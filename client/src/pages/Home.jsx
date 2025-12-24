@@ -30,13 +30,31 @@ const Home = () => {
         }
     };
 
+    // Track if today's agenda has been shown for this session
+    const [hasShownAgenda, setHasShownAgenda] = useState(false);
+
     useEffect(() => {
         fetchData();
 
         // Request notification permission
         if ('Notification' in window && Notification.permission === 'default') {
-            Notification.requestPermission();
+            Notification.requestPermission().then(permission => {
+                if (permission === 'granted') {
+                    toast.success("Notifications enabled for background alerts!");
+                }
+            });
         }
+    }, []);
+
+    // Refresh data when user returns to the tab
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                fetchData();
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, []);
 
     // Track last notification time for each reminder
@@ -59,20 +77,25 @@ const Home = () => {
                 // We use dueDateMs - 30000 to catch it slightly early or on time
                 if (nowMs >= dueDateMs - 30000 && nowMs - lastNotifyTime >= 120000) {
 
-                    // Show browser notification
-                    if ('Notification' in window && Notification.permission === 'granted') {
-                        const notification = new Notification('⏰ Reminder Due!', {
-                            body: reminder.title,
-                            icon: '/favicon.ico',
-                            badge: '/favicon.ico',
-                            tag: `reminder-${reminder.id}`,
-                            requireInteraction: true,
+                    // Show browser/native notification (using Service Worker for better background support)
+                    if ('serviceWorker' in navigator && Notification.permission === 'granted') {
+                        navigator.serviceWorker.ready.then(registration => {
+                            registration.showNotification('⏰ Reminder Due!', {
+                                body: reminder.title,
+                                icon: '/favicon.svg',
+                                badge: '/favicon.svg',
+                                vibrate: [200, 100, 200],
+                                tag: `reminder-${reminder.id}`,
+                                renotify: true,
+                                requireInteraction: true,
+                                actions: [
+                                    { action: 'done', title: 'Done' }
+                                ],
+                                data: {
+                                    url: window.location.origin
+                                }
+                            });
                         });
-
-                        notification.onclick = () => {
-                            window.focus();
-                            notification.close();
-                        };
                     }
 
                     // Show toast notification
@@ -138,11 +161,62 @@ const Home = () => {
         return r.due_date && r.due_date.startsWith(todayStr);
     });
 
+    // 🔔 Modern Agenda Alert for Today's Tasks
     useEffect(() => {
-        if (notifications.length > 0) {
-            toast(`You have ${notifications.length} tasks due today!`, { icon: '🔔', duration: 4000 });
+        if (!loading && notifications.length > 0 && !hasShownAgenda) {
+            // Show a custom, beautiful agenda toast
+            toast.custom((t) => (
+                <div
+                    className={`${t.visible ? 'animate-enter' : 'animate-leave'
+                        } max-w-md w-full bg-white shadow-2xl rounded-[32px] pointer-events-auto flex ring-1 ring-black ring-opacity-5 overflow-hidden border border-slate-100 mt-6`}
+                >
+                    <div className="flex-1 w-0 p-6">
+                        <div className="flex items-start gap-4">
+                            <div className="shrink-0">
+                                <div className="h-14 w-14 bg-linear-to-br from-[#2d5bff] to-[#4a69ff] rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20">
+                                    <FaBell className="h-7 w-7 text-white" />
+                                </div>
+                            </div>
+                            <div className="flex-1">
+                                <p className="text-xl font-black text-slate-800 tracking-tight">
+                                    Today's Agenda
+                                </p>
+                                <p className="mt-1 text-sm font-bold text-slate-500">
+                                    You have <span className="text-[#2d5bff]">{notifications.length} tasks</span> scheduled for today.
+                                </p>
+                                <div className="mt-4 flex flex-col gap-2">
+                                    {notifications.slice(0, 3).map(n => (
+                                        <div key={n.id} className="flex items-center gap-2 text-xs font-bold text-slate-600">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+                                            <span className="truncate">{n.title}</span>
+                                        </div>
+                                    ))}
+                                    {notifications.length > 3 && (
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">+ {notifications.length - 3} more tasks</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex border-l border-slate-50">
+                        <button
+                            onClick={() => {
+                                toast.dismiss(t.id);
+                                setHasShownAgenda(true);
+                            }}
+                            className="w-full border border-transparent rounded-none rounded-r-[32px] p-6 flex items-center justify-center text-sm font-black text-[#2d5bff] hover:bg-slate-50 transition-all uppercase tracking-widest"
+                        >
+                            Got it
+                        </button>
+                    </div>
+                </div>
+            ), {
+                duration: 8000,
+                position: 'top-center'
+            });
+            setHasShownAgenda(true);
         }
-    }, [notifications.length]);
+    }, [notifications.length, loading, hasShownAgenda]);
 
     const handleAdd = async (newReminder) => {
         try {
