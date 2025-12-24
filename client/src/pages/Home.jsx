@@ -76,15 +76,40 @@ const Home = () => {
                     }
 
                     // Show toast notification
-                    toast.error(`⏰ Reminder Due: ${reminder.title}`, {
+                    toast.custom((t) => (
+                        <div
+                            className={`${t.visible ? 'animate-enter' : 'animate-leave'
+                                } max-w-md w-[90%] sm:w-full bg-red-600 shadow-2xl rounded-2xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 overflow-hidden border border-red-500/50 mt-4`}
+                        >
+                            <div className="flex-1 w-0 p-4">
+                                <div className="flex items-center">
+                                    <div className="shrink-0">
+                                        <div className="h-10 w-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30">
+                                            <FaBell className="h-5 w-5 text-white animate-bounce" />
+                                        </div>
+                                    </div>
+                                    <div className="ml-4 flex-1">
+                                        <p className="text-sm font-black text-white">
+                                            Reminder Due!
+                                        </p>
+                                        <p className="mt-0.5 text-[11px] font-bold text-white/80 uppercase tracking-widest line-clamp-1">
+                                            {reminder.title}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex border-l border-white/10">
+                                <button
+                                    onClick={() => toast.dismiss(t.id)}
+                                    className="w-full border border-transparent rounded-none rounded-r-2xl px-4 flex items-center justify-center text-xs font-black text-white hover:bg-white/10 transition-colors uppercase tracking-widest"
+                                >
+                                    Done
+                                </button>
+                            </div>
+                        </div>
+                    ), {
                         duration: 6000,
-                        position: 'top-center',
-                        style: {
-                            background: '#fff',
-                            color: '#e11d48',
-                            fontWeight: 'bold',
-                            border: '2px solid #e11d48'
-                        }
+                        position: 'top-center'
                     });
 
                     // Update last notified time
@@ -187,7 +212,7 @@ const Home = () => {
         <div className="flex flex-col items-center h-full px-2 sm:px-4 relative lg:overflow-hidden">
             <div className="w-full max-w-7xl flex flex-col h-full py-2 sm:py-4 md:py-8">
 
-                <div className="flex justify-between items-center mb-4 sm:mb-6 flex-shrink-0 bg-gradient-to-r from-[#2d5bff] via-[#4a69ff] to-[#6366f1] p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-blue-400/30 shadow-xl shadow-blue-500/20 relative z-20">
+                <div className="flex justify-between items-center mb-4 sm:mb-6 shrink-0 bg-linear-to-r from-[#2d5bff] via-[#4a69ff] to-[#6366f1] p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-blue-400/30 shadow-xl shadow-blue-500/20 relative z-20">
                     <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white drop-shadow-lg">
                         Dashboard
                     </h1>
@@ -286,7 +311,7 @@ const Home = () => {
                     {/* RIGHT SIDE: LIST - SCROLLABLE SECTION */}
                     <div className="flex-1 min-h-0 w-full mb-10 lg:mb-0">
                         <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 shadow-2xl flex flex-col h-auto sm:h-[516px]">
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6 flex-shrink-0">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6 shrink-0">
                                 <div className="flex items-center gap-2 sm:gap-4">
                                     <h2 className="text-base sm:text-lg font-bold text-slate-800">
                                         Your Timeline
@@ -298,7 +323,7 @@ const Home = () => {
 
                                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                                     {/* 📅 Date Search Filter */}
-                                    <div className="relative">
+                                    <div className="relative shrink-0">
                                         <div className={`flex items-center gap-1.5 sm:gap-2 bg-white border px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl transition-all ${filterDate ? 'border-[#2d5bff] bg-blue-50' : 'border-slate-200'}`}>
                                             <svg className={`w-3 sm:w-3.5 h-3 sm:h-3.5 ${filterDate ? 'text-[#2d5bff]' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />

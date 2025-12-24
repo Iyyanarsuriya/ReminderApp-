@@ -27,7 +27,7 @@ function App() {
 
   return (
     <Router>
-      <Toaster position="top-right" reverseOrder={false} />
+      <Toaster position="top-center" reverseOrder={false} />
       <div className="min-h-screen bg-transparent text-slate-800 tracking-tight">
         <AppContent token={token} setToken={setToken} />
       </div>
