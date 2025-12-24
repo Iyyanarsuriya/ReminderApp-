@@ -30,12 +30,17 @@ app.use("/api/auth", authRoutes);
 app.use("/api/reminders", reminderRoutes);
 app.use("/api/notifications", notificationRoutes);
 
-// Configure Web Push
-webpush.setVapidDetails(
-    "mailto:example@yourdomain.com",
-    process.env.VAPID_PUBLIC_KEY,
-    process.env.VAPID_PRIVATE_KEY
-);
+// Configure Web Push - Only if keys are present to prevent crash
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    webpush.setVapidDetails(
+        "mailto:example@yourdomain.com",
+        process.env.VAPID_PUBLIC_KEY,
+        process.env.VAPID_PRIVATE_KEY
+    );
+    console.log("✅ Web Push configured");
+} else {
+    console.warn("⚠️ Web Push keys missing. Background notifications will not work.");
+}
 
 // Initialize Database Tables
 async function initDB() {
@@ -44,7 +49,7 @@ async function initDB() {
             CREATE TABLE IF NOT EXISTS push_subscriptions (
                 id INT AUTO_INCREMENT PRIMARY KEY,
                 user_id INT NOT NULL,
-                subscription_data JSON NOT NULL,
+                subscription_data LONGTEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE KEY unique_user_sub (user_id),
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
