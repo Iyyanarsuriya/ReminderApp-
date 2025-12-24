@@ -1,13 +1,13 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-    baseURL: 'http://192.168.0.169:5000/api',
+    baseURL: import.meta.env.VITE_API_BASE_URL + '/api',
     headers: {
         'Content-Type': 'application/json',
     },
 });
 
-// Add a request interceptor to add the auth token to headers
+// Add auth token
 axiosInstance.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
@@ -16,9 +16,7 @@ axiosInstance.interceptors.request.use(
         }
         return config;
     },
-    (error) => {
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );
 
 export default axiosInstance;
