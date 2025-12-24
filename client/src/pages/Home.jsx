@@ -12,6 +12,7 @@ const Home = () => {
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState(null);
     const [showNotifications, setShowNotifications] = useState(false);
+    const [confirmToggle, setConfirmToggle] = useState(null); // { id, currentStatus }
     const [sortBy, setSortBy] = useState('due_date'); // Default to date wise
     const [filterDate, setFilterDate] = useState(''); // Search by date
 
@@ -168,20 +169,20 @@ const Home = () => {
             toast.custom((t) => (
                 <div
                     className={`${t.visible ? 'animate-enter' : 'animate-leave'
-                        } max-w-md w-full bg-white shadow-2xl rounded-[32px] pointer-events-auto flex ring-1 ring-black ring-opacity-5 overflow-hidden border border-slate-100 mt-6`}
+                        } max-w-md w-[95%] sm:w-full bg-white shadow-2xl rounded-[24px] sm:rounded-[32px] pointer-events-auto flex ring-1 ring-black ring-opacity-5 overflow-hidden border border-slate-100 mt-6`}
                 >
-                    <div className="flex-1 w-0 p-6">
-                        <div className="flex items-start gap-4">
+                    <div className="flex-1 w-0 p-4 sm:p-6">
+                        <div className="flex items-start gap-3 sm:gap-4">
                             <div className="shrink-0">
-                                <div className="h-14 w-14 bg-linear-to-br from-[#2d5bff] to-[#4a69ff] rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20">
-                                    <FaBell className="h-7 w-7 text-white" />
+                                <div className="h-10 w-10 sm:h-14 sm:w-14 bg-linear-to-br from-[#2d5bff] to-[#4a69ff] rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20">
+                                    <FaBell className="h-5 w-5 sm:h-7 sm:w-7 text-white" />
                                 </div>
                             </div>
                             <div className="flex-1">
-                                <p className="text-xl font-black text-slate-800 tracking-tight">
+                                <p className="text-lg sm:text-xl font-black text-slate-800 tracking-tight">
                                     Today's Agenda
                                 </p>
-                                <p className="mt-1 text-sm font-bold text-slate-500">
+                                <p className="mt-1 text-[11px] sm:text-sm font-bold text-slate-500">
                                     You have <span className="text-[#2d5bff]">{notifications.length} tasks</span> scheduled for today.
                                 </p>
                                 <div className="mt-4 flex flex-col gap-2">
@@ -204,7 +205,7 @@ const Home = () => {
                                 toast.dismiss(t.id);
                                 setHasShownAgenda(true);
                             }}
-                            className="w-full border border-transparent rounded-none rounded-r-[32px] p-6 flex items-center justify-center text-sm font-black text-[#2d5bff] hover:bg-slate-50 transition-all uppercase tracking-widest"
+                            className="w-full border border-transparent rounded-none rounded-r-[24px] sm:rounded-r-[32px] p-4 sm:p-6 flex items-center justify-center text-xs sm:text-sm font-black text-[#2d5bff] hover:bg-slate-50 transition-all uppercase tracking-widest"
                         >
                             Got it
                         </button>
@@ -229,14 +230,38 @@ const Home = () => {
     };
 
     const handleToggle = async (id, currentStatus) => {
+        // If unchecking (marking as incomplete), update directly
+        if (currentStatus) {
+            try {
+                await updateReminder(id, { is_completed: false });
+                setReminders(reminders.map(r =>
+                    r.id === id ? { ...r, is_completed: false } : r
+                ));
+                toast.success("Task marked as incomplete");
+            } catch {
+                toast.error("Update failed");
+            }
+            return;
+        }
+
+        // If checking (marking as complete), show confirmation modal
+        setConfirmToggle({ id, currentStatus });
+    };
+
+    const confirmCompletion = async () => {
+        if (!confirmToggle) return;
+        const { id } = confirmToggle;
+
         try {
-            await updateReminder(id, { is_completed: !currentStatus });
+            await updateReminder(id, { is_completed: true });
             setReminders(reminders.map(r =>
-                r.id === id ? { ...r, is_completed: !currentStatus } : r
+                r.id === id ? { ...r, is_completed: true } : r
             ));
-            toast.success("Status updated");
+            toast.success("Task completed! 🥳");
         } catch {
             toast.error("Update failed");
+        } finally {
+            setConfirmToggle(null);
         }
     };
 
@@ -469,6 +494,40 @@ const Home = () => {
                 </div>
 
             </div>
+            {/* Completion Confirmation Modal */}
+            {confirmToggle && (
+                <div className="fixed inset-0 z-120 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[32px] p-6 sm:p-8 w-full max-w-[400px] shadow-2xl animate-in zoom-in-95 duration-200 border border-white">
+                        <div className="flex flex-col items-center text-center">
+                            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-6 border border-blue-100 shadow-lg shadow-blue-500/10">
+                                <div className="w-8 h-8 bg-[#2d5bff] rounded-full flex items-center justify-center animate-pulse">
+                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <h3 className="text-xl font-black text-slate-800 mb-2 uppercase tracking-tighter">Mark as Complete?</h3>
+                            <p className="text-slate-500 text-sm font-medium mb-8">
+                                High five! 👋 Shall we mark this task as finished and save your progress?
+                            </p>
+                            <div className="flex w-full gap-3">
+                                <button
+                                    onClick={() => setConfirmToggle(null)}
+                                    className="flex-1 py-3 px-6 rounded-xl font-black text-[11px] tracking-widest uppercase border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all active:scale-95"
+                                >
+                                    Not yet
+                                </button>
+                                <button
+                                    onClick={confirmCompletion}
+                                    className="flex-1 py-3 px-6 rounded-xl font-black text-[11px] tracking-widest uppercase bg-[#2d5bff] text-white shadow-lg shadow-blue-500/20 hover:bg-blue-600 hover:shadow-xl transition-all active:scale-95"
+                                >
+                                    Yes, Done!
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
