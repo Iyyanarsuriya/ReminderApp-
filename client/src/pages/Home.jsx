@@ -76,23 +76,24 @@ const Home = () => {
                     }
 
                     // Show toast notification
+                    // Show toast notification
                     toast.custom((t) => (
                         <div
                             className={`${t.visible ? 'animate-enter' : 'animate-leave'
-                                } max-w-md w-[90%] sm:w-full bg-red-600 shadow-2xl rounded-2xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 overflow-hidden border border-red-500/50 mt-4`}
+                                } max-w-md w-[95%] xs:w-[90%] sm:w-full bg-red-600 shadow-2xl rounded-2xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 overflow-hidden border border-red-500/50 mt-4`}
                         >
-                            <div className="flex-1 w-0 p-4">
+                            <div className="flex-1 w-0 p-3 sm:p-4">
                                 <div className="flex items-center">
                                     <div className="shrink-0">
-                                        <div className="h-10 w-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30">
-                                            <FaBell className="h-5 w-5 text-white animate-bounce" />
+                                        <div className="h-8 w-8 sm:h-10 sm:w-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30">
+                                            <FaBell className="h-4 w-4 sm:h-5 sm:w-5 text-white animate-bounce" />
                                         </div>
                                     </div>
-                                    <div className="ml-4 flex-1">
-                                        <p className="text-sm font-black text-white">
+                                    <div className="ml-3 sm:ml-4 flex-1">
+                                        <p className="text-xs sm:text-sm font-black text-white">
                                             Reminder Due!
                                         </p>
-                                        <p className="mt-0.5 text-[11px] font-bold text-white/80 uppercase tracking-widest line-clamp-1">
+                                        <p className="mt-0.5 text-[9px] sm:text-[11px] font-bold text-white/80 uppercase tracking-widest line-clamp-1">
                                             {reminder.title}
                                         </p>
                                     </div>
@@ -101,7 +102,7 @@ const Home = () => {
                             <div className="flex border-l border-white/10">
                                 <button
                                     onClick={() => toast.dismiss(t.id)}
-                                    className="w-full border border-transparent rounded-none rounded-r-2xl px-4 flex items-center justify-center text-xs font-black text-white hover:bg-white/10 transition-colors uppercase tracking-widest"
+                                    className="w-full border border-transparent rounded-none rounded-r-2xl px-3 sm:px-4 flex items-center justify-center text-[10px] sm:text-xs font-black text-white hover:bg-white/10 transition-colors uppercase tracking-widest"
                                 >
                                     Done
                                 </button>
@@ -212,20 +213,20 @@ const Home = () => {
         <div className="flex flex-col items-center h-full px-2 sm:px-4 relative lg:overflow-hidden">
             <div className="w-full max-w-7xl flex flex-col h-full py-2 sm:py-4 md:py-8">
 
-                <div className="flex justify-between items-center mb-4 sm:mb-6 shrink-0 bg-linear-to-r from-[#2d5bff] via-[#4a69ff] to-[#6366f1] p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-blue-400/30 shadow-xl shadow-blue-500/20 relative z-20">
-                    <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-white drop-shadow-lg">
+                <div className="flex justify-between items-center mb-4 sm:mb-6 shrink-0 bg-linear-to-r from-[#2d5bff] via-[#4a69ff] to-[#6366f1] p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-blue-400/30 shadow-xl shadow-blue-500/20 relative z-20">
+                    <h1 className="text-lg sm:text-2xl md:text-3xl font-black text-white drop-shadow-lg tracking-tight">
                         Dashboard
                     </h1>
 
-                    <div className="flex items-center gap-2 sm:gap-3 md:gap-6">
+                    <div className="flex items-center gap-2 sm:gap-4 md:gap-6">
                         {/* 🔔 Notification Icon */}
                         <div className="relative">
                             <FaBell
-                                className={`text-xl sm:text-2xl md:text-3xl cursor-pointer transition-colors ${showNotifications ? 'text-yellow-300' : 'text-white/80 hover:text-white'}`}
+                                className={`text-lg sm:text-2xl md:text-3xl cursor-pointer transition-colors ${showNotifications ? 'text-yellow-300' : 'text-white/80 hover:text-white'}`}
                                 onClick={() => setShowNotifications(!showNotifications)}
                             />
                             {notifications.length > 0 && (
-                                <span className="absolute -top-1 sm:-top-2 -right-1 sm:-right-2 bg-[#ff4d4d] w-4 h-4 sm:w-5 sm:h-5 text-[8px] sm:text-[10px] flex items-center justify-center rounded-full font-bold text-white shadow-lg animate-pulse">
+                                <span className="absolute -top-1 sm:-top-2 -right-1 sm:-right-2 bg-[#ff4d4d] w-3.5 h-3.5 sm:w-5 sm:h-5 text-[7px] sm:text-[10px] flex items-center justify-center rounded-full font-bold text-white shadow-lg animate-pulse">
                                     {notifications.length}
                                 </span>
                             )}
@@ -299,7 +300,7 @@ const Home = () => {
                 <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 h-full min-h-0 items-start overflow-y-auto lg:overflow-visible custom-scrollbar pb-10 lg:pb-0">
 
                     {/* LEFT SIDE: ADD REMINDER */}
-                    <div className="w-full lg:w-[450px] flex-shrink-0">
+                    <div className="w-full lg:w-[450px] shrink-0">
                         <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 shadow-2xl h-auto">
                             <h2 className="text-base sm:text-lg font-bold mb-4 sm:mb-6 text-slate-800">
                                 New task
@@ -310,7 +311,7 @@ const Home = () => {
 
                     {/* RIGHT SIDE: LIST - SCROLLABLE SECTION */}
                     <div className="flex-1 min-h-0 w-full mb-10 lg:mb-0">
-                        <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 shadow-2xl flex flex-col h-auto sm:h-[516px]">
+                        <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 shadow-2xl flex flex-col h-auto sm:min-h-[516px]">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6 shrink-0">
                                 <div className="flex items-center gap-2 sm:gap-4">
                                     <h2 className="text-base sm:text-lg font-bold text-slate-800">

@@ -4,6 +4,7 @@ import { Trash2, X, Calendar, Clock, AlertCircle } from 'lucide-react';
 
 function ReminderList({ reminders, onToggle, onDelete }) {
   const [selectedReminder, setSelectedReminder] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
 
   const isOverdue = (date, completed) => {
     if (!date || completed) return false;
@@ -64,7 +65,7 @@ function ReminderList({ reminders, onToggle, onDelete }) {
                   {/* Status Toggle - Radio Button Style */}
                   <button
                     onClick={() => onToggle(reminder.id, reminder.is_completed)}
-                    className={`mt-0.5 sm:mt-1 flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 transition-all flex items-center justify-center shadow-sm ${reminder.is_completed
+                    className={`mt-0.5 sm:mt-1 shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full border-2 transition-all flex items-center justify-center shadow-sm ${reminder.is_completed
                       ? 'bg-[#2d5bff] border-[#2d5bff] shadow-blue-500/30'
                       : 'border-slate-300 hover:border-[#2d5bff] bg-white'
                       }`}
@@ -97,12 +98,11 @@ function ReminderList({ reminders, onToggle, onDelete }) {
                       {reminder.due_date && (
                         <div className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl border text-[9px] sm:text-[11px] font-black uppercase tracking-wider ${overdue ? 'bg-red-50 border-red-100 text-[#ff4d4d]' : 'bg-slate-50 border-slate-100 text-slate-500'
                           }`}>
-                          <svg className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          <svg className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <span className="hidden sm:inline">{formatDate(reminder.due_date)}</span>
-                          <span className="sm:hidden">{formatDate(reminder.due_date).split(',')[0]}</span>
-                          {overdue && <span className="ml-0.5 sm:ml-1 opacity-70 hidden sm:inline">(Overdue)</span>}
+                          <span className="truncate">{formatDate(reminder.due_date)}</span>
+                          {overdue && <span className="ml-1 opacity-70 hidden xs:inline">(Overdue)</span>}
                         </div>
                       )}
 
@@ -119,7 +119,7 @@ function ReminderList({ reminders, onToggle, onDelete }) {
 
                 {/* Action Menu (Delete) - Highlighted Red */}
                 <button
-                  onClick={() => reminder.is_completed && onDelete(reminder.id)}
+                  onClick={() => reminder.is_completed && setDeleteId(reminder.id)}
                   disabled={!reminder.is_completed}
                   className={`p-1.5 sm:p-2.5 rounded-lg sm:rounded-xl transition-all duration-200 ${reminder.is_completed
                     ? 'text-white bg-[#ff4d4d] opacity-100 cursor-pointer shadow-lg shadow-red-500/30 hover:bg-[#ff3333] hover:shadow-xl hover:shadow-red-500/40 sm:hover:scale-110'
@@ -146,7 +146,7 @@ function ReminderList({ reminders, onToggle, onDelete }) {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header - Blue Theme */}
-            <div className="relative p-4 sm:p-6 md:p-8 rounded-t-xl sm:rounded-t-2xl bg-gradient-to-r from-[#2d5bff] via-[#4a69ff] to-[#6366f1]">
+            <div className="relative p-4 sm:p-6 md:p-8 rounded-t-xl sm:rounded-t-2xl bg-linear-to-r from-[#2d5bff] via-[#4a69ff] to-[#6366f1]">
               <button
                 onClick={() => setSelectedReminder(null)}
                 className="absolute top-3 right-3 sm:top-4 sm:right-4 p-1.5 sm:p-2 rounded-full bg-white/20 hover:bg-white/30 transition-all text-white"
@@ -233,7 +233,7 @@ function ReminderList({ reminders, onToggle, onDelete }) {
                 {!!selectedReminder.is_completed && (
                   <button
                     onClick={() => {
-                      onDelete(selectedReminder.id);
+                      setDeleteId(selectedReminder.id);
                       setSelectedReminder(null);
                     }}
                     className="flex-1 sm:flex-none py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm bg-[#ff4d4d] text-white hover:bg-[#ff3333] transition-all flex items-center justify-center gap-2"
@@ -242,6 +242,39 @@ function ReminderList({ reminders, onToggle, onDelete }) {
                     Delete
                   </button>
                 )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Delete Confirmation Modal */}
+      {deleteId && (
+        <div className="fixed inset-0 z-110 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white rounded-[32px] p-6 sm:p-8 w-full max-w-[400px] shadow-2xl animate-in zoom-in-95 duration-200 border border-white">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6 border border-red-100 shadow-lg shadow-red-500/10">
+                <Trash2 className="w-8 h-8 text-[#ff4d4d] animate-bounce" />
+              </div>
+              <h3 className="text-xl font-black text-slate-800 mb-2 uppercase tracking-tighter">Are you sure?</h3>
+              <p className="text-slate-500 text-sm font-medium mb-8">
+                This action cannot be undone. This reminder will be permanently deleted from your timeline.
+              </p>
+              <div className="flex w-full gap-3">
+                <button
+                  onClick={() => setDeleteId(null)}
+                  className="flex-1 py-3 px-6 rounded-xl font-black text-[13px] tracking-widest uppercase border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all active:scale-95"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    onDelete(deleteId);
+                    setDeleteId(null);
+                  }}
+                  className="flex-1 py-3 px-6 rounded-xl font-black text-[13px] tracking-widest uppercase bg-[#ff4d4d] text-white shadow-lg shadow-red-500/20 hover:bg-[#ff3333] hover:shadow-xl transition-all active:scale-95"
+                >
+                  Delete
+                </button>
               </div>
             </div>
           </div>

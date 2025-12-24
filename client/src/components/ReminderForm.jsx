@@ -24,10 +24,10 @@ function ReminderForm({ onAdd }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 md:space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-4 md:space-y-6">
       {/* Title */}
       <div>
-        <label className="block text-xs sm:text-sm font-semibold text-slate-500 mb-1.5 sm:mb-2">
+        <label className="block text-[10px] sm:text-sm font-bold text-slate-400 mb-1 sm:mb-2 uppercase tracking-widest">
           Title
         </label>
         <div className="relative">
@@ -44,7 +44,7 @@ function ReminderForm({ onAdd }) {
 
       {/* Description */}
       <div>
-        <label className="block text-xs sm:text-sm font-semibold text-slate-500 mb-1.5 sm:mb-2">
+        <label className="block text-[10px] sm:text-sm font-bold text-slate-400 mb-1 sm:mb-2 uppercase tracking-widest">
           Description (Optional)
         </label>
         <textarea
@@ -57,7 +57,7 @@ function ReminderForm({ onAdd }) {
 
       {/* Date & Time Picker */}
       <div>
-        <label className="block text-xs sm:text-sm font-semibold text-slate-500 mb-1.5 sm:mb-2">
+        <label className="block text-[10px] sm:text-sm font-bold text-slate-400 mb-1 sm:mb-2 uppercase tracking-widest">
           Due Date & Time
         </label>
         <input
@@ -71,7 +71,7 @@ function ReminderForm({ onAdd }) {
 
       {/* Priority */}
       <div>
-        <label className="block text-xs sm:text-sm font-semibold text-slate-500 mb-1.5 sm:mb-2">
+        <label className="block text-[10px] sm:text-sm font-bold text-slate-400 mb-1 sm:mb-2 uppercase tracking-widest">
           Priority
         </label>
         <div className="relative group/select">

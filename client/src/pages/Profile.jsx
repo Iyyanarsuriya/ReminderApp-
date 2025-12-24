@@ -105,19 +105,13 @@ const Profile = () => {
         <div className="min-h-[calc(100vh-80px)] py-[24px] sm:py-[48px] px-[16px]">
             <div className="max-w-[896px] mx-auto">
                 {/* NAVIGATION ACTIONS */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-[16px] mb-[32px]">
-                    <Link to="/" className="text-slate-500 hover:text-[#f97066] font-bold text-[14px] flex items-center gap-[8px] transition-colors order-2 sm:order-1">
+                <div className="flex items-center justify-start mb-[32px]">
+                    <Link to="/" className="text-slate-500 hover:text-[#2d5bff] font-bold text-[14px] flex items-center gap-[8px] transition-colors">
                         <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                         </svg>
                         <span>Back to Dashboard</span>
                     </Link>
-                    <button
-                        onClick={logout}
-                        className="w-full sm:w-auto bg-white hover:bg-red-50 text-red-500 px-[24px] py-[10px] rounded-[16px] text-[13px] font-black tracking-widest uppercase border border-red-100 transition-all order-1 sm:order-2 shadow-sm"
-                    >
-                        Logout Account
-                    </button>
                 </div>
 
                 {/* MAIN PROFILE CARD */}
@@ -255,12 +249,50 @@ const Profile = () => {
                         )}
                     </div>
                 </div>
+
+                {/* SETTINGS SECTION */}
+                {!isEditing && (
+                    <div className="mt-[32px] glass rounded-[32px] p-[24px] sm:p-[32px] border border-white shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="flex items-center gap-[12px] mb-[24px]">
+                            <div className="w-[40px] h-[40px] bg-slate-100 rounded-[12px] flex items-center justify-center">
+                                <svg className="w-[20px] h-[20px] text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </div>
+                            <h2 className="text-[18px] font-black text-slate-800 uppercase tracking-tighter">Account Settings</h2>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
+                            <div className="p-[20px] rounded-[24px] bg-red-50/50 border border-red-100 flex items-center justify-between group">
+                                <div>
+                                    <h3 className="font-black text-slate-800 text-[14px]">Session</h3>
+                                    <p className="text-[12px] text-slate-500 font-medium">Log out of your current session</p>
+                                </div>
+                                <button
+                                    onClick={logout}
+                                    className="bg-white hover:bg-red-500 hover:text-white text-red-500 px-[20px] py-[10px] rounded-[14px] text-[11px] font-black tracking-widest uppercase border border-red-100 transition-all shadow-sm active:scale-95"
+                                >
+                                    Logout
+                                </button>
+                            </div>
+
+                            <div className="p-[20px] rounded-[24px] bg-slate-50 border border-slate-100 flex items-center justify-between opacity-60">
+                                <div>
+                                    <h3 className="font-black text-slate-800 text-[14px]">Privacy</h3>
+                                    <p className="text-[12px] text-slate-500 font-medium">Manage your data</p>
+                                </div>
+                                <span className="bg-slate-200 text-slate-500 px-[12px] py-[6px] rounded-full text-[9px] font-black uppercase tracking-widest">Coming Soon</span>
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {/* STATS MODAL */}
                 {selectedStat.open && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-[16px]">
+                    <div className="fixed inset-0 z-100 flex items-center justify-center p-[16px]">
                         <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setSelectedStat({ ...selectedStat, open: false })}></div>
                         <div className="relative bg-white rounded-[32px] p-[24px] sm:p-[32px] w-full max-w-[600px] max-h-[80vh] overflow-hidden shadow-2xl flex flex-col border border-white">
-                            <div className="flex justify-between items-center mb-[24px] flex-shrink-0">
+                            <div className="flex justify-between items-center mb-[24px] shrink-0">
                                 <h3 className={`text-[20px] font-black uppercase tracking-tighter ${selectedStat.title === 'Remaining Tasks' ? 'text-amber-500' :
                                     selectedStat.title === 'Completed Tasks' ? 'text-emerald-500' :
                                         'text-[#2d5bff]'
@@ -276,9 +308,9 @@ const Profile = () => {
                                 {selectedStat.items.length > 0 ? (
                                     <div className="space-y-[12px]">
                                         {selectedStat.items.map(item => (
-                                            <div key={item.id} className={`p-[16px] rounded-[20px] border transition-colors shadow-sm ${selectedStat.title === 'Remaining Tasks' ? 'bg-gradient-to-br from-amber-50 to-orange-50 border-orange-100' :
-                                                selectedStat.title === 'Completed Tasks' ? 'bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100' :
-                                                    'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100'
+                                            <div key={item.id} className={`p-[16px] rounded-[20px] border transition-colors shadow-sm ${selectedStat.title === 'Remaining Tasks' ? 'bg-linear-to-br from-amber-50 to-orange-50 border-orange-100' :
+                                                selectedStat.title === 'Completed Tasks' ? 'bg-linear-to-br from-emerald-50 to-teal-50 border-emerald-100' :
+                                                    'bg-linear-to-br from-blue-50 to-indigo-50 border-blue-100'
                                                 }`}>
                                                 <div className="flex justify-between items-start mb-[4px]">
                                                     <h4 className={`font-bold text-slate-800 ${item.is_completed ? 'line-through text-slate-400' : ''}`}>{item.title}</h4>

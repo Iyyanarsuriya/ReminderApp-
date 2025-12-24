@@ -43,28 +43,30 @@ function AppContent({ token, setToken }) {
   return (
     <>
       {token && !isAuthRoute && (
-        <header className="fixed top-0 left-0 w-full z-50 border-b border-white glass">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-20">
+        <header className="fixed top-0 left-0 w-full z-50 border-b border-white/50 glass">
+          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16 sm:h-20">
               {/* Logo Section */}
               <div className="flex items-center gap-2">
-                <div className="w-10 h-10 bg-[#2d5bff] rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <span className="text-xl font-black text-slate-800 hidden sm:block">
-                  Reminder<span className="text-[#2d5bff]">App</span>
-                </span>
+                <Link to="/" className="flex items-center gap-2 group">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#2d5bff] rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
+                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <span className="text-lg sm:text-xl font-black text-slate-800 tracking-tighter">
+                    Reminder<span className="text-[#2d5bff]">App</span>
+                  </span>
+                </Link>
               </div>
 
               {/* Navigation Links */}
-              <nav className="flex items-center gap-8">
-                <Link to="/" className="text-xs font-black tracking-widest uppercase text-slate-500 hover:text-[#2d5bff] transition-all duration-300 relative group">
+              <nav className="flex items-center gap-3 sm:gap-8">
+                <Link to="/" className="text-[10px] sm:text-xs font-black tracking-widest uppercase text-slate-500 hover:text-[#2d5bff] transition-all duration-300 relative group hidden xs:block">
                   Home
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#2d5bff] transition-all duration-300 group-hover:w-full"></span>
                 </Link>
-                <Link to="/profile" className="px-6 py-2.5 bg-[#1a1c21] hover:bg-slate-800 text-white text-xs font-black tracking-widest uppercase rounded-full shadow-lg transition-all active:scale-95">
+                <Link to="/profile" className="px-4 sm:px-6 py-2 sm:py-2.5 bg-[#1a1c21] hover:bg-slate-800 text-white text-[10px] sm:text-xs font-black tracking-widest uppercase rounded-full shadow-lg transition-all active:scale-95 whitespace-nowrap">
                   Profile
                 </Link>
               </nav>
@@ -73,7 +75,7 @@ function AppContent({ token, setToken }) {
         </header>
       )}
 
-      <main className={token && !isAuthRoute ? "lg:h-[calc(100vh-5rem)] mt-20 lg:overflow-hidden min-h-[calc(100vh-5rem)]" : ""}>
+      <main className={token && !isAuthRoute ? "lg:h-[calc(100vh-5rem)] mt-16 sm:mt-20 lg:overflow-hidden min-h-[calc(100vh-5rem)]" : ""}>
         <Routes>
           <Route path="/login" element={<Login setToken={setToken} />} />
           <Route path="/signup" element={<Signup />} />
