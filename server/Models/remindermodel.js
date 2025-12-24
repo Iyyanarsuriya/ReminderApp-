@@ -7,9 +7,14 @@ exports.getAllByUserId = async (userId) => {
 
 exports.create = async (reminderData) => {
     const { user_id, title, description, due_date, priority } = reminderData;
+
+    // Use Date object - mysql2 formats this correctly for DATETIME columns
+    const dateObj = due_date ? new Date(due_date) : null;
+    const finalDate = (dateObj && !isNaN(dateObj.getTime())) ? dateObj : null;
+
     const [result] = await db.query(
         'INSERT INTO reminders (user_id, title, description, due_date, priority) VALUES (?, ?, ?, ?, ?)',
-        [user_id, title, description, due_date, priority || 'medium']
+        [user_id, title, description, finalDate, priority || 'medium']
     );
     return { id: result.insertId, ...reminderData, is_completed: false };
 };

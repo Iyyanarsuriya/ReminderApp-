@@ -46,9 +46,13 @@ exports.updatePassword = async (id, hashedPassword) => {
 
 // OTP-based password reset methods
 exports.saveOTP = async (email, otp, expiry) => {
+    // Use Date object - mysql2 formats this correctly for DATETIME columns
+    const dateObj = expiry ? new Date(expiry) : null;
+    const finalExpiry = (dateObj && !isNaN(dateObj.getTime())) ? dateObj : null;
+
     const [result] = await db.query(
         'UPDATE users SET reset_otp = ?, reset_otp_expiry = ? WHERE email = ?',
-        [otp, expiry, email]
+        [otp, finalExpiry, email]
     );
     return result.affectedRows > 0;
 };

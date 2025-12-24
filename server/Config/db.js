@@ -12,7 +12,8 @@ const pool = mysql.createPool({
     connectionLimit: 5,
     queueLimit: 0,
 
-    connectTimeout: 30000, // ✅ REQUIRED for Railway + Render
+    connectTimeout: 30000,
+    timezone: '+00:00', // Ensure UTC consistency
 });
 
 module.exports = pool.promise();
