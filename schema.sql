@@ -1,6 +1,4 @@
--- Create the database
-CREATE DATABASE IF NOT EXISTS reminder_db;
-USE reminder_db;
+
 
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
