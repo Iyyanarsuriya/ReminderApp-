@@ -52,8 +52,8 @@ async function initDB() {
                 subscription_data LONGTEXT NOT NULL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE KEY unique_user_sub (user_id),
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-            )
+                CONSTRAINT fk_push_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB
         `);
         console.log("✅ Database initialized");
     } catch (err) {
