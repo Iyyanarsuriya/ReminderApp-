@@ -27,7 +27,19 @@ function App() {
 
   return (
     <Router>
-      <Toaster position="top-center" reverseOrder={false} />
+      <Toaster
+        position="top-center"
+        reverseOrder={false}
+        toastOptions={{
+          duration: 2000,
+          style: {
+            fontFamily: "'Outfit', sans-serif",
+            fontWeight: '600',
+            fontSize: '14px',
+            borderRadius: '12px',
+          }
+        }}
+      />
       <div className="min-h-screen bg-transparent text-slate-800 tracking-tight">
         <AppContent token={token} setToken={setToken} />
       </div>
