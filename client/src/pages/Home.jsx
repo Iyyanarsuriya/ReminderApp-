@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getReminders, createReminder, updateReminder, deleteReminder } from '../api/homeApi';
 import { getMe } from '../api/authApi';
-import { subscribeToPush } from '../api/notificationApi';
 import ReminderForm from '../components/ReminderForm';
 import ReminderList from '../components/ReminderList';
 import { Link } from 'react-router-dom';
@@ -37,44 +36,7 @@ const Home = () => {
 
     useEffect(() => {
         fetchData();
-
-        // Request notification permission & subscribe for Web Push
-        if ('Notification' in window) {
-            Notification.requestPermission().then(async permission => {
-                if (permission === 'granted') {
-                    toast.success("Notifications enabled!");
-
-                    // Subscribe to Web Push for locked screen support
-                    try {
-                        const registration = await navigator.serviceWorker.ready;
-                        const publicVapidKey = 'BBZkduSTn1UjCwEKOjkuNgDs4iOPwkfpaa--K9NtxsqmcgjxKQpQTfzeGnjuDDpHyhZ6TiRUb1-rNg3zFDJIcWM';
-
-                        const subscription = await registration.pushManager.subscribe({
-                            userVisibleOnly: true,
-                            applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
-                        });
-
-                        await subscribeToPush(subscription);
-                        console.log("Push Subscribed!");
-                    } catch (err) {
-                        console.error("Push Subscription failed:", err);
-                    }
-                }
-            });
-        }
     }, []);
-
-    // Helper to convert VAPID key
-    function urlBase64ToUint8Array(base64String) {
-        const padding = '='.repeat((4 - base64String.length % 4) % 4);
-        const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-        const rawData = window.atob(base64);
-        const outputArray = new Uint8Array(rawData.length);
-        for (let i = 0; i < rawData.length; ++i) {
-            outputArray[i] = rawData.charCodeAt(i);
-        }
-        return outputArray;
-    }
 
     // Refresh data when user returns to the tab
     useEffect(() => {
@@ -115,27 +77,6 @@ const Home = () => {
                 // Condition: If reminder is due/overdue AND (never notified OR 5 minutes passed)
                 // We show immediate alert if it just became due
                 if (nowMs >= dueDateMs - 30000 && (nowMs - lastNotifyTime >= 300000)) {
-
-                    // Trigger Native Notification
-                    if ('serviceWorker' in navigator && Notification.permission === 'granted') {
-                        navigator.serviceWorker.ready.then(registration => {
-                            registration.showNotification('🚀 Task Alert!', {
-                                body: `Heads up! "${reminder.title}" is due now.`,
-                                icon: '/favicon.svg',
-                                badge: '/favicon.svg',
-                                vibrate: [200, 100, 200],
-                                tag: `reminder-${reminder.id}`,
-                                renotify: true,
-                                requireInteraction: true,
-                                actions: [
-                                    { action: 'done', title: 'Done' }
-                                ],
-                                data: {
-                                    url: window.location.origin
-                                }
-                            });
-                        });
-                    }
 
                     // Show Toast Alert
                     toast.custom((t) => (
