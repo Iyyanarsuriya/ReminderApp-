@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { getUserProfile } from '../api/userApi';
+import { useNavigate } from 'react-router-dom';
 import { getReminders } from '../api/homeApi';
-import { updateProfile, getGoogleAuthUrl } from '../api/authApi';
+import { updateProfile, getGoogleAuthUrl, getMe } from '../api/authApi';
 import { API_URL } from '../api/axiosInstance';
 import toast from 'react-hot-toast';
 import { FaGoogle, FaCalendarAlt } from 'react-icons/fa';
@@ -29,7 +28,7 @@ const Profile = () => {
     const fetchProfileData = async () => {
         try {
             const [userRes, remindersRes] = await Promise.all([
-                getUserProfile(),
+                getMe(),
                 getReminders()
             ]);
 

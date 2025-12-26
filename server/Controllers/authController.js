@@ -150,7 +150,6 @@ exports.login = async (req, res) => {
         }
 
         const token = jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '1h' });
-        console.log('Token generated');
 
         res.json({ token, user: { id: user.id, username: user.username, email: user.email, profile_image: user.profile_image } });
     } catch (error) {
@@ -213,9 +212,11 @@ exports.googleCallback = async (req, res) => {
             await User.update(decoded.id, { google_refresh_token: refreshToken });
         }
 
-        res.redirect(`http://localhost:5173/profile?google=success`);
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        res.redirect(`${frontendUrl}/profile?google=success`);
     } catch (error) {
         console.error('Google callback error:', error);
-        res.redirect(`http://localhost:5173/profile?google=error`);
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        res.redirect(`${frontendUrl}/profile?google=error`);
     }
 };
