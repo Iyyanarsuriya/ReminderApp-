@@ -6,7 +6,7 @@ exports.findByEmail = async (email) => {
 };
 
 exports.findById = async (id) => {
-    const [rows] = await db.query('SELECT id, username, email, mobile_number, profile_image FROM users WHERE id = ?', [id]);
+    const [rows] = await db.query('SELECT id, username, email, mobile_number, profile_image, google_refresh_token FROM users WHERE id = ?', [id]);
     return rows[0];
 };
 
@@ -20,16 +20,20 @@ exports.create = async (userData) => {
 };
 
 exports.update = async (id, userData) => {
-    const { username, email, mobile_number, profile_image } = userData;
-    let query = 'UPDATE users SET username = ?, email = ?, mobile_number = ?';
-    const params = [username, email, mobile_number];
+    const { username, email, mobile_number, profile_image, google_refresh_token } = userData;
+    let query = 'UPDATE users SET ';
+    const updates = [];
+    const params = [];
 
-    if (profile_image !== undefined) {
-        query += ', profile_image = ?';
-        params.push(profile_image);
-    }
+    if (username) { updates.push('username = ?'); params.push(username); }
+    if (email) { updates.push('email = ?'); params.push(email); }
+    if (mobile_number !== undefined) { updates.push('mobile_number = ?'); params.push(mobile_number); }
+    if (profile_image !== undefined) { updates.push('profile_image = ?'); params.push(profile_image); }
+    if (google_refresh_token !== undefined) { updates.push('google_refresh_token = ?'); params.push(google_refresh_token); }
 
-    query += ' WHERE id = ?';
+    if (updates.length === 0) return true;
+
+    query += updates.join(', ') + ' WHERE id = ?';
     params.push(id);
 
     const [result] = await db.query(query, params);

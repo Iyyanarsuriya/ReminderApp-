@@ -9,6 +9,19 @@ const reminderRoutes = require("./routes/reminderRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const db = require("./Config/db");
+
+// Database initialization
+async function initDB() {
+    try {
+        await db.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS google_refresh_token TEXT AFTER profile_image`);
+        await db.query(`ALTER TABLE reminders ADD COLUMN IF NOT EXISTS google_event_id VARCHAR(255) AFTER is_completed`);
+        console.log("✅ Database schema updated for Google Calendar");
+    } catch (err) {
+        console.log("ℹ️ Database update skip (columns may already exist):", err.message);
+    }
+}
+initDB();
 
 app.use(cors());
 app.use(express.json());

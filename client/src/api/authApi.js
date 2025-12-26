@@ -30,3 +30,7 @@ export const verifyOTP = async (email, otp) => {
 export const resetPasswordWithOTP = async (email, otp, password) => {
     return await axiosInstance.post('/auth/reset-password-otp', { email, otp, password });
 };
+
+export const getGoogleAuthUrl = async () => {
+    return await axiosInstance.get('/auth/google');
+};

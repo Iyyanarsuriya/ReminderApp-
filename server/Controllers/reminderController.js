@@ -1,4 +1,6 @@
 const Reminder = require('../Models/remindermodel');
+const User = require('../Models/userModel');
+const googleService = require('../Services/googleCalendarService');
 
 exports.getReminders = async (req, res) => {
     try {
@@ -20,6 +22,21 @@ exports.createReminder = async (req, res) => {
             due_date,
             priority
         });
+
+        // Sync with Google Calendar if connected
+        const user = await User.findById(req.user.id);
+        if (user && user.google_refresh_token && due_date) {
+            try {
+                const event = await googleService.createEvent(user.google_refresh_token, newReminder);
+                if (event && event.id) {
+                    await Reminder.updateGoogleEventId(newReminder.id, event.id);
+                    newReminder.google_event_id = event.id;
+                }
+            } catch (gErr) {
+                console.error('Failed to create Google Event:', gErr.message);
+            }
+        }
+
         res.status(201).json(newReminder);
     } catch (error) {
         console.error(error);
@@ -30,8 +47,21 @@ exports.createReminder = async (req, res) => {
 exports.deleteReminder = async (req, res) => {
     const { id } = req.params;
     try {
+        // Fetch reminder to check for google_event_id before deleting
+        const reminders = await Reminder.getAllByUserId(req.user.id);
+        const reminderToDelete = reminders.find(r => r.id == id);
+
         const success = await Reminder.delete(id, req.user.id);
         if (!success) return res.status(404).json({ error: 'Reminder not found' });
+
+        // Delete from Google Calendar if exists
+        if (reminderToDelete && reminderToDelete.google_event_id) {
+            const user = await User.findById(req.user.id);
+            if (user && user.google_refresh_token) {
+                await googleService.deleteEvent(user.google_refresh_token, reminderToDelete.google_event_id);
+            }
+        }
+
         res.json({ message: 'Reminder deleted' });
     } catch (error) {
         console.error(error);

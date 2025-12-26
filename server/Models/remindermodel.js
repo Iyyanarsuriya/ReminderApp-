@@ -6,17 +6,24 @@ exports.getAllByUserId = async (userId) => {
 };
 
 exports.create = async (reminderData) => {
-    const { user_id, title, description, due_date, priority } = reminderData;
+    const { user_id, title, description, due_date, priority, google_event_id } = reminderData;
 
-    // Use Date object - mysql2 formats this correctly for DATETIME columns
     const dateObj = due_date ? new Date(due_date) : null;
     const finalDate = (dateObj && !isNaN(dateObj.getTime())) ? dateObj : null;
 
     const [result] = await db.query(
-        'INSERT INTO reminders (user_id, title, description, due_date, priority) VALUES (?, ?, ?, ?, ?)',
-        [user_id, title, description, finalDate, priority || 'medium']
+        'INSERT INTO reminders (user_id, title, description, due_date, priority, google_event_id) VALUES (?, ?, ?, ?, ?, ?)',
+        [user_id, title, description, finalDate, priority || 'medium', google_event_id || null]
     );
     return { id: result.insertId, ...reminderData, is_completed: false };
+};
+
+exports.updateGoogleEventId = async (id, googleEventId) => {
+    const [result] = await db.query(
+        'UPDATE reminders SET google_event_id = ? WHERE id = ?',
+        [googleEventId, id]
+    );
+    return result.affectedRows > 0;
 };
 
 exports.updateStatus = async (id, userId, is_completed) => {

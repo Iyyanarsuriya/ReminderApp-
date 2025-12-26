@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getUserProfile } from '../api/userApi';
 import { getReminders } from '../api/homeApi';
-import { updateProfile } from '../api/authApi';
+import { updateProfile, getGoogleAuthUrl } from '../api/authApi';
 import { API_URL } from '../api/axiosInstance';
 import toast from 'react-hot-toast';
+import { FaGoogle, FaCalendarAlt } from 'react-icons/fa';
 
 const Profile = () => {
     const [user, setUser] = useState(() => {
@@ -103,7 +104,28 @@ const Profile = () => {
 
     useEffect(() => {
         fetchProfileData();
+
+        // Check for google auth status in URL
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('google') === 'success') {
+            toast.success("Google Calendar connected!");
+            navigate('/profile', { replace: true });
+        } else if (params.get('google') === 'error') {
+            toast.error("Failed to connect Google Calendar");
+            navigate('/profile', { replace: true });
+        }
     }, []);
+
+    const handleGoogleConnect = async () => {
+        try {
+            const response = await getGoogleAuthUrl();
+            if (response.data.url) {
+                window.location.href = response.data.url;
+            }
+        } catch (error) {
+            toast.error("Could not initiate Google connection");
+        }
+    };
 
     if (loading) return (
         <div className="min-h-screen flex items-center justify-center">
@@ -233,29 +255,61 @@ const Profile = () => {
                                 </button>
                             </form>
                         ) : (
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-[16px] sm:gap-[24px]">
-                                <button
-                                    onClick={() => setSelectedStat({ open: true, title: 'All Tasks', items: reminders })}
-                                    className="bg-white border border-slate-100 p-[16px] sm:p-[24px] rounded-[24px] text-center shadow-lg shadow-slate-200/50 hover:scale-[1.02] transition-transform active:scale-95"
-                                >
-                                    <p className="text-slate-400 text-[11px] font-black uppercase tracking-widest mb-[4px]">Total Tasks</p>
-                                    <p className="text-[32px] sm:text-[40px] font-black text-[#2d5bff]">{stats.total}</p>
-                                </button>
-                                <button
-                                    onClick={() => setSelectedStat({ open: true, title: 'Completed Tasks', items: reminders.filter(r => r.is_completed) })}
-                                    className="bg-emerald-50 border border-emerald-100 p-[16px] sm:p-[24px] rounded-[24px] text-center shadow-lg shadow-emerald-200/20 hover:scale-[1.02] transition-transform active:scale-95"
-                                >
-                                    <p className="text-emerald-600 text-[11px] font-black uppercase tracking-widest mb-[4px]">Completed</p>
-                                    <p className="text-[32px] sm:text-[40px] font-black text-emerald-600">{stats.completed}</p>
-                                </button>
-                                <button
-                                    onClick={() => setSelectedStat({ open: true, title: 'Remaining Tasks', items: reminders.filter(r => !r.is_completed) })}
-                                    className="bg-amber-50 border border-amber-100 p-[16px] sm:p-[24px] rounded-[24px] text-center shadow-lg shadow-amber-200/20 hover:scale-[1.02] transition-transform active:scale-95"
-                                >
-                                    <p className="text-amber-600 text-[11px] font-black uppercase tracking-widest mb-[4px]">Remaining</p>
-                                    <p className="text-[32px] sm:text-[40px] font-black text-amber-600">{stats.pending}</p>
-                                </button>
-                            </div>
+                            <>
+                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-[16px] sm:gap-[24px]">
+                                    <button
+                                        onClick={() => setSelectedStat({ open: true, title: 'All Tasks', items: reminders })}
+                                        className="bg-white border border-slate-100 p-[16px] sm:p-[24px] rounded-[24px] text-center shadow-lg shadow-slate-200/50 hover:scale-[1.02] transition-transform active:scale-95"
+                                    >
+                                        <p className="text-slate-400 text-[11px] font-black uppercase tracking-widest mb-[4px]">Total Tasks</p>
+                                        <p className="text-[32px] sm:text-[40px] font-black text-[#2d5bff]">{stats.total}</p>
+                                    </button>
+                                    <button
+                                        onClick={() => setSelectedStat({ open: true, title: 'Completed Tasks', items: reminders.filter(r => r.is_completed) })}
+                                        className="bg-emerald-50 border border-emerald-100 p-[16px] sm:p-[24px] rounded-[24px] text-center shadow-lg shadow-emerald-200/20 hover:scale-[1.02] transition-transform active:scale-95"
+                                    >
+                                        <p className="text-emerald-600 text-[11px] font-black uppercase tracking-widest mb-[4px]">Completed</p>
+                                        <p className="text-[32px] sm:text-[40px] font-black text-emerald-600">{stats.completed}</p>
+                                    </button>
+                                    <button
+                                        onClick={() => setSelectedStat({ open: true, title: 'Remaining Tasks', items: reminders.filter(r => !r.is_completed) })}
+                                        className="bg-amber-50 border border-amber-100 p-[16px] sm:p-[24px] rounded-[24px] text-center shadow-lg shadow-amber-200/20 hover:scale-[1.02] transition-transform active:scale-95"
+                                    >
+                                        <p className="text-amber-600 text-[11px] font-black uppercase tracking-widest mb-[4px]">Remaining</p>
+                                        <p className="text-[32px] sm:text-[40px] font-black text-amber-600">{stats.pending}</p>
+                                    </button>
+                                </div>
+
+                                <div className="mt-[48px] pt-[32px] border-t border-slate-100/50">
+                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-[24px] bg-slate-50/50 border border-slate-100 p-[24px] sm:p-[32px] rounded-[32px]">
+                                        <div className="flex items-center gap-[20px] text-center sm:text-left">
+                                            <div className="w-[56px] h-[56px] rounded-[20px] bg-white shadow-xl flex items-center justify-center text-[#4285F4]">
+                                                <FaGoogle className="text-[24px]" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-[17px] font-black text-slate-800 tracking-tight">Google Calendar</h3>
+                                                <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mt-[2px]">
+                                                    {user?.google_refresh_token ? 'Connected & Sycing' : 'Not Connected'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={handleGoogleConnect}
+                                            disabled={user?.google_refresh_token}
+                                            className={`flex items-center gap-[12px] px-[24px] py-[14px] rounded-[18px] font-black text-[13px] tracking-widest uppercase transition-all shadow-lg active:scale-95 ${user?.google_refresh_token
+                                                ? 'bg-emerald-500 text-white cursor-default'
+                                                : 'bg-white text-slate-800 hover:bg-[#4285F4] hover:text-white border border-slate-100'
+                                                }`}
+                                        >
+                                            <FaCalendarAlt className="text-[16px]" />
+                                            {user?.google_refresh_token ? 'Connected' : 'Connect Now'}
+                                        </button>
+                                    </div>
+                                    <p className="text-center mt-[16px] text-[11px] text-slate-400 font-bold uppercase tracking-widest">
+                                        Link your calendar to get automatic notifications & event sync
+                                    </p>
+                                </div>
+                            </>
                         )}
                     </div>
                 </div>

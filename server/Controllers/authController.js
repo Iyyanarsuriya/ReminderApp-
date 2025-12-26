@@ -192,3 +192,30 @@ exports.updateProfile = async (req, res) => {
         res.status(500).json({ error: 'Internal Server Error' });
     }
 };
+const googleService = require('../Services/googleCalendarService');
+
+exports.googleAuth = (req, res) => {
+    // Pass the JWT as state so we can identify the user in the callback
+    const state = req.headers.authorization?.split(' ')[1];
+    const url = googleService.getAuthUrl(state);
+    res.json({ url });
+};
+
+exports.googleCallback = async (req, res) => {
+    const { code, state } = req.query;
+    try {
+        // Verify the state (which is our JWT)
+        const decoded = jwt.verify(state, JWT_SECRET);
+        const tokens = await googleService.getTokens(code);
+        const refreshToken = tokens.refresh_token;
+
+        if (refreshToken) {
+            await User.update(decoded.id, { google_refresh_token: refreshToken });
+        }
+
+        res.redirect(`http://localhost:5173/profile?google=success`);
+    } catch (error) {
+        console.error('Google callback error:', error);
+        res.redirect(`http://localhost:5173/profile?google=error`);
+    }
+};
