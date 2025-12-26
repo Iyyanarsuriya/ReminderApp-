@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getReminders, createReminder, updateReminder, deleteReminder } from '../api/homeApi';
 import { getMe } from '../api/authApi';
 import { API_URL } from '../api/axiosInstance';
@@ -60,26 +60,26 @@ const Home = () => {
         localStorage.setItem('lastNotifiedTimes', JSON.stringify(lastNotifiedTimes));
     }, [lastNotifiedTimes]);
 
-    // Check for due reminders every minute
+    // Keep a ref of reminders for the background interval to avoid restarting it
+    const remindersRef = useRef(reminders);
+    useEffect(() => {
+        remindersRef.current = reminders;
+    }, [reminders]);
+
+    // Stable background check for due reminders
     useEffect(() => {
         const checkReminders = () => {
             const now = new Date();
             const nowMs = now.getTime();
 
-            reminders.forEach(reminder => {
+            remindersRef.current.forEach(reminder => {
                 if (reminder.is_completed || !reminder.due_date) return;
 
                 const dueDate = new Date(reminder.due_date);
                 const dueDateMs = dueDate.getTime();
-
-                // Use a non-state check to avoid dependency loop
                 const lastNotifyTime = JSON.parse(localStorage.getItem('lastNotifiedTimes') || '{}')[reminder.id] || 0;
 
-                // Condition: If reminder is due/overdue AND (never notified OR 5 minutes passed)
-                // We show immediate alert if it just became due
                 if (nowMs >= dueDateMs - 30000 && (nowMs - lastNotifyTime >= 300000)) {
-
-                    // Show Toast Alert
                     toast.custom((t) => (
                         <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-[95%] xs:w-[90%] sm:w-full bg-red-600 shadow-2xl rounded-2xl pointer-events-auto flex ring-1 ring-black ring-opacity-5 overflow-hidden border border-red-500/50 mt-4`}>
                             <div className="flex-1 w-0 p-3 sm:p-4">
@@ -101,7 +101,6 @@ const Home = () => {
                         </div>
                     ), { duration: 4000, position: 'top-center' });
 
-                    // Update last notified time
                     setLastNotifiedTimes(prev => ({
                         ...prev,
                         [reminder.id]: nowMs
@@ -110,10 +109,9 @@ const Home = () => {
             });
         };
 
-        checkReminders();
         const interval = setInterval(checkReminders, 30000);
         return () => clearInterval(interval);
-    }, [reminders]); 
+    }, []); // Heartbeat interval starts once and stays alive
 
     // 🔔 Notification logic for today's tasks
     const todayStr = new Date().toISOString().split('T')[0];
