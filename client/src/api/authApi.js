@@ -34,3 +34,7 @@ export const resetPasswordWithOTP = async (email, otp, password) => {
 export const getGoogleAuthUrl = async () => {
     return await axiosInstance.get('/auth/google');
 };
+
+export const disconnectGoogle = async () => {
+    return await axiosInstance.post('/auth/google/disconnect');
+};

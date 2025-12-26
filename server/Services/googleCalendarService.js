@@ -1,14 +1,20 @@
 const { google } = require('googleapis');
 require('dotenv').config();
 
+const redirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5000/api/auth/google/callback';
+
 const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5000/api/auth/google/callback'
+    redirectUri
 );
 
 if (!process.env.GOOGLE_CLIENT_ID) {
     console.warn('⚠️ GOOGLE_CLIENT_ID is missing from .env. Google Calendar features will not work.');
+}
+
+if (!process.env.GOOGLE_REDIRECT_URI && process.env.NODE_ENV === 'production') {
+    console.error('❌ CRITICAL: GOOGLE_REDIRECT_URI is not set in production!');
 }
 
 const SCOPES = ['https://www.googleapis.com/auth/calendar.events', 'https://www.googleapis.com/auth/calendar.readonly'];

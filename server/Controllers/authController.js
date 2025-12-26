@@ -220,3 +220,14 @@ exports.googleCallback = async (req, res) => {
         res.redirect(`${frontendUrl}/profile?google=error`);
     }
 };
+
+exports.disconnectGoogle = async (req, res) => {
+    try {
+        await User.update(req.user.id, { google_refresh_token: null });
+        res.json({ message: 'Google Calendar disconnected successfully' });
+    } catch (error) {
+        console.error('Disconnect Google error:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+

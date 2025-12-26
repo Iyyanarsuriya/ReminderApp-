@@ -18,5 +18,6 @@ router.post('/reset-password-otp', authController.resetPasswordWithOTP);
 // Google Calendar OAuth
 router.get('/google', authenticateToken, authController.googleAuth);
 router.get('/google/callback', authController.googleCallback);
+router.post('/google/disconnect', authenticateToken, authController.disconnectGoogle);
 
 module.exports = router;

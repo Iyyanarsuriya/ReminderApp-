@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getReminders } from '../api/homeApi';
-import { updateProfile, getGoogleAuthUrl, getMe } from '../api/authApi';
+import { disconnectGoogle, updateProfile, getGoogleAuthUrl, getMe } from '../api/authApi';
 import { API_URL } from '../api/axiosInstance';
 import toast from 'react-hot-toast';
 import { FaGoogle, FaCalendarAlt } from 'react-icons/fa';
@@ -117,6 +117,24 @@ const Profile = () => {
             navigate('/profile', { replace: true });
         }
     }, []);
+
+    const handleGoogleDisconnect = async () => {
+        if (!window.confirm("Are you sure you want to disconnect Google Calendar? This will stop syncing new reminders.")) return;
+
+        try {
+            await disconnectGoogle();
+            toast.dismiss();
+            toast.success("Disconnected from Google Calendar");
+
+            // Update local state
+            const updatedUser = { ...user, google_refresh_token: null };
+            setUser(updatedUser);
+            localStorage.setItem('user', JSON.stringify(updatedUser)); // Keep user session updated
+        } catch (error) {
+            toast.dismiss();
+            toast.error("Failed to disconnect");
+        }
+    };
 
     const handleGoogleConnect = async () => {
         try {
@@ -297,15 +315,14 @@ const Profile = () => {
                                             </div>
                                         </div>
                                         <button
-                                            onClick={handleGoogleConnect}
-                                            disabled={user?.google_refresh_token}
+                                            onClick={user?.google_refresh_token ? handleGoogleDisconnect : handleGoogleConnect}
                                             className={`flex items-center gap-[12px] px-[24px] py-[14px] rounded-[18px] font-black text-[13px] tracking-widest uppercase transition-all shadow-lg active:scale-95 ${user?.google_refresh_token
-                                                ? 'bg-emerald-500 text-white cursor-default'
+                                                ? 'bg-rose-500 text-white hover:bg-rose-600'
                                                 : 'bg-white text-slate-800 hover:bg-[#4285F4] hover:text-white border border-slate-100'
                                                 }`}
                                         >
                                             <FaCalendarAlt className="text-[16px]" />
-                                            {user?.google_refresh_token ? 'Connected' : 'Connect Now'}
+                                            {user?.google_refresh_token ? 'Disconnect' : 'Connect Now'}
                                         </button>
                                     </div>
                                     <p className="text-center mt-[16px] text-[11px] text-slate-400 font-bold uppercase tracking-widest">
