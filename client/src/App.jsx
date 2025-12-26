@@ -116,7 +116,7 @@ function AppContent({ token, setToken }) {
         </header>
       )}
 
-      <main className={token && !isAuthRoute ? "lg:h-[calc(100vh-5rem)] mt-16 sm:mt-20 lg:overflow-hidden min-h-[calc(100vh-5rem)]" : ""}>
+      <main className={token && !isAuthRoute ? "min-h-[calc(100vh-5rem)] mt-16 sm:mt-20" : ""}>
         <Routes>
           <Route path="/login" element={<Login setToken={setToken} />} />
           <Route path="/signup" element={<Signup />} />
