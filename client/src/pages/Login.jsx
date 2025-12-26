@@ -22,6 +22,8 @@ const Login = ({ setToken }) => {
       setPassword(atob(savedPassword)); // Decode from base64
       setRememberMe(true);
     }
+    // Clear any lingering toasts from the previous screen (like Logout)
+    toast.dismiss();
   }, []);
 
   const isValidEmail = (email) => {
@@ -65,7 +67,7 @@ const Login = ({ setToken }) => {
 
       setToken(token);
       toast.dismiss();
-      toast.success("Login successful");
+      toast.success("Login successful", { duration: 2000 });
 
       navigate("/");
     } catch (error) {

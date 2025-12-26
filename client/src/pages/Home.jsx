@@ -37,6 +37,8 @@ const Home = () => {
 
     useEffect(() => {
         fetchData();
+        // Force clear any lingering login/auth toasts
+        toast.dismiss();
     }, []);
 
     // Refresh data when user returns to the tab
