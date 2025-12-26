@@ -17,6 +17,7 @@ const ForgotPassword = () => {
         setLoading(true);
         try {
             const response = await forgotPassword(email);
+            toast.dismiss();
             toast.success(response.data.message);
             setStep(2);
             if (response.data.testOTP) {
@@ -24,6 +25,7 @@ const ForgotPassword = () => {
                 toast('Check console for test OTP', { icon: '🐛' });
             }
         } catch (error) {
+            toast.dismiss();
             toast.error(error.response?.data?.error || "Failed to send OTP");
         } finally {
             setLoading(false);
@@ -35,9 +37,11 @@ const ForgotPassword = () => {
         setLoading(true);
         try {
             await verifyOTP(email, otp);
+            toast.dismiss();
             toast.success('OTP verified successfully!');
             setStep(3);
         } catch (error) {
+            toast.dismiss();
             toast.error(error.response?.data?.error || "Invalid or expired OTP");
         } finally {
             setLoading(false);
@@ -59,9 +63,11 @@ const ForgotPassword = () => {
         setLoading(true);
         try {
             await resetPasswordWithOTP(email, otp, password);
+            toast.dismiss();
             toast.success("Password reset successful! Please login.");
             navigate('/login');
         } catch (error) {
+            toast.dismiss();
             toast.error(error.response?.data?.error || "Failed to reset password");
         } finally {
             setLoading(false);

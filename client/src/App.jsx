@@ -30,7 +30,13 @@ function App() {
       <Toaster
         position="top-center"
         reverseOrder={false}
-        gutter={8}
+        gutter={12}
+        containerStyle={{
+          top: 40,
+          left: 20,
+          bottom: 20,
+          right: 20,
+        }}
         toastOptions={{
           // Global defaults
           duration: 2000,
@@ -40,7 +46,11 @@ function App() {
             fontFamily: "'Outfit', sans-serif",
             fontWeight: '600',
             fontSize: '14px',
-            borderRadius: '12px',
+            borderRadius: '16px',
+            padding: '12px 20px',
+            boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
+            maxWidth: '350px',
+            width: '90%',
           },
           // Specific type defaults
           success: {

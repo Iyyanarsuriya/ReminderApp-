@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     mobile_number VARCHAR(20),
     password VARCHAR(255) NOT NULL,
     profile_image VARCHAR(255) DEFAULT NULL,
+    google_refresh_token TEXT DEFAULT NULL,
     reset_otp VARCHAR(6) DEFAULT NULL,
     reset_otp_expiry DATETIME DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -23,6 +24,7 @@ CREATE TABLE IF NOT EXISTS reminders (
     due_date DATETIME,
     priority ENUM('low', 'medium', 'high') DEFAULT 'medium',
     is_completed BOOLEAN DEFAULT FALSE,
+    google_event_id VARCHAR(255) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

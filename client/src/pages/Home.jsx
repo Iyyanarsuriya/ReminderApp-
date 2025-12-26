@@ -182,12 +182,14 @@ const Home = () => {
         }
     }, [notifications.length, loading, hasShownAgenda]);
 
-    const handleAdd = async (newReminder) => {
+    const handleAdd = async (reminderData) => {
         try {
-            const response = await createReminder(newReminder);
-            setReminders([response.data, ...reminders]);
+            const res = await createReminder(reminderData);
+            setReminders([res.data, ...reminders]);
+            toast.dismiss();
             toast.success("Reminder added!");
         } catch {
+            toast.dismiss();
             toast.error("Failed to add reminder");
         }
     };
@@ -200,8 +202,10 @@ const Home = () => {
                 setReminders(reminders.map(r =>
                     r.id === id ? { ...r, is_completed: false } : r
                 ));
+                toast.dismiss();
                 toast.success("Task marked as incomplete");
             } catch {
+                toast.dismiss();
                 toast.error("Update failed");
             }
             return;
@@ -220,8 +224,10 @@ const Home = () => {
             setReminders(reminders.map(r =>
                 r.id === id ? { ...r, is_completed: true } : r
             ));
+            toast.dismiss();
             toast.success("Task completed! 🥳");
         } catch {
+            toast.dismiss();
             toast.error("Update failed");
         } finally {
             setConfirmToggle(null);
@@ -232,8 +238,10 @@ const Home = () => {
         try {
             await deleteReminder(id);
             setReminders(reminders.filter(r => r.id !== id));
+            toast.dismiss();
             toast.success("Reminder deleted");
         } catch {
+            toast.dismiss();
             toast.error("Delete failed");
         }
     };

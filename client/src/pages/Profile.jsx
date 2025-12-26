@@ -64,7 +64,7 @@ const Profile = () => {
             }
 
             const response = await updateProfile(formData);
-
+            toast.dismiss();
             // Update local user state with new data including image if returned
             const updatedUser = {
                 ...user,
@@ -79,6 +79,7 @@ const Profile = () => {
             setPreviewImage(null);
             toast.success("Profile updated successfully!");
         } catch (error) {
+            toast.dismiss();
             toast.error(error.response?.data?.error || "Update failed");
         } finally {
             setUpdating(false);
@@ -108,9 +109,11 @@ const Profile = () => {
         // Check for google auth status in URL
         const params = new URLSearchParams(window.location.search);
         if (params.get('google') === 'success') {
+            toast.dismiss();
             toast.success("Google Calendar connected!");
             navigate('/profile', { replace: true });
         } else if (params.get('google') === 'error') {
+            toast.dismiss();
             toast.error("Failed to connect Google Calendar");
             navigate('/profile', { replace: true });
         }
@@ -123,6 +126,7 @@ const Profile = () => {
                 window.location.href = response.data.url;
             }
         } catch (error) {
+            toast.dismiss();
             toast.error("Could not initiate Google connection");
         }
     };

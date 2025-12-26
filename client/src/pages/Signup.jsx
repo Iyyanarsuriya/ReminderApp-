@@ -44,9 +44,11 @@ const Signup = () => {
     try {
       setLoading(true);
       await signup({ username, email, password, mobile_number });
+      toast.dismiss();
       toast.success("Account created successfully!");
       navigate('/login');
     } catch (error) {
+      toast.dismiss();
       toast.error(error.response?.data?.error || "Signup failed");
     } finally {
       setLoading(false);
