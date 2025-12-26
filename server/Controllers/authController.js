@@ -107,7 +107,10 @@ exports.resetPasswordWithOTP = async (req, res) => {
 };
 
 exports.signup = async (req, res) => {
-    const { username, email, password, mobile_number } = req.body;
+    let { username, email, password, mobile_number } = req.body;
+    username = username?.trim();
+    email = email?.trim().toLowerCase();
+    password = password?.trim();
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
         const userId = await User.create({
@@ -127,7 +130,9 @@ exports.signup = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
-    const { email, password } = req.body;
+    let { email, password } = req.body;
+    email = email?.trim().toLowerCase();
+    password = password?.trim();
     console.log('Login attempt for email:', email);
     try {
         const user = await User.findByEmail(email);

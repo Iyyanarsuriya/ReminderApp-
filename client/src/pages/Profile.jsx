@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getUserProfile } from '../api/userApi';
 import { getReminders } from '../api/homeApi';
 import { updateProfile } from '../api/authApi';
+import { API_URL } from '../api/axiosInstance';
 import toast from 'react-hot-toast';
 
 const Profile = () => {
@@ -125,7 +126,7 @@ const Profile = () => {
                                 <div className="w-[96px] h-[96px] sm:w-[128px] sm:h-[128px] rounded-full bg-[#2d5bff] p-[4px] shadow-lg shadow-blue-500/10 shrink-0">
                                     {previewImage || user?.profile_image ? (
                                         <img
-                                            src={previewImage || `http://192.168.0.169:5000${user.profile_image}`}
+                                            src={previewImage || `${API_URL}${user.profile_image}`}
                                             alt="Profile"
                                             className="w-full h-full rounded-full object-cover bg-white"
                                             onError={(e) => {

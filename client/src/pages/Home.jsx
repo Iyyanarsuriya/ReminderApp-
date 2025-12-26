@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getReminders, createReminder, updateReminder, deleteReminder } from '../api/homeApi';
 import { getMe } from '../api/authApi';
+import { API_URL } from '../api/axiosInstance';
 import ReminderForm from '../components/ReminderForm';
 import ReminderList from '../components/ReminderList';
 import { Link } from 'react-router-dom';
@@ -337,7 +338,7 @@ const Home = () => {
                             >
                                 {user?.profile_image ? (
                                     <img
-                                        src={`http://192.168.0.169:5000${user.profile_image}`}
+                                        src={`${API_URL}${user.profile_image}`}
                                         alt="User"
                                         className="w-full h-full object-cover"
                                         onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
