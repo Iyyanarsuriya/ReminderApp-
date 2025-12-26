@@ -1,6 +1,18 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast';
+import { Toaster, useToasterStore, toast } from 'react-hot-toast';
+
+// Component to limit visible toasts to 1
+const ToastLimiter = () => {
+  const { toasts } = useToasterStore();
+  useEffect(() => {
+    toasts
+      .filter((t) => t.visible) // Only check visible toasts
+      .filter((_, i) => i >= 1) // Allow only 1 toast
+      .forEach((t) => toast.dismiss(t.id)); // Dismiss others
+  }, [toasts]);
+  return null;
+};
 
 // Pages
 import Home from './pages/Home';
@@ -27,6 +39,7 @@ function App() {
 
   return (
     <Router>
+      <ToastLimiter />
       <Toaster
         position="top-center"
         reverseOrder={false}

@@ -63,7 +63,7 @@ const Profile = () => {
             }
 
             const response = await updateProfile(formData);
-            toast.dismiss();
+
             // Update local user state with new data including image if returned
             const updatedUser = {
                 ...user,
@@ -78,7 +78,6 @@ const Profile = () => {
             setPreviewImage(null);
             toast.success("Profile updated successfully!");
         } catch (error) {
-            toast.dismiss();
             toast.error(error.response?.data?.error || "Update failed");
         } finally {
             setUpdating(false);
@@ -100,7 +99,6 @@ const Profile = () => {
         sessionStorage.removeItem('user');
 
         window.dispatchEvent(new Event('storage'));
-        toast.dismiss();
         toast.success("Logged out successfully");
         navigate('/login');
     };
@@ -111,11 +109,9 @@ const Profile = () => {
         // Check for google auth status in URL
         const params = new URLSearchParams(window.location.search);
         if (params.get('google') === 'success') {
-            toast.dismiss();
             toast.success("Google Calendar connected!");
             navigate('/profile', { replace: true });
         } else if (params.get('google') === 'error') {
-            toast.dismiss();
             toast.error("Failed to connect Google Calendar");
             navigate('/profile', { replace: true });
         }
@@ -126,7 +122,6 @@ const Profile = () => {
 
         try {
             await disconnectGoogle();
-            toast.dismiss();
             toast.success("Disconnected from Google Calendar");
 
             // Update local state
@@ -134,7 +129,6 @@ const Profile = () => {
             setUser(updatedUser);
             localStorage.setItem('user', JSON.stringify(updatedUser)); // Keep user session updated
         } catch (error) {
-            toast.dismiss();
             toast.error("Failed to disconnect");
         }
     };
@@ -146,7 +140,6 @@ const Profile = () => {
                 window.location.href = response.data.url;
             }
         } catch (error) {
-            toast.dismiss();
             toast.error("Could not initiate Google connection");
         }
     };
@@ -318,14 +311,15 @@ const Profile = () => {
                                             </div>
                                         </div>
                                         <button
-                                            onClick={user?.google_refresh_token ? handleGoogleDisconnect : handleGoogleConnect}
+                                            onClick={user?.google_refresh_token ? handleGoogleDisconnect : undefined}
+                                            disabled={!user?.google_refresh_token}
                                             className={`flex items-center gap-[12px] px-[24px] py-[14px] rounded-[18px] font-black text-[13px] tracking-widest uppercase transition-all shadow-lg active:scale-95 ${user?.google_refresh_token
                                                 ? 'bg-rose-500 text-white hover:bg-rose-600'
-                                                : 'bg-white text-slate-800 hover:bg-[#4285F4] hover:text-white border border-slate-100'
+                                                : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
                                                 }`}
                                         >
                                             <FaCalendarAlt className="text-[16px]" />
-                                            {user?.google_refresh_token ? 'Disconnect' : 'Connect Now'}
+                                            {user?.google_refresh_token ? 'Disconnect' : 'Temporarily Disabled'}
                                         </button>
                                     </div>
                                     <p className="text-center mt-[16px] text-[11px] text-slate-400 font-bold uppercase tracking-widest">

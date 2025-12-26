@@ -101,7 +101,7 @@ const Home = () => {
                                 </div>
                             </div>
                             <div className="flex border-l border-white/10">
-                                <button onClick={() => toast.dismiss(t.id)} className="w-full border border-transparent rounded-none rounded-r-2xl px-3 sm:px-4 flex items-center justify-center text-[10px] sm:text-xs font-black text-white hover:bg-white/10 transition-colors uppercase tracking-widest">Done</button>
+                                <button onClick={() => toast.remove(t.id)} className="w-full border border-transparent rounded-none rounded-r-2xl px-3 sm:px-4 flex items-center justify-center text-[10px] sm:text-xs font-black text-white hover:bg-white/10 transition-colors uppercase tracking-widest">Done</button>
                             </div>
                         </div>
                     ), { duration: 4000, position: 'top-center' });
@@ -186,10 +186,8 @@ const Home = () => {
         try {
             const res = await createReminder(reminderData);
             setReminders([res.data, ...reminders]);
-            toast.dismiss();
             toast.success("Reminder added!");
         } catch {
-            toast.dismiss();
             toast.error("Failed to add reminder");
         }
     };
@@ -202,10 +200,8 @@ const Home = () => {
                 setReminders(reminders.map(r =>
                     r.id === id ? { ...r, is_completed: false } : r
                 ));
-                toast.dismiss();
                 toast.success("Task marked as incomplete");
             } catch {
-                toast.dismiss();
                 toast.error("Update failed");
             }
             return;
@@ -224,10 +220,8 @@ const Home = () => {
             setReminders(reminders.map(r =>
                 r.id === id ? { ...r, is_completed: true } : r
             ));
-            toast.dismiss();
             toast.success("Task completed! 🥳");
         } catch {
-            toast.dismiss();
             toast.error("Update failed");
         } finally {
             setConfirmToggle(null);
@@ -238,10 +232,8 @@ const Home = () => {
         try {
             await deleteReminder(id);
             setReminders(reminders.filter(r => r.id !== id));
-            toast.dismiss();
             toast.success("Reminder deleted");
         } catch {
-            toast.dismiss();
             toast.error("Delete failed");
         }
     };
