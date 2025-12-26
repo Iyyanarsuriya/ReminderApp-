@@ -32,6 +32,8 @@ function App() {
         reverseOrder={false}
         toastOptions={{
           duration: 2000,
+          pauseOnHover: false,
+          pauseOnFocusLoss: false,
           style: {
             fontFamily: "'Outfit', sans-serif",
             fontWeight: '600',
