@@ -113,7 +113,7 @@ const Home = () => {
         checkReminders();
         const interval = setInterval(checkReminders, 30000);
         return () => clearInterval(interval);
-    }, [reminders]); // lastNotifiedTimes removed from dependencies
+    }, [reminders]); 
 
     // 🔔 Notification logic for today's tasks
     const todayStr = new Date().toISOString().split('T')[0];
