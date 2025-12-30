@@ -38,7 +38,7 @@ const Login = ({ setToken }) => {
 
     if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors);
-      toast.error(Object.values(fieldErrors)[0]);
+      toast.error(Object.values(fieldErrors)[0], { id: 'validation-error' });
       return;
     }
 
@@ -66,11 +66,11 @@ const Login = ({ setToken }) => {
       }
 
       setToken(token);
-      toast.success("Login successful", { duration: 2000 });
+      toast.success("Login successful", { id: 'login-success', duration: 2000 });
 
       navigate("/");
     } catch (error) {
-      toast.error(error.response?.data?.error || "Login failed");
+      toast.error(error.response?.data?.error || "Login failed", { id: 'login-error' });
     } finally {
       setLoading(false);
     }

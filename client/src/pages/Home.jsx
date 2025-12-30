@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { getReminders, createReminder, updateReminder, deleteReminder } from '../api/homeApi';
 import { getMe } from '../api/authApi';
 import { API_URL } from '../api/axiosInstance';
@@ -119,11 +119,13 @@ const Home = () => {
     }, []); // Heartbeat interval starts once and stays alive
 
     // 🔔 Notification logic for today's tasks
-    const todayStr = new Date().toISOString().split('T')[0];
-    const notifications = reminders.filter(r => {
-        if (r.is_completed) return false;
-        return r.due_date && r.due_date.startsWith(todayStr);
-    });
+    const notifications = useMemo(() => {
+        const todayStr = new Date().toISOString().split('T')[0];
+        return reminders.filter(r => {
+            if (r.is_completed) return false;
+            return r.due_date && r.due_date.startsWith(todayStr);
+        });
+    }, [reminders]);
 
     // 🔔 Modern Agenda Alert for Today's Tasks
     useEffect(() => {
@@ -182,22 +184,23 @@ const Home = () => {
         }
     }, [notifications.length, loading, hasShownAgenda]);
 
-    const handleAdd = async (reminderData) => {
+    // Memoize handlers to prevent unnecessary re-renders of child components
+    const handleAdd = useCallback(async (reminderData) => {
         try {
             const res = await createReminder(reminderData);
-            setReminders([res.data, ...reminders]);
+            setReminders(prev => [res.data, ...prev]);
             toast.success("Reminder added!");
         } catch {
             toast.error("Failed to add reminder");
         }
-    };
+    }, []);
 
-    const handleToggle = async (id, currentStatus) => {
+    const handleToggle = useCallback(async (id, currentStatus) => {
         // If unchecking (marking as incomplete), update directly
         if (currentStatus) {
             try {
                 await updateReminder(id, { is_completed: false });
-                setReminders(reminders.map(r =>
+                setReminders(prev => prev.map(r =>
                     r.id === id ? { ...r, is_completed: false } : r
                 ));
                 toast.success("Task marked as incomplete");
@@ -209,15 +212,15 @@ const Home = () => {
 
         // If checking (marking as complete), show confirmation modal
         setConfirmToggle({ id, currentStatus });
-    };
+    }, []);
 
-    const confirmCompletion = async () => {
+    const confirmCompletion = useCallback(async () => {
         if (!confirmToggle) return;
         const { id } = confirmToggle;
 
         try {
             await updateReminder(id, { is_completed: true });
-            setReminders(reminders.map(r =>
+            setReminders(prev => prev.map(r =>
                 r.id === id ? { ...r, is_completed: true } : r
             ));
             toast.success("Task completed! 🥳");
@@ -226,42 +229,42 @@ const Home = () => {
         } finally {
             setConfirmToggle(null);
         }
-    };
+    }, [confirmToggle]);
 
-    const handleDelete = async (id) => {
+    const handleDelete = useCallback(async (id) => {
         try {
             await deleteReminder(id);
-            setReminders(reminders.filter(r => r.id !== id));
+            setReminders(prev => prev.filter(r => r.id !== id));
             toast.success("Reminder deleted");
         } catch {
             toast.error("Delete failed");
         }
-    };
+    }, []);
 
-    const priorityWeight = {
-        'low': 1,
-        'medium': 2,
-        'high': 3
-    };
+    // Memoized derived state for reminders
+    // This sorting/filtering can be expensive, so we memoize it.
+    const processedReminders = useMemo(() => {
+        const priorityWeight = { 'low': 1, 'medium': 2, 'high': 3 };
 
-    const processedReminders = reminders
-        .filter(r => {
-            if (!filterDate) return true;
-            if (!r.due_date) return false;
-            return r.due_date.startsWith(filterDate);
-        })
-        .sort((a, b) => {
-            if (sortBy === 'newest') return new Date(b.created_at || 0) - new Date(a.created_at || 0);
-            if (sortBy === 'oldest') return new Date(a.created_at || 0) - new Date(b.created_at || 0);
-            if (sortBy === 'due_date') {
-                const dateA = a.due_date ? new Date(a.due_date) : new Date(8640000000000000); // Max date for nulls
-                const dateB = b.due_date ? new Date(b.due_date) : new Date(8640000000000000); // Max date for nulls
-                return dateA.getTime() - dateB.getTime();
-            }
-            if (sortBy === 'priority') return (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0);
-            if (sortBy === 'status') return (a.is_completed ? 1 : 0) - (b.is_completed ? 1 : 0);
-            return 0;
-        });
+        return reminders
+            .filter(r => {
+                if (!filterDate) return true;
+                if (!r.due_date) return false;
+                return r.due_date.startsWith(filterDate);
+            })
+            .sort((a, b) => {
+                if (sortBy === 'newest') return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+                if (sortBy === 'oldest') return new Date(a.created_at || 0) - new Date(b.created_at || 0);
+                if (sortBy === 'due_date') {
+                    const dateA = a.due_date ? new Date(a.due_date) : new Date(8640000000000000);
+                    const dateB = b.due_date ? new Date(b.due_date) : new Date(8640000000000000);
+                    return dateA.getTime() - dateB.getTime();
+                }
+                if (sortBy === 'priority') return (priorityWeight[b.priority] || 0) - (priorityWeight[a.priority] || 0);
+                if (sortBy === 'status') return (a.is_completed ? 1 : 0) - (b.is_completed ? 1 : 0);
+                return 0;
+            });
+    }, [reminders, filterDate, sortBy]);
 
     if (loading) {
         return (
