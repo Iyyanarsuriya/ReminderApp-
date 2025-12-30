@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getReminders } from '../api/homeApi';
+import { getReminders, updateReminder, deleteReminder } from '../api/homeApi';
 import { disconnectGoogle, updateProfile, getGoogleAuthUrl, getMe } from '../api/authApi';
 import { API_URL } from '../api/axiosInstance';
 import toast from 'react-hot-toast';
 import { FaGoogle, FaCalendarAlt } from 'react-icons/fa';
+import { X, Calendar, Clock, AlertCircle, Trash2 } from 'lucide-react';
 
 const Profile = () => {
     const [user, setUser] = useState(() => {
@@ -14,6 +15,8 @@ const Profile = () => {
     const [reminders, setReminders] = useState([]);
     const [stats, setStats] = useState({ total: 0, completed: 0, pending: 0 });
     const [selectedStat, setSelectedStat] = useState({ open: false, title: '', items: [] });
+    const [selectedTask, setSelectedTask] = useState(null); // For detailed view
+    const [deleteId, setDeleteId] = useState(null);
     const [loading, setLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState(() => {
@@ -162,6 +165,81 @@ const Profile = () => {
             }
         } catch (error) {
             toast.error("Could not initiate Google connection");
+        }
+    };
+
+    // Helper to format date
+    const formatDate = (dateStr) => {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+        });
+    };
+
+    // Check if overdue
+    const isOverdue = (date, completed) => {
+        if (!date || completed) return false;
+        return new Date(date) < new Date();
+    };
+
+    // Handle Task Update
+    const handleToggleTask = async (task) => {
+        try {
+            const newStatus = !task.is_completed;
+            await updateReminder(task.id, { is_completed: newStatus });
+
+            // Update local state
+            const updatedTask = { ...task, is_completed: newStatus };
+
+            // Update selectedTask if open
+            if (selectedTask && selectedTask.id === task.id) {
+                setSelectedTask(updatedTask);
+            }
+
+            // Update reminders list
+            const updatedReminders = reminders.map(r => r.id === task.id ? updatedTask : r);
+            setReminders(updatedReminders);
+
+            // Update stats items if open
+            if (selectedStat.open) {
+                setSelectedStat(prev => ({
+                    ...prev,
+                    items: prev.items.map(i => i.id === task.id ? updatedTask : i)
+                }));
+            }
+
+            // Recalculate stats
+            // Note: Simplification, ideally refetch or careful recalc needed if filtering calls for it.
+            // For now, we'll just trigger a data refresh to be safe and consistent with filters
+            fetchProfileData();
+
+            toast.success(newStatus ? "Task completed! 🥳" : "Task reactivated");
+        } catch (error) {
+            toast.error("Failed to update task");
+        }
+    };
+
+    // Handle Delete
+    const handleDeleteTask = async (id) => {
+        try {
+            await deleteReminder(id);
+            setReminders(prev => prev.filter(r => r.id !== id));
+            if (selectedStat.open) {
+                setSelectedStat(prev => ({
+                    ...prev,
+                    items: prev.items.filter(i => i.id !== id)
+                }));
+            }
+            setSelectedTask(null);
+            setDeleteId(null);
+            fetchProfileData(); // Refresh stats
+            toast.success("Task deleted");
+        } catch (error) {
+            toast.error("Delete failed");
         }
     };
 
@@ -419,10 +497,14 @@ const Profile = () => {
                                 {selectedStat.items.length > 0 ? (
                                     <div className="space-y-[12px]">
                                         {selectedStat.items.map(item => (
-                                            <div key={item.id} className={`p-[16px] rounded-[20px] border transition-colors shadow-sm ${selectedStat.title === 'Remaining Tasks' ? 'bg-linear-to-br from-amber-50 to-orange-50 border-orange-100' :
-                                                selectedStat.title === 'Completed Tasks' ? 'bg-linear-to-br from-emerald-50 to-teal-50 border-emerald-100' :
-                                                    'bg-linear-to-br from-blue-50 to-indigo-50 border-blue-100'
-                                                }`}>
+                                            <div
+                                                key={item.id}
+                                                onClick={() => setSelectedTask(item)}
+                                                className={`p-[16px] rounded-[20px] border transition-all shadow-sm cursor-pointer hover:scale-[1.02] hover:shadow-md ${selectedStat.title === 'Remaining Tasks' ? 'bg-linear-to-br from-amber-50 to-orange-50 border-orange-100' :
+                                                    selectedStat.title === 'Completed Tasks' ? 'bg-linear-to-br from-emerald-50 to-teal-50 border-emerald-100' :
+                                                        'bg-linear-to-br from-blue-50 to-indigo-50 border-blue-100'
+                                                    }`}
+                                            >
                                                 <div className="flex justify-between items-start mb-[4px]">
                                                     <h4 className={`font-bold text-slate-800 ${item.is_completed ? 'line-through text-slate-400' : ''}`}>{item.title}</h4>
                                                     <span className={`text-[10px] font-black uppercase px-[8px] py-[2px] rounded-full border ${item.priority === 'high' ? 'bg-white/50 text-[#ff4d4d] border-red-100' :
@@ -432,7 +514,7 @@ const Profile = () => {
                                                         {item.priority}
                                                     </span>
                                                 </div>
-                                                {item.description && <p className="text-[12px] text-slate-500 mb-[8px]">{item.description}</p>}
+                                                {item.description && <p className="text-[12px] text-slate-500 mb-[8px] line-clamp-2">{item.description}</p>}
                                                 <div className="text-[10px] text-slate-400 font-bold">
                                                     {item.due_date ? new Date(item.due_date).toLocaleString() : 'No due date'}
                                                 </div>
@@ -444,6 +526,149 @@ const Profile = () => {
                                         No tasks found in this category.
                                     </div>
                                 )}
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {/* Detail Modal for Selected Task */}
+                {selectedTask && (
+                    <div
+                        className="fixed inset-0 z-[110] flex items-center justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+                        onClick={() => setSelectedTask(null)}
+                    >
+                        <div
+                            className="bg-white rounded-xl sm:rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200 custom-scrollbar border border-white"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Modal Header - Blue Theme */}
+                            <div className="relative p-4 sm:p-6 md:p-8 rounded-t-xl sm:rounded-t-2xl bg-linear-to-r from-[#2d5bff] via-[#4a69ff] to-[#6366f1] overflow-hidden">
+                                {/* Decorative circle */}
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-xl"></div>
+
+                                <button
+                                    onClick={() => setSelectedTask(null)}
+                                    className="absolute top-3 right-3 sm:top-4 sm:right-4 p-1.5 sm:p-2 rounded-full bg-white/20 hover:bg-white/30 transition-all text-white backdrop-blur-sm"
+                                >
+                                    <X className="w-4 h-4 sm:w-5 sm:h-5" />
+                                </button>
+
+                                <div className="flex items-start gap-3 sm:gap-4 pr-8 sm:pr-10 relative z-10">
+                                    <div className="flex-1">
+                                        <div className="flex flex-wrap items-center gap-2 mb-2 sm:mb-3">
+                                            <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider shadow-sm ${selectedTask.priority === 'high'
+                                                ? 'bg-red-100 text-red-700'
+                                                : selectedTask.priority === 'medium'
+                                                    ? 'bg-amber-100 text-amber-700'
+                                                    : 'bg-white text-[#2d5bff]'
+                                                }`}>
+                                                {selectedTask.priority} Priority
+                                            </span>
+                                            {!!selectedTask.is_completed && (
+                                                <span className="px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider bg-emerald-400 text-white shadow-sm">
+                                                    Completed
+                                                </span>
+                                            )}
+                                        </div>
+                                        <h2 className={`text-xl sm:text-2xl md:text-3xl font-black text-white mb-1 tracking-tight ${selectedTask.is_completed ? 'line-through opacity-80' : ''}`}>
+                                            {selectedTask.title}
+                                        </h2>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Modal Body */}
+                            <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6">
+                                {/* Description */}
+                                {selectedTask.description && (
+                                    <div>
+                                        <h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                            <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                                            Description
+                                        </h3>
+                                        <p className="text-sm sm:text-base md:text-lg text-slate-700 leading-relaxed whitespace-pre-wrap font-medium">
+                                            {selectedTask.description}
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Due Date */}
+                                {selectedTask.due_date && (
+                                    <div>
+                                        <h3 className="text-xs sm:text-sm font-bold text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                            <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+                                            Due Date
+                                        </h3>
+                                        <div className={`flex flex-wrap items-center gap-2 text-sm sm:text-base md:text-lg font-bold ${isOverdue(selectedTask.due_date, selectedTask.is_completed)
+                                            ? 'text-red-500'
+                                            : 'text-slate-700'
+                                            }`}>
+                                            <Clock className="w-4 h-4 sm:w-5 sm:h-5" />
+                                            <span>{formatDate(selectedTask.due_date)}</span>
+                                            {isOverdue(selectedTask.due_date, selectedTask.is_completed) && (
+                                                <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] sm:text-xs font-black rounded-full uppercase tracking-wider">
+                                                    Overdue
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Actions */}
+                                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4 border-t border-slate-100">
+                                    <button
+                                        onClick={() => handleToggleTask(selectedTask)}
+                                        className={`flex-1 py-3 px-6 rounded-xl font-black text-[13px] tracking-widest uppercase transition-all shadow-lg active:scale-95 ${selectedTask.is_completed
+                                            ? 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                            : 'bg-[#2d5bff] text-white hover:bg-blue-600 shadow-blue-500/30'
+                                            }`}
+                                    >
+                                        {selectedTask.is_completed ? 'Mark as Incomplete' : 'Mark as Complete'}
+                                    </button>
+
+                                    {!!selectedTask.is_completed && (
+                                        <button
+                                            onClick={() => {
+                                                setDeleteId(selectedTask.id);
+                                                // Don't close selectedTask yet, let delete confirmation render on top or replace
+                                            }}
+                                            className="flex-1 sm:flex-none py-3 px-6 rounded-xl font-black text-[13px] tracking-widest uppercase bg-white border-2 border-red-50 text-[#ff4d4d] hover:bg-red-50 transition-all flex items-center justify-center gap-2 active:scale-95"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                            Delete
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Delete Confirmation Modal (Reused) */}
+                {deleteId && (
+                    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+                        <div className="bg-white rounded-[32px] p-6 sm:p-8 w-full max-w-[400px] shadow-2xl animate-in zoom-in-95 duration-200 border border-white">
+                            <div className="flex flex-col items-center text-center">
+                                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6 border border-red-100 shadow-lg shadow-red-500/10">
+                                    <Trash2 className="w-8 h-8 text-[#ff4d4d] animate-bounce" />
+                                </div>
+                                <h3 className="text-xl font-black text-slate-800 mb-2 uppercase tracking-tighter">Are you sure?</h3>
+                                <p className="text-slate-500 text-sm font-medium mb-8">
+                                    This action cannot be undone. This reminder will be permanently deleted.
+                                </p>
+                                <div className="flex w-full gap-3">
+                                    <button
+                                        onClick={() => setDeleteId(null)}
+                                        className="flex-1 py-3 px-6 rounded-xl font-black text-[11px] tracking-widest uppercase border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all active:scale-95"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteTask(deleteId)}
+                                        className="flex-1 py-3 px-6 rounded-xl font-black text-[11px] tracking-widest uppercase bg-[#ff4d4d] text-white shadow-lg shadow-red-500/20 hover:bg-[#ff3333] hover:shadow-xl transition-all active:scale-95"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
