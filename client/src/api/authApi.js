@@ -13,10 +13,9 @@ export const getMe = async () => {
 };
 
 export const updateProfile = async (userData) => {
-    const isFormData = userData instanceof FormData;
-    return await axiosInstance.put('/auth/profile', userData, {
-        headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : undefined
-    });
+    // IMPORTANT: Do NOT manually set 'Content-Type': 'multipart/form-data'.
+    // Axios/Browser will automatically set it with the correct boundary when passing FormData.
+    return await axiosInstance.put('/auth/profile', userData);
 };
 
 export const forgotPassword = async (email) => {

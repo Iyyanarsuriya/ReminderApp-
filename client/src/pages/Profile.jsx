@@ -71,7 +71,10 @@ const Profile = () => {
                 profile_image: response.data.profile_image || user.profile_image
             };
             setUser(updatedUser);
-            localStorage.setItem('user', JSON.stringify(updatedUser));
+            localStorage.setItem('user', JSON.stringify(updatedUser)); // Keep user session updated
+
+            // Refresh data from server to be sure
+            await fetchProfileData();
 
             setIsEditing(false);
             setSelectedFile(null);
