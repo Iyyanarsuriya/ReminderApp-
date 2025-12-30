@@ -384,21 +384,43 @@ const Profile = () => {
 
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-[16px] sm:gap-[24px]">
                                     <button
-                                        onClick={() => setSelectedStat({ open: true, title: 'All Tasks', items: reminders })}
+                                        onClick={() => {
+                                            // Get currently filtered list based on date
+                                            const currentFiltered = reminders.filter(r => {
+                                                if (!filterDate) return true;
+                                                if (!r.due_date) return false;
+                                                return r.due_date.startsWith(filterDate);
+                                            });
+                                            setSelectedStat({ open: true, title: 'All Tasks', items: currentFiltered });
+                                        }}
                                         className="bg-white border border-slate-100 p-[16px] sm:p-[24px] rounded-[24px] text-center shadow-lg shadow-slate-200/50 hover:scale-[1.02] transition-transform active:scale-95"
                                     >
                                         <p className="text-slate-400 text-[11px] font-black uppercase tracking-widest mb-[4px]">Total Tasks</p>
                                         <p className="text-[32px] sm:text-[40px] font-black text-[#2d5bff]">{stats.total}</p>
                                     </button>
                                     <button
-                                        onClick={() => setSelectedStat({ open: true, title: 'Completed Tasks', items: reminders.filter(r => r.is_completed) })}
+                                        onClick={() => {
+                                            const currentFiltered = reminders.filter(r => {
+                                                if (!filterDate) return true;
+                                                if (!r.due_date) return false;
+                                                return r.due_date.startsWith(filterDate);
+                                            });
+                                            setSelectedStat({ open: true, title: 'Completed Tasks', items: currentFiltered.filter(r => r.is_completed) });
+                                        }}
                                         className="bg-emerald-50 border border-emerald-100 p-[16px] sm:p-[24px] rounded-[24px] text-center shadow-lg shadow-emerald-200/20 hover:scale-[1.02] transition-transform active:scale-95"
                                     >
                                         <p className="text-emerald-600 text-[11px] font-black uppercase tracking-widest mb-[4px]">Completed</p>
                                         <p className="text-[32px] sm:text-[40px] font-black text-emerald-600">{stats.completed}</p>
                                     </button>
                                     <button
-                                        onClick={() => setSelectedStat({ open: true, title: 'Remaining Tasks', items: reminders.filter(r => !r.is_completed) })}
+                                        onClick={() => {
+                                            const currentFiltered = reminders.filter(r => {
+                                                if (!filterDate) return true;
+                                                if (!r.due_date) return false;
+                                                return r.due_date.startsWith(filterDate);
+                                            });
+                                            setSelectedStat({ open: true, title: 'Remaining Tasks', items: currentFiltered.filter(r => !r.is_completed) });
+                                        }}
                                         className="bg-amber-50 border border-amber-100 p-[16px] sm:p-[24px] rounded-[24px] text-center shadow-lg shadow-amber-200/20 hover:scale-[1.02] transition-transform active:scale-95"
                                     >
                                         <p className="text-amber-600 text-[11px] font-black uppercase tracking-widest mb-[4px]">Remaining</p>
@@ -485,8 +507,8 @@ const Profile = () => {
                         >
                             {/* Modal Header - Dynamic Theme */}
                             <div className={`relative p-4 sm:p-6 md:p-8 shrink-0 overflow-hidden ${selectedStat.title === 'Completed Tasks' ? 'bg-linear-to-r from-emerald-500 via-teal-500 to-green-500' :
-                                    selectedStat.title === 'Remaining Tasks' ? 'bg-linear-to-r from-amber-500 via-orange-500 to-red-500' :
-                                        'bg-linear-to-r from-[#2d5bff] via-[#4a69ff] to-[#6366f1]'
+                                selectedStat.title === 'Remaining Tasks' ? 'bg-linear-to-r from-amber-500 via-orange-500 to-red-500' :
+                                    'bg-linear-to-r from-[#2d5bff] via-[#4a69ff] to-[#6366f1]'
                                 }`}>
                                 {/* Decorative circle */}
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-xl"></div>
@@ -519,8 +541,8 @@ const Profile = () => {
                                             >
                                                 {/* Left Border accent */}
                                                 <div className={`absolute left-0 top-0 bottom-0 w-1 sm:w-1.5 ${item.priority === 'high' ? 'bg-[#ff4d4d]' :
-                                                        item.priority === 'medium' ? 'bg-[#ffb800]' :
-                                                            'bg-[#2d5bff]'
+                                                    item.priority === 'medium' ? 'bg-[#ffb800]' :
+                                                        'bg-[#2d5bff]'
                                                     }`}></div>
 
                                                 <div className="pl-3 sm:pl-4 flex justify-between items-start gap-3">
@@ -544,8 +566,8 @@ const Profile = () => {
                                                     </div>
 
                                                     <span className={`shrink-0 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${item.priority === 'high' ? 'bg-red-50 text-red-500 border-red-100' :
-                                                            item.priority === 'medium' ? 'bg-amber-50 text-amber-500 border-amber-100' :
-                                                                'bg-blue-50 text-blue-500 border-blue-100'
+                                                        item.priority === 'medium' ? 'bg-amber-50 text-amber-500 border-amber-100' :
+                                                            'bg-blue-50 text-blue-500 border-blue-100'
                                                         }`}>
                                                         {item.priority}
                                                     </span>
