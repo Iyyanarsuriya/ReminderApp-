@@ -60,6 +60,9 @@ const Home = () => {
         return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
     }, []);
 
+    // 🔔 Notification state tracking
+    const activeToastsRef = useRef({}); // { reminderId: toastId }
+
     // Track last notification time for each reminder - Persist to localStorage for reliability
     const [lastNotifiedTimes, setLastNotifiedTimes] = useState(() => {
         const saved = localStorage.getItem('lastNotifiedTimes');
@@ -74,6 +77,15 @@ const Home = () => {
     const remindersRef = useRef(reminders);
     useEffect(() => {
         remindersRef.current = reminders;
+
+        // Auto-dismiss notifications for deleted tasks
+        const currentIds = new Set(reminders.map(r => r.id));
+        Object.keys(activeToastsRef.current).forEach(id => {
+            if (!currentIds.has(parseInt(id))) {
+                toast.dismiss(activeToastsRef.current[id]);
+                delete activeToastsRef.current[id];
+            }
+        });
     }, [reminders]);
 
     // Stable background check for due reminders
@@ -91,7 +103,7 @@ const Home = () => {
 
                 if (nowMs >= dueDateMs - 30000 && (nowMs - lastNotifyTime >= 300000)) {
                     // Show In-App Toast
-                    toast.custom((t) => (
+                    const tId = toast.custom((t) => (
                         <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-[95%] xs:w-[90%] sm:w-full bg-slate-900 shadow-2xl rounded-2xl pointer-events-auto flex flex-col ring-1 ring-black ring-opacity-5 overflow-hidden border border-slate-700 mt-4`}>
                             <div className="flex-1 w-0 p-3 sm:p-4">
                                 <div className="flex items-center">
@@ -110,6 +122,14 @@ const Home = () => {
                                 <button
                                     onClick={async () => {
                                         toast.remove(t.id);
+                                        delete activeToastsRef.current[reminder.id];
+
+                                        // Pre-check existence
+                                        if (!remindersRef.current.find(r => r.id === reminder.id)) {
+                                            toast.error("Task no longer exists");
+                                            return;
+                                        }
+
                                         // Snooze for 10 minutes
                                         try {
                                             const newDate = new Date(Date.now() + 10 * 60000).toISOString();
@@ -117,10 +137,8 @@ const Home = () => {
                                             setReminders(prev => prev.map(r => r.id === reminder.id ? { ...r, due_date: newDate } : r));
                                             toast.success("Snoozed for 10 min", { icon: '💤' });
                                         } catch (e) {
-                                            // Silent refresh if possible, or filtered toast
                                             const res = await getReminders().catch(() => ({ data: [] }));
                                             setReminders(res.data);
-                                            // Check if it still exists to show error
                                             if (!res.data.find(r => r.id === reminder.id)) {
                                                 toast.error("Task no longer exists");
                                             } else {
@@ -135,6 +153,14 @@ const Home = () => {
                                 <button
                                     onClick={async () => {
                                         toast.remove(t.id);
+                                        delete activeToastsRef.current[reminder.id];
+
+                                        // Pre-check existence
+                                        if (!remindersRef.current.find(r => r.id === reminder.id)) {
+                                            toast.error("Task no longer exists");
+                                            return;
+                                        }
+
                                         // Snooze for 1 hour
                                         try {
                                             const newDate = new Date(Date.now() + 60 * 60000).toISOString();
@@ -142,10 +168,8 @@ const Home = () => {
                                             setReminders(prev => prev.map(r => r.id === reminder.id ? { ...r, due_date: newDate } : r));
                                             toast.success("Snoozed for 1 hour", { icon: '💤' });
                                         } catch (e) {
-                                            // Silent refresh if possible, or filtered toast
                                             const res = await getReminders().catch(() => ({ data: [] }));
                                             setReminders(res.data);
-                                            // Check if it still exists to show error
                                             if (!res.data.find(r => r.id === reminder.id)) {
                                                 toast.error("Task no longer exists");
                                             } else {
@@ -158,7 +182,10 @@ const Home = () => {
                                     1h
                                 </button>
                                 <button
-                                    onClick={() => toast.remove(t.id)}
+                                    onClick={() => {
+                                        toast.remove(t.id);
+                                        delete activeToastsRef.current[reminder.id];
+                                    }}
                                     className="flex-1 py-3 text-[10px] sm:text-xs font-black text-[#2d5bff] hover:bg-slate-700 transition-colors uppercase tracking-wider cursor-pointer"
                                 >
                                     Dismiss
@@ -166,6 +193,8 @@ const Home = () => {
                             </div>
                         </div>
                     ), { duration: 8000, position: 'top-center' }); // Longer duration for snooze decision
+
+                    activeToastsRef.current[reminder.id] = tId;
 
                     setLastNotifiedTimes(prev => ({
                         ...prev,
