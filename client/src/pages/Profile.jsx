@@ -314,15 +314,14 @@ const Profile = () => {
                                             </div>
                                         </div>
                                         <button
-                                            onClick={user?.google_refresh_token ? handleGoogleDisconnect : undefined}
-                                            disabled={!user?.google_refresh_token}
+                                            onClick={user?.google_refresh_token ? handleGoogleDisconnect : handleGoogleConnect}
                                             className={`flex items-center gap-[12px] px-[24px] py-[14px] rounded-[18px] font-black text-[13px] tracking-widest uppercase transition-all shadow-lg active:scale-95 ${user?.google_refresh_token
                                                 ? 'bg-rose-500 text-white hover:bg-rose-600'
-                                                : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                                                : 'bg-[#4285F4] text-white hover:bg-blue-600'
                                                 }`}
                                         >
                                             <FaCalendarAlt className="text-[16px]" />
-                                            {user?.google_refresh_token ? 'Disconnect' : 'Temporarily Disabled'}
+                                            {user?.google_refresh_token ? 'Disconnect' : 'Connect Calendar'}
                                         </button>
                                     </div>
                                     <p className="text-center mt-[16px] text-[11px] text-slate-400 font-bold uppercase tracking-widest">
