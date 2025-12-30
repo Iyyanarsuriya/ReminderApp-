@@ -25,6 +25,9 @@ const Profile = () => {
     const [updating, setUpdating] = useState(false);
     const navigate = useNavigate();
 
+    // Filter stats by date (Default to Today)
+    const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]);
+
     const fetchProfileData = async () => {
         try {
             const [userRes, remindersRes] = await Promise.all([
@@ -37,11 +40,18 @@ const Profile = () => {
             const fetchedReminders = remindersRes.data;
             setReminders(fetchedReminders);
 
-            const completed = fetchedReminders.filter(r => r.is_completed).length;
+            // Filter reminders for the selected date
+            const filteredReminders = fetchedReminders.filter(r => {
+                if (!filterDate) return true;
+                if (!r.due_date) return false;
+                return r.due_date.startsWith(filterDate);
+            });
+
+            const completed = filteredReminders.filter(r => r.is_completed).length;
             setStats({
-                total: fetchedReminders.length,
+                total: filteredReminders.length,
                 completed: completed,
-                pending: fetchedReminders.length - completed
+                pending: filteredReminders.length - completed
             });
         } catch (error) {
             console.error("Error fetching profile", error);
@@ -49,6 +59,14 @@ const Profile = () => {
             setLoading(false);
         }
     };
+
+    // Refetch when filterDate changes
+    useEffect(() => {
+        if (!loading) { // Avoid initial double fetch conflicts
+            fetchProfileData();
+        }
+    }, [filterDate]);
+
 
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
@@ -276,6 +294,16 @@ const Profile = () => {
                             </form>
                         ) : (
                             <>
+                                {/* Stats Date Picker */}
+                                <div className="flex justify-end mb-4">
+                                    <input
+                                        type="date"
+                                        value={filterDate}
+                                        onChange={(e) => setFilterDate(e.target.value)}
+                                        className="bg-white border boundary-slate-200 text-slate-600 text-[12px] font-bold px-3 py-2 rounded-[12px] outline-none focus:border-[#2d5bff] transition-colors shadow-sm"
+                                    />
+                                </div>
+
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-[16px] sm:gap-[24px]">
                                     <button
                                         onClick={() => setSelectedStat({ open: true, title: 'All Tasks', items: reminders })}

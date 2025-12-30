@@ -18,7 +18,7 @@ const Home = () => {
     const [showNotifications, setShowNotifications] = useState(false);
     const [confirmToggle, setConfirmToggle] = useState(null); // { id, currentStatus }
     const [sortBy, setSortBy] = useState('due_date'); // Default to date wise
-    const [filterDate, setFilterDate] = useState(''); // Search by date
+    const [filterDate, setFilterDate] = useState(new Date().toISOString().split('T')[0]); // Default to Today
 
     const fetchData = async () => {
         try {
