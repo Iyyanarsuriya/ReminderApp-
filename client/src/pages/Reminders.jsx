@@ -426,7 +426,7 @@ const Reminders = () => {
                         Dashboard
                     </h1>
 
-                    <div className="flex items-center gap-[8px] sm:gap-[16px] md:gap-[24px]">
+                    <div className="flex items-center gap-[8px] sm:gap-[16px]">
                         {/* 🔔 Notification Icon */}
                         <div className="relative">
                             <FaBell
@@ -482,36 +482,6 @@ const Reminders = () => {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
                         </button>
-
-                        {/* User Info */}
-                        <div className="flex items-center gap-[8px] sm:gap-[16px]">
-                            <div className="text-right hidden sm:block">
-                                <p className="text-[10px] sm:text-[12px] text-white">Welcome,</p>
-                                <p className="text-[12px] sm:text-[14px] font-bold text-black truncate max-w-[80px] sm:max-w-[120px]">
-                                    {user?.username}
-                                </p>
-                            </div>
-
-                            <Link
-                                to="/profile"
-                                className="w-[32px] h-[32px] sm:w-[36px] sm:h-[36px] md:w-[40px] md:h-[40px] rounded-full bg-white text-[#2d5bff] flex items-center justify-center hover:bg-white/90 transition-all active:scale-95 group shadow-lg shadow-white/20 overflow-hidden"
-                            >
-                                {user?.profile_image ? (
-                                    <img
-                                        src={`${API_URL}${user.profile_image}`}
-                                        alt="User"
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }}
-                                    />
-                                ) : null}
-                                <span
-                                    className="text-[#2d5bff] font-black text-[12px] sm:text-[14px] group-hover:scale-110 transition-transform"
-                                    style={{ display: user?.profile_image ? 'none' : 'block' }}
-                                >
-                                    {user?.username?.charAt(0).toUpperCase()}
-                                </span>
-                            </Link>
-                        </div>
                     </div>
                 </div>
 

@@ -173,12 +173,6 @@ const ExpenseTracker = () => {
                         </div>
                         <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest ml-[52px]">Take control of your finances</p>
                     </div>
-                    <button
-                        onClick={() => navigate('/')}
-                        className="w-[40px] h-[40px] sm:w-[48px] sm:h-[48px] rounded-full bg-slate-200 flex items-center justify-center hover:bg-slate-300 transition-all active:scale-95 group shrink-0"
-                    >
-                        <FaTimes className="text-slate-600 transition-transform group-hover:rotate-90" />
-                    </button>
                 </div>
 
                 {activeTab === 'Dashboard' ? (
