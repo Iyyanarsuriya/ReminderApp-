@@ -19,6 +19,7 @@ import Home from './pages/Home';
 import Reminders from './pages/Reminders';
 import ExpenseTracker from './pages/ExpenseTracker';
 import Profile from './pages/Profile';
+import FinanceProfile from './pages/FinanceProfile';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
@@ -100,29 +101,29 @@ function AppContent({ token, setToken }) {
     <>
       {token && !isAuthRoute && (
         <header className="fixed top-0 left-0 w-full z-50 border-b border-white/50 glass">
-          <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16 sm:h-20">
+          <div className="max-w-[1280px] mx-auto px-[12px] sm:px-[24px] lg:px-[32px]">
+            <div className="flex justify-between items-center h-[64px] sm:h-[80px]">
               {/* Logo Section */}
-              <div className="flex items-center gap-2">
-                <Link to="/" className="flex items-center gap-2 group">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#2d5bff] rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
-                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex items-center gap-[8px]">
+                <Link to="/" className="flex items-center gap-[8px] group">
+                  <div className="w-[32px] h-[32px] sm:w-[40px] sm:h-[40px] bg-[#2d5bff] rounded-[8px] sm:rounded-[12px] flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
+                    <svg className="w-[20px] h-[20px] sm:w-[24px] sm:h-[24px] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                     </svg>
                   </div>
-                  <span className="text-lg sm:text-xl font-black text-slate-800 tracking-tighter">
+                  <span className="text-[18px] sm:text-[20px] font-black text-slate-800 tracking-tighter">
                     Organizer<span className="text-[#2d5bff]">Pro</span>
                   </span>
                 </Link>
               </div>
 
               {/* Navigation Links */}
-              <nav className="flex items-center gap-3 sm:gap-8">
-                <Link to="/" className="text-[10px] sm:text-xs font-black tracking-widest uppercase text-slate-500 hover:text-[#2d5bff] transition-all duration-300 relative group hidden xs:block">
+              <nav className="flex items-center gap-[12px] sm:gap-[32px]">
+                <Link to="/" className="text-[10px] sm:text-[12px] font-black tracking-widest uppercase text-slate-500 hover:text-[#2d5bff] transition-all duration-300 relative group hidden xs:block">
                   Home
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#2d5bff] transition-all duration-300 group-hover:w-full"></span>
+                  <span className="absolute -bottom-[4px] left-0 w-0 h-[2px] bg-[#2d5bff] transition-all duration-300 group-hover:w-full"></span>
                 </Link>
-                <Link to="/profile" className="px-4 sm:px-6 py-2 sm:py-2.5 bg-[#1a1c21] hover:bg-slate-800 text-white text-[10px] sm:text-xs font-black tracking-widest uppercase rounded-full shadow-lg transition-all active:scale-95 whitespace-nowrap">
+                <Link to="/profile" className="px-[16px] sm:px-[24px] py-[8px] sm:py-[10px] bg-[#1a1c21] hover:bg-slate-800 text-white text-[10px] sm:text-[12px] font-black tracking-widest uppercase rounded-full shadow-lg transition-all active:scale-95 whitespace-nowrap">
                   Profile
                 </Link>
               </nav>
@@ -131,7 +132,7 @@ function AppContent({ token, setToken }) {
         </header>
       )}
 
-      <main className={token && !isAuthRoute ? "min-h-[calc(100vh-5rem)] mt-16 sm:mt-20" : ""}>
+      <main className={token && !isAuthRoute ? "min-h-[calc(100vh-5rem)] mt-[64px] sm:mt-[80px]" : ""}>
         <Routes>
           <Route path="/login" element={<Login setToken={setToken} />} />
           <Route path="/signup" element={<Signup />} />
@@ -158,6 +159,12 @@ function AppContent({ token, setToken }) {
           <Route path="/profile" element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/finance-profile" element={
+            <ProtectedRoute>
+              <FinanceProfile />
             </ProtectedRoute>
           } />
 

@@ -84,7 +84,7 @@ const Signup = () => {
                 if (errors.username) setErrors({ ...errors, username: null });
               }}
               className={`w-full bg-slate-50 border ${errors.username ? 'border-red-500' : 'border-slate-200'} rounded-2xl px-4 py-3 text-slate-800 input-focus font-medium placeholder:text-slate-300`}
-              placeholder="Lily Amber"
+              placeholder="Suriya"
               required
             />
           </div>
@@ -99,7 +99,7 @@ const Signup = () => {
                 if (errors.email) setErrors({ ...errors, email: null });
               }}
               className={`w-full bg-slate-50 border ${errors.email ? 'border-red-500' : 'border-slate-200'} rounded-2xl px-4 py-3 text-slate-800 input-focus font-medium placeholder:text-slate-300`}
-              placeholder="lilyamber@gmail.com"
+              placeholder="suriya@gmail.com"
               required
             />
           </div>

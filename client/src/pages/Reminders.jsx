@@ -116,11 +116,11 @@ const Reminders = () => {
                 if (isDueToday && nowMs >= dueDateMs - 30000 && (nowMs - lastNotifyTime >= 300000)) {
                     // Show In-App Toast
                     const tId = toast.custom((t) => (
-                        <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-[95%] xs:w-[90%] sm:w-full bg-slate-900 shadow-2xl rounded-2xl pointer-events-auto flex flex-col ring-1 ring-black ring-opacity-5 overflow-hidden border border-slate-700 mt-4`}>
-                            <div className="flex-1 w-0 p-3 sm:p-4">
+                        <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-[448px] w-[95%] xs:w-[90%] sm:w-full bg-slate-900 shadow-2xl rounded-[16px] pointer-events-auto flex flex-col ring-[1px] ring-black ring-opacity-5 overflow-hidden border border-slate-700 mt-[16px]`}>
+                            <div className="flex-1 w-0 p-[12px] sm:p-[16px]">
                                 <div className="flex items-center">
                                     <div className="shrink-0">
-                                        <div className="h-8 w-8 sm:h-10 sm:w-10 bg-linear-to-br from-[#2d5bff] to-[#6366f1] rounded-full flex items-center justify-center border border-white/10 shadow-lg shadow-blue-500/20">
+                                        <div className="h-[32px] w-[32px] sm:h-[40px] sm:w-[40px] bg-linear-to-br from-[#2d5bff] to-[#6366f1] rounded-full flex items-center justify-center border border-white/10 shadow-lg shadow-blue-500/20">
                                             <FaBell className="h-4 w-4 sm:h-5 sm:w-5 text-white animate-bounce" />
                                         </div>
                                     </div>
@@ -257,12 +257,12 @@ const Reminders = () => {
             toast.custom((t) => (
                 <div
                     className={`${t.visible ? 'animate-enter' : 'animate-leave'
-                        } max-w-md w-[95%] sm:w-full bg-white shadow-2xl rounded-[24px] sm:rounded-[32px] pointer-events-auto flex ring-1 ring-black ring-opacity-5 overflow-hidden border border-slate-100 mt-6`}
+                        } max-w-[448px] w-[95%] sm:w-full bg-white shadow-2xl rounded-[24px] sm:rounded-[32px] pointer-events-auto flex ring-[1px] ring-black ring-opacity-5 overflow-hidden border border-slate-100 mt-[24px]`}
                 >
-                    <div className="flex-1 w-0 p-4 sm:p-6">
-                        <div className="flex items-start gap-3 sm:gap-4">
+                    <div className="flex-1 w-0 p-[16px] sm:p-[24px]">
+                        <div className="flex items-start gap-[12px] sm:gap-[16px]">
                             <div className="shrink-0">
-                                <div className="h-10 w-10 sm:h-14 sm:w-14 bg-linear-to-br from-[#2d5bff] to-[#4a69ff] rounded-xl sm:rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20">
+                                <div className="h-[40px] w-[40px] sm:h-[56px] sm:w-[56px] bg-linear-to-br from-[#2d5bff] to-[#4a69ff] rounded-[12px] sm:rounded-[16px] flex items-center justify-center shadow-xl shadow-blue-500/20">
                                     <FaBell className="h-5 w-5 sm:h-7 sm:w-7 text-white" />
                                 </div>
                             </div>
@@ -418,23 +418,23 @@ const Reminders = () => {
     }
 
     return (
-        <div className="flex flex-col items-center h-full px-2 sm:px-4 relative lg:overflow-hidden">
-            <div className="w-full max-w-7xl flex flex-col h-full py-2 sm:py-4 md:py-8">
+        <div className="flex flex-col items-center h-full px-[8px] sm:px-[16px] relative lg:overflow-hidden">
+            <div className="w-full max-w-[1280px] flex flex-col h-full py-[8px] sm:py-[16px] md:py-[32px]">
 
-                <div className="flex justify-between items-center mb-4 sm:mb-6 shrink-0 bg-linear-to-r from-[#2d5bff] via-[#4a69ff] to-[#6366f1] p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border border-blue-400/30 shadow-xl shadow-blue-500/20 relative z-20">
-                    <h1 className="text-lg sm:text-2xl md:text-3xl font-black text-white drop-shadow-lg tracking-tight">
+                <div className="flex justify-between items-center mb-[16px] sm:mb-[24px] shrink-0 bg-linear-to-r from-[#2d5bff] via-[#4a69ff] to-[#6366f1] p-[10px] sm:p-[16px] rounded-[12px] sm:rounded-[16px] border border-blue-400/30 shadow-xl shadow-blue-500/20 relative z-20">
+                    <h1 className="text-[18px] sm:text-[24px] md:text-[30px] font-black text-white drop-shadow-lg tracking-tight">
                         Dashboard
                     </h1>
 
-                    <div className="flex items-center gap-2 sm:gap-4 md:gap-6">
+                    <div className="flex items-center gap-[8px] sm:gap-[16px] md:gap-[24px]">
                         {/* 🔔 Notification Icon */}
                         <div className="relative">
                             <FaBell
-                                className={`text-lg sm:text-2xl md:text-3xl cursor-pointer transition-colors ${showNotifications ? 'text-yellow-300' : 'text-white/80 hover:text-white'}`}
+                                className={`text-[18px] sm:text-[24px] md:text-[30px] cursor-pointer transition-colors ${showNotifications ? 'text-yellow-300' : 'text-white/80 hover:text-white'}`}
                                 onClick={() => setShowNotifications(!showNotifications)}
                             />
                             {notifications.length > 0 && (
-                                <span className="absolute -top-1 sm:-top-2 -right-1 sm:-right-2 bg-[#ff4d4d] w-3.5 h-3.5 sm:w-5 sm:h-5 text-[7px] sm:text-[10px] flex items-center justify-center rounded-full font-bold text-white shadow-lg animate-pulse">
+                                <span className="absolute -top-[4px] sm:-top-[8px] -right-[4px] sm:-right-[8px] bg-[#ff4d4d] w-[14px] h-[14px] sm:w-[20px] sm:h-[20px] text-[7px] sm:text-[10px] flex items-center justify-center rounded-full font-bold text-white shadow-lg animate-pulse">
                                     {notifications.length}
                                 </span>
                             )}
@@ -443,26 +443,26 @@ const Reminders = () => {
                             {showNotifications && (
                                 <>
                                     <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)}></div>
-                                    <div className="absolute right-0 mt-4 w-64 sm:w-72 md:w-80 bg-white border border-slate-200 rounded-xl sm:rounded-2xl shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                                        <div className="p-3 sm:p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                                            <h3 className="font-bold text-xs sm:text-sm text-slate-800">Tasks Due Today</h3>
-                                            <FaTimes className="text-slate-400 hover:text-[#ff4d4d] cursor-pointer transition-colors text-sm" onClick={() => setShowNotifications(false)} />
+                                    <div className="absolute right-0 mt-[16px] w-[256px] sm:w-[288px] md:w-[320px] bg-white border border-slate-200 rounded-[12px] sm:rounded-[16px] shadow-xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="p-[12px] sm:p-[16px] border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                                            <h3 className="font-bold text-[12px] sm:text-[14px] text-slate-800">Tasks Due Today</h3>
+                                            <FaTimes className="text-slate-400 hover:text-[#ff4d4d] cursor-pointer transition-colors text-[14px]" onClick={() => setShowNotifications(false)} />
                                         </div>
-                                        <div className="max-h-64 overflow-y-auto text-slate-700">
+                                        <div className="max-h-[256px] overflow-y-auto text-slate-700">
                                             {notifications.length > 0 ? (
                                                 notifications.map(notif => (
-                                                    <div key={notif.id} className="p-3 sm:p-4 border-b border-slate-100 hover:bg-[#f97066]/5 transition-colors">
-                                                        <p className="text-xs sm:text-sm font-semibold text-slate-800 mb-1 whitespace-normal">{notif.title}</p>
-                                                        <p className="text-[10px] sm:text-xs text-slate-500 flex justify-between items-center">
+                                                    <div key={notif.id} className="p-[12px] sm:p-[16px] border-b border-slate-100 hover:bg-[#f97066]/5 transition-colors">
+                                                        <p className="text-[12px] sm:text-[14px] font-semibold text-slate-800 mb-[4px] whitespace-normal">{notif.title}</p>
+                                                        <p className="text-[10px] sm:text-[12px] text-slate-500 flex justify-between items-center">
                                                             <span className="font-medium text-slate-400">Due Today</span>
-                                                            <span className="bg-orange-100 text-orange-600 uppercase font-bold text-[7px] sm:text-[8px] tracking-widest px-1.5 sm:px-2 py-0.5 rounded-full">
+                                                            <span className="bg-orange-100 text-orange-600 uppercase font-bold text-[7px] sm:text-[8px] tracking-widest px-[6px] sm:px-[8px] py-[2px] rounded-full">
                                                                 Today
                                                             </span>
                                                         </p>
                                                     </div>
                                                 ))
                                             ) : (
-                                                <div className="p-6 sm:p-8 text-center text-slate-400 text-xs sm:text-sm">
+                                                <div className="p-[24px] sm:p-[32px] text-center text-slate-400 text-[12px] sm:text-[14px]">
                                                     No tasks due today! 🚀
                                                 </div>
                                             )}
@@ -476,25 +476,25 @@ const Reminders = () => {
                         <button
                             onClick={handleTriggerMissedAlert}
                             title="Test Missed Task Notifications"
-                            className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-lg transition-all active:scale-95"
+                            className="bg-white/10 hover:bg-white/20 text-white p-[8px] rounded-[8px] transition-all active:scale-95"
                         >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
                         </button>
 
                         {/* User Info */}
-                        <div className="flex items-center gap-2 sm:gap-4">
+                        <div className="flex items-center gap-[8px] sm:gap-[16px]">
                             <div className="text-right hidden sm:block">
-                                <p className="text-[10px] sm:text-xs text-white">Welcome,</p>
-                                <p className="text-xs sm:text-sm font-bold text-black truncate max-w-[80px] sm:max-w-[120px]">
+                                <p className="text-[10px] sm:text-[12px] text-white">Welcome,</p>
+                                <p className="text-[12px] sm:text-[14px] font-bold text-black truncate max-w-[80px] sm:max-w-[120px]">
                                     {user?.username}
                                 </p>
                             </div>
 
                             <Link
                                 to="/profile"
-                                className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full bg-white text-[#2d5bff] flex items-center justify-center hover:bg-white/90 transition-all active:scale-95 group shadow-lg shadow-white/20 overflow-hidden"
+                                className="w-[32px] h-[32px] sm:w-[36px] sm:h-[36px] md:w-[40px] md:h-[40px] rounded-full bg-white text-[#2d5bff] flex items-center justify-center hover:bg-white/90 transition-all active:scale-95 group shadow-lg shadow-white/20 overflow-hidden"
                             >
                                 {user?.profile_image ? (
                                     <img
@@ -505,7 +505,7 @@ const Reminders = () => {
                                     />
                                 ) : null}
                                 <span
-                                    className="text-[#2d5bff] font-black text-xs sm:text-sm group-hover:scale-110 transition-transform"
+                                    className="text-[#2d5bff] font-black text-[12px] sm:text-[14px] group-hover:scale-110 transition-transform"
                                     style={{ display: user?.profile_image ? 'none' : 'block' }}
                                 >
                                     {user?.username?.charAt(0).toUpperCase()}
@@ -517,11 +517,11 @@ const Reminders = () => {
 
                 {/* BULK ACTION BAR */}
                 {selectedIds.length > 0 && (
-                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-4 z-50 animate-in slide-in-from-bottom-10 fade-in duration-300 border border-slate-700">
-                        <span className="text-xs font-bold text-slate-300">
+                    <div className="fixed bottom-[24px] left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-md text-white px-[16px] py-[12px] rounded-[16px] shadow-2xl flex items-center gap-[16px] z-50 animate-in slide-in-from-bottom-10 fade-in duration-300 border border-slate-700">
+                        <span className="text-[12px] font-bold text-slate-300">
                             {selectedIds.length} selected
                         </span>
-                        <div className="h-4 w-px bg-slate-700"></div>
+                        <div className="h-[16px] w-px bg-slate-700"></div>
                         <button
                             onClick={async () => {
                                 try {
@@ -532,30 +532,31 @@ const Reminders = () => {
                                     setIsSelectionMode(false);
                                 } catch (e) { toast.error("Batch update failed"); }
                             }}
-                            className="text-xs font-black text-white hover:text-blue-400 transition-colors uppercase tracking-wider cursor-pointer"
+                            className="text-[12px] font-black text-white hover:text-blue-400 transition-colors uppercase tracking-wider cursor-pointer"
                         >
                             Complete All
                         </button>
                         <button
                             onClick={() => setConfirmBulkDelete(true)}
-                            className="text-xs font-black text-[#ff4d4d] hover:text-[#ff3333] transition-colors uppercase tracking-wider cursor-pointer"
+                            className="text-[12px] font-black text-[#ff4d4d] hover:text-[#ff3333] transition-colors uppercase tracking-wider cursor-pointer"
                         >
                             Delete All
                         </button>
-                        <div className="h-4 w-px bg-slate-700"></div>
-                        <button onClick={() => { setSelectedIds([]); setIsSelectionMode(false); }} className="p-1 hover:bg-white/10 rounded-full transition-colors cursor-pointer">
-                            <FaTimes className="w-3 h-3" />
+                        <div className="h-[16px] w-px bg-slate-700"></div>
+                        <button onClick={() => { setSelectedIds([]); setIsSelectionMode(false); }} className="p-[4px] hover:bg-white/10 rounded-full transition-colors cursor-pointer">
+                            <FaTimes className="w-[12px] h-[12px]" />
                         </button>
                     </div>
                 )}
 
                 {/* MAIN CONTENT GRID */}
-                <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 h-full min-h-0 items-start overflow-y-auto lg:overflow-visible custom-scrollbar pb-10 lg:pb-0">
+                <div className="flex flex-col lg:flex-row gap-[16px] sm:gap-[24px] md:gap-[32px] h-full min-h-0 items-start overflow-y-auto lg:overflow-visible custom-scrollbar pb-[40px] lg:pb-0">
 
                     {/* LEFT SIDE: ADD REMINDER */}
-                    <div className="w-full lg:w-[450px] shrink-0">
-                        <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 shadow-2xl h-auto">
-                            <h2 className="text-base sm:text-lg font-bold mb-4 sm:mb-6 text-slate-800">
+                    <div className="w-full lg:w-[400px] xl:w-[448px] shrink-0">
+                        <div className="glass rounded-[16px] sm:rounded-[24px] md:rounded-[32px] p-[16px] sm:p-[20px] md:p-[24px] shadow-2xl h-auto transition-all">
+                            <h2 className="text-[14px] sm:text-[16px] md:text-[18px] font-black mb-[16px] sm:mb-[24px] text-slate-800 uppercase tracking-widest flex items-center gap-[8px]">
+                                <div className="w-[4px] h-[16px] bg-blue-500 rounded-full"></div>
                                 New task
                             </h2>
                             <ReminderForm onAdd={handleAdd} />
@@ -563,44 +564,47 @@ const Reminders = () => {
                     </div>
 
                     {/* RIGHT SIDE: LIST - SCROLLABLE SECTION */}
-                    <div className="flex-1 min-h-0 w-full mb-10 lg:mb-0">
-                        <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-5 md:p-6 shadow-2xl flex flex-col h-auto sm:min-h-[516px]">
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4 mb-4 sm:mb-6 shrink-0">
-                                <div className="flex items-center gap-2 sm:gap-4">
-                                    <h2 className="text-base sm:text-lg font-bold text-slate-800">
+                    <div className="flex-1 min-h-0 w-full mb-[40px] lg:mb-0">
+                        <div className="glass rounded-[16px] sm:rounded-[24px] md:rounded-[32px] p-[16px] sm:p-[20px] md:p-[24px] shadow-2xl flex flex-col h-auto sm:min-h-[516px]">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-[12px] sm:gap-[16px] mb-[16px] sm:mb-[24px] shrink-0">
+                                <div className="flex flex-wrap items-center gap-[8px] sm:gap-[16px]">
+                                    <h2 className="text-[14px] sm:text-[16px] md:text-[18px] font-black text-slate-800 uppercase tracking-widest flex items-center gap-[8px]">
+                                        <div className="w-[4px] h-[16px] bg-[#2d5bff] rounded-full"></div>
                                         Your Timeline
                                     </h2>
-                                    <span className="text-[10px] sm:text-xs font-bold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                                    <span className="text-[9px] sm:text-[10px] md:text-[12px] font-black px-[8px] sm:px-[12px] py-[2px] sm:py-[4px] rounded-full bg-slate-100 text-slate-600 border border-slate-200 uppercase tracking-widest shrink-0">
                                         {processedReminders.length} Tasks
                                     </span>
-                                    <button
-                                        onClick={() => setShowFilters(!showFilters)}
-                                        className={`ml-2 flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${showFilters ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
-                                    >
-                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                                        </svg>
-                                        <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest">Filters</span>
-                                    </button>
+                                    <div className="flex items-center gap-[4px] sm:gap-[8px]">
+                                        <button
+                                            onClick={() => setShowFilters(!showFilters)}
+                                            className={`flex items-center gap-[6px] sm:gap-[8px] px-[10px] sm:px-[12px] py-[4px] sm:py-[6px] rounded-[8px] border transition-all cursor-pointer ${showFilters ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
+                                        >
+                                            <svg className="w-[12px] h-[12px] sm:w-[14px] sm:h-[14px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                            </svg>
+                                            <span className="text-[9px] sm:text-[10px] md:text-[12px] font-black uppercase tracking-widest">Filters</span>
+                                        </button>
 
-                                    <button
-                                        onClick={() => setIsSelectionMode(!isSelectionMode)}
-                                        className={`ml-1 text-[10px] sm:text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border transition-all cursor-pointer ${isSelectionMode ? 'bg-[#2d5bff] text-white border-[#2d5bff] shadow-lg shadow-blue-500/30' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
-                                    >
-                                        {isSelectionMode ? 'Cancel' : 'Select'}
-                                    </button>
+                                        <button
+                                            onClick={() => setIsSelectionMode(!isSelectionMode)}
+                                            className={`text-[9px] sm:text-[10px] md:text-[12px] font-black uppercase tracking-widest px-[10px] sm:px-[12px] py-[4px] sm:py-[6px] rounded-[8px] border transition-all cursor-pointer ${isSelectionMode ? 'bg-[#2d5bff] text-white border-[#2d5bff] shadow-lg shadow-blue-500/30' : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300'}`}
+                                        >
+                                            {isSelectionMode ? 'Cancel' : 'Select'}
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
                             {/* COLLAPSIBLE FILTERS */}
                             {showFilters && (
-                                <div className="animate-in slide-in-from-top-2 fade-in duration-200 mb-6">
-                                    <div className="flex flex-wrap items-center gap-2 sm:gap-3 p-3 sm:p-4 bg-slate-50 rounded-xl border border-slate-200/60">
+                                <div className="animate-in slide-in-from-top-2 fade-in duration-200 mb-[24px]">
+                                    <div className="flex flex-wrap items-center gap-[8px] sm:gap-[12px] p-[12px] sm:p-[16px] bg-slate-50 rounded-[12px] border border-slate-200/60">
 
                                         {/* 🔍 Search Input */}
                                         <div className="relative shrink-0 group/search flex-1 min-w-[140px]">
-                                            <div className={`flex items-center gap-2 bg-white border px-3 py-2 rounded-xl transition-all ${searchQuery ? 'border-[#2d5bff] ring-2 ring-[#2d5bff]/10' : 'border-slate-200 group-hover/search:border-slate-300'}`}>
-                                                <svg className={`w-3.5 h-3.5 ${searchQuery ? 'text-[#2d5bff]' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <div className={`flex items-center gap-[8px] bg-white border px-[12px] py-[8px] rounded-[12px] transition-all ${searchQuery ? 'border-[#2d5bff] ring-2 ring-[#2d5bff]/10' : 'border-slate-200 group-hover/search:border-slate-300'}`}>
+                                                <svg className={`w-[14px] h-[14px] ${searchQuery ? 'text-[#2d5bff]' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                                 </svg>
                                                 <input
@@ -623,8 +627,8 @@ const Reminders = () => {
 
                                         {/* 📅 Date Search Filter */}
                                         <div className="relative shrink-0">
-                                            <div className={`flex items-center gap-2 bg-white border px-3 py-2 rounded-xl transition-all cursor-pointer ${filterDate ? 'border-[#2d5bff] ring-2 ring-[#2d5bff]/10' : 'border-slate-200 hover:border-slate-300'}`}>
-                                                <svg className={`w-3.5 h-3.5 ${filterDate ? 'text-[#2d5bff]' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <div className={`flex items-center gap-[8px] bg-white border px-[12px] py-[8px] rounded-[12px] transition-all cursor-pointer ${filterDate ? 'border-[#2d5bff] ring-2 ring-[#2d5bff]/10' : 'border-slate-200 hover:border-slate-300'}`}>
+                                                <svg className={`w-[14px] h-[14px] ${filterDate ? 'text-[#2d5bff]' : 'text-slate-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                 </svg>
                                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-wide">Date:</span>
@@ -647,8 +651,8 @@ const Reminders = () => {
 
                                         {/* 🏷️ Category Filter */}
                                         <div className="relative group/cat">
-                                            <div className={`flex items-center gap-2 bg-white border px-3 py-2 rounded-xl transition-all cursor-pointer ${filterCategory ? 'border-[#2d5bff] ring-2 ring-[#2d5bff]/10' : 'border-slate-200 hover:border-slate-300'}`}>
-                                                <div className={`w-2 h-2 rounded-full ${filterCategory ? 'bg-[#2d5bff]' : 'bg-slate-300'}`}></div>
+                                            <div className={`flex items-center gap-[8px] bg-white border px-[12px] py-[8px] rounded-[12px] transition-all cursor-pointer ${filterCategory ? 'border-[#2d5bff] ring-2 ring-[#2d5bff]/10' : 'border-slate-200 hover:border-slate-300'}`}>
+                                                <div className={`w-[8px] h-[8px] rounded-full ${filterCategory ? 'bg-[#2d5bff]' : 'bg-slate-300'}`}></div>
                                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-wide">Category:</span>
                                                 <select
                                                     value={filterCategory}
@@ -680,15 +684,15 @@ const Reminders = () => {
 
                                         {/* 🧪 Sort Control */}
                                         <div className="relative group/sort">
-                                            <div className="flex items-center gap-2 bg-white border border-slate-200 px-3 py-2 rounded-xl shadow-sm hover:border-[#2d5bff]/30 transition-all cursor-pointer relative">
-                                                <svg className="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <div className="flex items-center gap-[8px] bg-white border border-slate-200 px-[12px] py-[8px] rounded-[12px] shadow-sm hover:border-[#2d5bff]/30 transition-all cursor-pointer relative">
+                                                <svg className="w-[14px] h-[14px] text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
                                                 </svg>
                                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-wide">Sort:</span>
                                                 <select
                                                     value={sortBy}
                                                     onChange={(e) => setSortBy(e.target.value)}
-                                                    className="bg-transparent text-[11px] font-bold text-slate-700 outline-none cursor-pointer appearance-none pr-5 min-w-[80px]"
+                                                    className="bg-transparent text-[11px] font-bold text-slate-700 outline-none cursor-pointer appearance-none pr-[20px] min-w-[80px]"
                                                 >
                                                     <option value="due_date">Due Date</option>
                                                     <option value="newest">Newest</option>
@@ -696,7 +700,7 @@ const Reminders = () => {
                                                     <option value="priority">Priority</option>
                                                     <option value="status">Status</option>
                                                 </select>
-                                                <svg className="w-2.5 h-2.5 text-slate-400 absolute right-2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg className="w-[10px] h-[10px] text-slate-400 absolute right-[8px] pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
                                                 </svg>
                                             </div>
@@ -736,30 +740,30 @@ const Reminders = () => {
             </div>
             {/* Completion Confirmation Modal */}
             {confirmToggle && (
-                <div className="fixed inset-0 z-120 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
-                    <div className="bg-white rounded-[32px] p-6 sm:p-8 w-full max-w-[400px] shadow-2xl animate-in zoom-in-95 duration-200 border border-white">
+                <div className="fixed inset-0 z-120 flex items-center justify-center p-[16px] bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[32px] p-[24px] sm:p-[32px] w-full max-w-[400px] shadow-2xl animate-in zoom-in-95 duration-200 border border-white">
                         <div className="flex flex-col items-center text-center">
-                            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-6 border border-blue-100 shadow-lg shadow-blue-500/10">
-                                <div className="w-8 h-8 bg-[#2d5bff] rounded-full flex items-center justify-center animate-pulse">
-                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="w-[64px] h-[64px] bg-blue-50 rounded-full flex items-center justify-center mb-[24px] border border-blue-100 shadow-lg shadow-blue-500/10">
+                                <div className="w-[32px] h-[32px] bg-[#2d5bff] rounded-full flex items-center justify-center animate-pulse">
+                                    <svg className="w-[20px] h-[20px] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" />
                                     </svg>
                                 </div>
                             </div>
-                            <h3 className="text-xl font-black text-slate-800 mb-2 uppercase tracking-tighter">Mark as Complete?</h3>
-                            <p className="text-slate-500 text-sm font-medium mb-8">
+                            <h3 className="text-[20px] font-black text-slate-800 mb-[8px] uppercase tracking-tighter">Mark as Complete?</h3>
+                            <p className="text-slate-500 text-[14px] font-medium mb-[32px]">
                                 High five! 👋 Shall we mark this task as finished and save your progress?
                             </p>
-                            <div className="flex w-full gap-3">
+                            <div className="flex w-full gap-[12px]">
                                 <button
                                     onClick={() => setConfirmToggle(null)}
-                                    className="flex-1 py-3 px-6 rounded-xl font-black text-[11px] tracking-widest uppercase border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
+                                    className="flex-1 py-[12px] px-[24px] rounded-[12px] font-black text-[11px] tracking-widest uppercase border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
                                 >
                                     Not yet
                                 </button>
                                 <button
                                     onClick={confirmCompletion}
-                                    className="flex-1 py-3 px-6 rounded-xl font-black text-[11px] tracking-widest uppercase bg-[#2d5bff] text-white shadow-lg shadow-blue-500/20 hover:bg-blue-600 hover:shadow-xl transition-all active:scale-95 cursor-pointer"
+                                    className="flex-1 py-[12px] px-[24px] rounded-[12px] font-black text-[11px] tracking-widest uppercase bg-[#2d5bff] text-white shadow-lg shadow-blue-500/20 hover:bg-blue-600 hover:shadow-xl transition-all active:scale-95 cursor-pointer"
                                 >
                                     Yes, Done!
                                 </button>
@@ -770,24 +774,24 @@ const Reminders = () => {
             )}
             {/* Bulk Delete Confirmation Modal */}
             {confirmBulkDelete && (
-                <div className="fixed inset-0 z-120 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
-                    <div className="bg-white rounded-[32px] p-6 sm:p-8 w-full max-w-[400px] shadow-2xl animate-in zoom-in-95 duration-200 border border-white">
+                <div className="fixed inset-0 z-120 flex items-center justify-center p-[16px] bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[32px] p-[24px] sm:p-[32px] w-full max-w-[400px] shadow-2xl animate-in zoom-in-95 duration-200 border border-white">
                         <div className="flex flex-col items-center text-center">
-                            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-6 border border-red-100 shadow-lg shadow-red-500/10">
-                                <div className="w-8 h-8 bg-[#ff4d4d] rounded-full flex items-center justify-center animate-pulse">
-                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="w-[64px] h-[64px] bg-red-50 rounded-full flex items-center justify-center mb-[24px] border border-red-100 shadow-lg shadow-red-500/10">
+                                <div className="w-[32px] h-[32px] bg-[#ff4d4d] rounded-full flex items-center justify-center animate-pulse">
+                                    <svg className="w-[20px] h-[20px] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                     </svg>
                                 </div>
                             </div>
-                            <h3 className="text-xl font-black text-slate-800 mb-2 uppercase tracking-tighter">Delete {selectedIds.length} Tasks?</h3>
-                            <p className="text-slate-500 text-sm font-medium mb-8">
+                            <h3 className="text-[20px] font-black text-slate-800 mb-[8px] uppercase tracking-tighter">Delete {selectedIds.length} Tasks?</h3>
+                            <p className="text-slate-500 text-[14px] font-medium mb-[32px]">
                                 Are you sure you want to delete these tasks? This action cannot be undone! 🗑️
                             </p>
-                            <div className="flex w-full gap-3">
+                            <div className="flex w-full gap-[12px]">
                                 <button
                                     onClick={() => setConfirmBulkDelete(false)}
-                                    className="flex-1 py-3 px-6 rounded-xl font-black text-[11px] tracking-widest uppercase border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
+                                    className="flex-1 py-[12px] px-[24px] rounded-[12px] font-black text-[11px] tracking-widest uppercase border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
                                 >
                                     Cancel
                                 </button>
@@ -802,7 +806,7 @@ const Reminders = () => {
                                         } catch (e) { toast.error("Delete failed"); }
                                         finally { setConfirmBulkDelete(false); }
                                     }}
-                                    className="flex-1 py-3 px-6 rounded-xl font-black text-[11px] tracking-widest uppercase bg-[#ff4d4d] text-white shadow-lg shadow-red-500/20 hover:bg-red-600 hover:shadow-xl transition-all active:scale-95 cursor-pointer"
+                                    className="flex-1 py-[12px] px-[24px] rounded-[12px] font-black text-[11px] tracking-widest uppercase bg-[#ff4d4d] text-white shadow-lg shadow-red-500/20 hover:bg-red-600 hover:shadow-xl transition-all active:scale-95 cursor-pointer"
                                 >
                                     Yes, Delete
                                 </button>
