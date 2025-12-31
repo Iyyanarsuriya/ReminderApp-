@@ -15,3 +15,7 @@ export const updateReminder = async (id, updateData) => {
 export const deleteReminder = async (id) => {
     return await axiosInstance.delete(`/reminders/${id}`);
 };
+
+export const triggerMissedAlert = async () => {
+    return await axiosInstance.post('/reminders/send-missed-alert');
+};

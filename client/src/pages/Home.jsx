@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { getReminders, createReminder, updateReminder, deleteReminder } from '../api/homeApi';
+import { getReminders, createReminder, updateReminder, deleteReminder, triggerMissedAlert } from '../api/homeApi';
 import { getMe } from '../api/authApi';
 import { API_URL } from '../api/axiosInstance';
 import ReminderForm from '../components/ReminderForm';
@@ -110,7 +110,10 @@ const Home = () => {
                 const dueDateMs = dueDate.getTime();
                 const lastNotifyTime = JSON.parse(localStorage.getItem('lastNotifiedTimes') || '{}')[reminder.id] || 0;
 
-                if (nowMs >= dueDateMs - 30000 && (nowMs - lastNotifyTime >= 300000)) {
+                // Only notify if it's due today (to avoid confusion with filtered lists)
+                const isDueToday = reminder.due_date.startsWith(new Date().toISOString().split('T')[0]);
+
+                if (isDueToday && nowMs >= dueDateMs - 30000 && (nowMs - lastNotifyTime >= 300000)) {
                     // Show In-App Toast
                     const tId = toast.custom((t) => (
                         <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-[95%] xs:w-[90%] sm:w-full bg-slate-900 shadow-2xl rounded-2xl pointer-events-auto flex flex-col ring-1 ring-black ring-opacity-5 overflow-hidden border border-slate-700 mt-4`}>
@@ -191,9 +194,30 @@ const Home = () => {
                                     1h
                                 </button>
                                 <button
+                                    onClick={async () => {
+                                        toast.remove(t.id);
+                                        delete activeToastsRef.current[reminder.id];
+                                        try {
+                                            await updateReminder(reminder.id, { is_completed: true });
+                                            setReminders(prev => prev.map(r => r.id === reminder.id ? { ...r, is_completed: true } : r));
+                                            toast.success("Task completed!", { icon: '✅' });
+                                        } catch {
+                                            toast.error("Failed to complete task");
+                                        }
+                                    }}
+                                    className="flex-1 py-3 text-[10px] sm:text-xs font-black text-emerald-400 hover:bg-slate-700 transition-colors uppercase tracking-wider cursor-pointer"
+                                >
+                                    Done
+                                </button>
+                                <button
                                     onClick={() => {
                                         toast.remove(t.id);
                                         delete activeToastsRef.current[reminder.id];
+                                        // Dismiss = Suppress for 1 hour locally
+                                        setLastNotifiedTimes(prev => ({
+                                            ...prev,
+                                            [reminder.id]: Date.now() + 3600000 - 300000 // Offset so it triggers in 1 hour
+                                        }));
                                     }}
                                     className="flex-1 py-3 text-[10px] sm:text-xs font-black text-[#2d5bff] hover:bg-slate-700 transition-colors uppercase tracking-wider cursor-pointer"
                                 >
@@ -283,7 +307,14 @@ const Home = () => {
         }
     }, [notifications.length, loading, hasShownAgenda]);
 
-    // Memoize handlers to prevent unnecessary re-renders of child components
+    const handleTriggerMissedAlert = async () => {
+        try {
+            await triggerMissedAlert();
+            toast.success("Missed task check triggered!");
+        } catch (error) {
+            toast.error("Failed to trigger missed task check");
+        }
+    };
     const handleAdd = useCallback(async (reminderData) => {
         try {
             const res = await createReminder(reminderData);
@@ -440,6 +471,17 @@ const Home = () => {
                                 </>
                             )}
                         </div>
+
+                        {/* ✉️ Trigger Missed Alert Button (Mobile/Dev) */}
+                        <button
+                            onClick={handleTriggerMissedAlert}
+                            title="Test Missed Task Notifications"
+                            className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-lg transition-all active:scale-95"
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                        </button>
 
                         {/* User Info */}
                         <div className="flex items-center gap-2 sm:gap-4">
