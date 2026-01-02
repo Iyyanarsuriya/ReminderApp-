@@ -12,7 +12,7 @@ import GlobalModals from './components/modals/GlobalModals';
 const LandingPage = lazy(() => import('./pages/LandingPage'));
 const Home = lazy(() => import('./pages/Home'));
 const Reminders = lazy(() => import('./pages/Reminders'));
-const Profile = lazy(() => import('./pages/Profile'));
+const Profile = lazy(() => import('./pages/ReminderDashboard'));
 const FinanceProfile = lazy(() => import('./pages/FinanceProfile'));
 const ExpenseTracker = lazy(() => import('./pages/ExpenseTracker'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
@@ -84,7 +84,14 @@ const AppContent = () => {
       fetchUserData();
       fetchTodayReminders();
       const interval = setInterval(fetchTodayReminders, 60000); // Refresh every minute
-      return () => clearInterval(interval);
+
+      const handleRefresh = () => fetchTodayReminders();
+      window.addEventListener('refresh-reminders', handleRefresh);
+
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener('refresh-reminders', handleRefresh);
+      };
     }
   }, [token]);
 
@@ -97,9 +104,15 @@ const AppContent = () => {
       if (!newToken) setUser(null);
     };
 
+    const handleRefreshReminders = () => fetchTodayReminders();
+
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+    window.addEventListener('refresh-reminders', handleRefreshReminders);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('refresh-reminders', handleRefreshReminders);
+    };
+  }, [token]);
 
   const handleLogout = () => {
     localStorage.clear();

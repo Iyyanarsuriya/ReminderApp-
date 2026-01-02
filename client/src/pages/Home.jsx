@@ -76,11 +76,11 @@ const Home = () => {
                             <div className="relative z-10 scale-105 lg:scale-110">
                                 <div className="bg-white rounded-[48px] p-4 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] border border-white max-w-[550px]">
                                     <div className="bg-[#1a1c21] rounded-[32px] overflow-hidden shadow-2xl p-2">
-                                        <div className="aspect-4/5 relative rounded-2xl overflow-hidden bg-[#2d5bff]/5">
+                                        <div className="aspect-square relative rounded-2xl overflow-hidden bg-white">
                                             <img
                                                 src="/landing_illustration.png"
                                                 alt="Dashboard Illustration"
-                                                className="w-full h-full object-contain transform hover:scale-105 transition-transform duration-700 p-4 bg-white"
+                                                className="w-full h-full object-contain transform hover:scale-105 transition-transform duration-700"
                                             />
                                         </div>
                                     </div>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 
-function ReminderForm({ onAdd }) {
+function ReminderForm({ onAdd, categories = [] }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -26,7 +26,7 @@ function ReminderForm({ onAdd }) {
     setDescription('');
     setDueDate('');
     setPriority('low');
-    setCategory('General');
+    setCategory(categories[0]?.name || 'General');
     setRecurrenceType('none');
   };
 
@@ -114,12 +114,12 @@ function ReminderForm({ onAdd }) {
               onChange={(e) => setCategory(e.target.value)}
               className="w-full bg-slate-50 border border-slate-200 rounded-[8px] sm:rounded-[12px] px-[12px] sm:px-[16px] py-[8px] sm:py-[12px] text-slate-800 input-focus text-[12px] sm:text-[14px] md:text-[16px] font-medium appearance-none cursor-pointer"
             >
-              <option value="General">General</option>
-              <option value="Work">Work</option>
-              <option value="Personal">Personal</option>
-              <option value="Health">Health</option>
-              <option value="Study">Study</option>
-              <option value="Finance">Finance</option>
+              {categories.map((cat) => (
+                <option key={cat.id || cat.name} value={cat.name}>
+                  {cat.name}
+                </option>
+              ))}
+              {categories.length === 0 && <option value="General">General</option>}
             </select>
             <ChevronDown className="absolute right-[12px] top-1/2 -translate-y-1/2 w-[16px] h-[16px] text-slate-400 pointer-events-none" />
           </div>

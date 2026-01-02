@@ -8,12 +8,12 @@ const authRoutes = require("./routes/authRoutes");
 const reminderRoutes = require("./routes/reminderRoutes");
 const pushRoutes = require("./routes/pushRoutes");
 const transactionRoutes = require("./routes/transactionRoutes");
+const categoryRoutes = require("./routes/categoryRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const db = require("./config/db");
 const { initCronJobs } = require("./jobs/cronService");
-
 // Start Cron Jobs
 initCronJobs();
 
@@ -32,6 +32,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/reminders", reminderRoutes);
 app.use("/api/push", pushRoutes);
 app.use("/api/transactions", transactionRoutes);
+app.use("/api/categories", categoryRoutes);
 
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);

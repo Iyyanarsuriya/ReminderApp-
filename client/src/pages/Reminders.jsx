@@ -7,6 +7,9 @@ import ReminderList from '../components/ReminderList';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { FaBell, FaTimes } from 'react-icons/fa';
+import { LayoutDashboard, Settings } from 'lucide-react';
+import { getCategories } from '../api/categoryApi';
+import CategoryManager from '../components/CategoryManager';
 
 const Reminders = () => {
     const [reminders, setReminders] = useState([]);
@@ -25,6 +28,8 @@ const Reminders = () => {
     const [selectedIds, setSelectedIds] = useState([]);
     const [showFilters, setShowFilters] = useState(false);
     const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+    const [categories, setCategories] = useState([]);
+    const [showCategoryManager, setShowCategoryManager] = useState(false);
 
     const lastFetchRef = useRef(0);
 
@@ -36,12 +41,14 @@ const Reminders = () => {
         }
 
         try {
-            const [remindersRes, userRes] = await Promise.all([
+            const [remindersRes, userRes, categoriesRes] = await Promise.all([
                 getReminders(),
-                getMe()
+                getMe(),
+                getCategories()
             ]);
             setReminders(remindersRes.data);
             setUser(userRes.data);
+            setCategories(categoriesRes.data);
             localStorage.setItem('user', JSON.stringify(userRes.data));
             lastFetchRef.current = Date.now();
         } catch (error) {
@@ -319,6 +326,7 @@ const Reminders = () => {
         try {
             const res = await createReminder(reminderData);
             setReminders(prev => [res.data, ...prev]);
+            window.dispatchEvent(new Event('refresh-reminders'));
             toast.success("Reminder added!");
         } catch {
             toast.error("Failed to add reminder");
@@ -333,6 +341,7 @@ const Reminders = () => {
                 setReminders(prev => prev.map(r =>
                     r.id === id ? { ...r, is_completed: false } : r
                 ));
+                window.dispatchEvent(new Event('refresh-reminders'));
                 toast.success("Task marked as incomplete");
             } catch {
                 toast.error("Update failed");
@@ -353,6 +362,7 @@ const Reminders = () => {
             setReminders(prev => prev.map(r =>
                 r.id === id ? { ...r, is_completed: true } : r
             ));
+            window.dispatchEvent(new Event('refresh-reminders'));
             toast.success("Task completed! 🥳");
         } catch {
             toast.error("Update failed");
@@ -365,6 +375,7 @@ const Reminders = () => {
         try {
             await deleteReminder(id);
             setReminders(prev => prev.filter(r => r.id !== id));
+            window.dispatchEvent(new Event('refresh-reminders'));
             toast.success("Reminder deleted");
         } catch {
             toast.error("Delete failed");
@@ -476,12 +487,21 @@ const Reminders = () => {
                         <button
                             onClick={handleTriggerMissedAlert}
                             title="Test Missed Task Notifications"
-                            className="bg-white/10 hover:bg-white/20 text-white p-[8px] rounded-[8px] transition-all active:scale-95"
+                            className="bg-white/10 hover:bg-white/20 text-white p-[8px] rounded-[8px] transition-all active:scale-95 flex items-center justify-center shrink-0"
                         >
                             <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                             </svg>
                         </button>
+
+                        {/* 📊 Dashboard Shortcut Button */}
+                        <Link
+                            to="/profile"
+                            title="Go to Dashboard"
+                            className="bg-white/10 hover:bg-white/20 text-white p-[8px] rounded-[8px] transition-all active:scale-95 flex items-center justify-center shrink-0"
+                        >
+                            <LayoutDashboard className="w-[20px] h-[20px]" />
+                        </Link>
                     </div>
                 </div>
 
@@ -497,6 +517,7 @@ const Reminders = () => {
                                 try {
                                     await Promise.all(selectedIds.map(id => updateReminder(id, { is_completed: true })));
                                     setReminders(prev => prev.map(r => selectedIds.includes(r.id) ? { ...r, is_completed: true } : r));
+                                    window.dispatchEvent(new Event('refresh-reminders'));
                                     toast.success(`${selectedIds.length} tasks completed`);
                                     setSelectedIds([]);
                                     setIsSelectionMode(false);
@@ -529,7 +550,7 @@ const Reminders = () => {
                                 <div className="w-[4px] h-[16px] bg-blue-500 rounded-full"></div>
                                 New task
                             </h2>
-                            <ReminderForm onAdd={handleAdd} />
+                            <ReminderForm onAdd={handleAdd} categories={categories} />
                         </div>
                     </div>
 
@@ -620,7 +641,7 @@ const Reminders = () => {
                                         </div>
 
                                         {/* 🏷️ Category Filter */}
-                                        <div className="relative group/cat">
+                                        <div className="relative group/cat flex items-center gap-[8px]">
                                             <div className={`flex items-center gap-[8px] bg-white border px-[12px] py-[8px] rounded-[12px] transition-all cursor-pointer ${filterCategory ? 'border-[#2d5bff] ring-2 ring-[#2d5bff]/10' : 'border-slate-200 hover:border-slate-300'}`}>
                                                 <div className={`w-[8px] h-[8px] rounded-full ${filterCategory ? 'bg-[#2d5bff]' : 'bg-slate-300'}`}></div>
                                                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-wide">Category:</span>
@@ -630,12 +651,10 @@ const Reminders = () => {
                                                     className="bg-transparent text-[11px] font-bold text-slate-700 outline-none cursor-pointer appearance-none min-w-[60px]"
                                                 >
                                                     <option value="">All</option>
-                                                    <option value="Work">Work</option>
-                                                    <option value="Personal">Personal</option>
-                                                    <option value="Health">Health</option>
-                                                    <option value="Study">Study</option>
-                                                    <option value="Finance">Finance</option>
-                                                    <option value="General">General</option>
+                                                    {categories.map(cat => (
+                                                        <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                                    ))}
+                                                    {categories.length === 0 && <option value="General">General</option>}
                                                 </select>
                                                 {filterCategory ? (
                                                     <button
@@ -650,8 +669,14 @@ const Reminders = () => {
                                                     </svg>
                                                 )}
                                             </div>
+                                            <button
+                                                onClick={() => setShowCategoryManager(true)}
+                                                className="p-2 bg-white border border-slate-200 rounded-[12px] text-slate-400 hover:text-[#2d5bff] hover:border-[#2d5bff]/30 transition-all cursor-pointer shadow-sm group/cat-btn shrink-0"
+                                                title="Manage Categories"
+                                            >
+                                                <Settings className="w-[14px] h-[14px] group-hover/cat-btn:rotate-45 transition-transform" />
+                                            </button>
                                         </div>
-
                                         {/* 🧪 Sort Control */}
                                         <div className="relative group/sort">
                                             <div className="flex items-center gap-[8px] bg-white border border-slate-200 px-[12px] py-[8px] rounded-[12px] shadow-sm hover:border-[#2d5bff]/30 transition-all cursor-pointer relative">
@@ -709,81 +734,97 @@ const Reminders = () => {
 
             </div>
             {/* Completion Confirmation Modal */}
-            {confirmToggle && (
-                <div className="fixed inset-0 z-120 flex items-center justify-center p-[16px] bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
-                    <div className="bg-white rounded-[32px] p-[24px] sm:p-[32px] w-full max-w-[400px] shadow-2xl animate-in zoom-in-95 duration-200 border border-white">
-                        <div className="flex flex-col items-center text-center">
-                            <div className="w-[64px] h-[64px] bg-blue-50 rounded-full flex items-center justify-center mb-[24px] border border-blue-100 shadow-lg shadow-blue-500/10">
-                                <div className="w-[32px] h-[32px] bg-[#2d5bff] rounded-full flex items-center justify-center animate-pulse">
-                                    <svg className="w-[20px] h-[20px] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" />
-                                    </svg>
+            {
+                confirmToggle && (
+                    <div className="fixed inset-0 z-120 flex items-center justify-center p-[16px] bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+                        <div className="bg-white rounded-[32px] p-[24px] sm:p-[32px] w-full max-w-[400px] shadow-2xl animate-in zoom-in-95 duration-200 border border-white">
+                            <div className="flex flex-col items-center text-center">
+                                <div className="w-[64px] h-[64px] bg-blue-50 rounded-full flex items-center justify-center mb-[24px] border border-blue-100 shadow-lg shadow-blue-500/10">
+                                    <div className="w-[32px] h-[32px] bg-[#2d5bff] rounded-full flex items-center justify-center animate-pulse">
+                                        <svg className="w-[20px] h-[20px] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
                                 </div>
-                            </div>
-                            <h3 className="text-[20px] font-black text-slate-800 mb-[8px] uppercase tracking-tighter">Mark as Complete?</h3>
-                            <p className="text-slate-500 text-[14px] font-medium mb-[32px]">
-                                High five! 👋 Shall we mark this task as finished and save your progress?
-                            </p>
-                            <div className="flex w-full gap-[12px]">
-                                <button
-                                    onClick={() => setConfirmToggle(null)}
-                                    className="flex-1 py-[12px] px-[24px] rounded-[12px] font-black text-[11px] tracking-widest uppercase border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
-                                >
-                                    Not yet
-                                </button>
-                                <button
-                                    onClick={confirmCompletion}
-                                    className="flex-1 py-[12px] px-[24px] rounded-[12px] font-black text-[11px] tracking-widest uppercase bg-[#2d5bff] text-white shadow-lg shadow-blue-500/20 hover:bg-blue-600 hover:shadow-xl transition-all active:scale-95 cursor-pointer"
-                                >
-                                    Yes, Done!
-                                </button>
+                                <h3 className="text-[20px] font-black text-slate-800 mb-[8px] uppercase tracking-tighter">Mark as Complete?</h3>
+                                <p className="text-slate-500 text-[14px] font-medium mb-[32px]">
+                                    High five! 👋 Shall we mark this task as finished and save your progress?
+                                </p>
+                                <div className="flex w-full gap-[12px]">
+                                    <button
+                                        onClick={() => setConfirmToggle(null)}
+                                        className="flex-1 py-[12px] px-[24px] rounded-[12px] font-black text-[11px] tracking-widest uppercase border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
+                                    >
+                                        Not yet
+                                    </button>
+                                    <button
+                                        onClick={confirmCompletion}
+                                        className="flex-1 py-[12px] px-[24px] rounded-[12px] font-black text-[11px] tracking-widest uppercase bg-[#2d5bff] text-white shadow-lg shadow-blue-500/20 hover:bg-blue-600 hover:shadow-xl transition-all active:scale-95 cursor-pointer"
+                                    >
+                                        Yes, Done!
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
             {/* Bulk Delete Confirmation Modal */}
-            {confirmBulkDelete && (
-                <div className="fixed inset-0 z-120 flex items-center justify-center p-[16px] bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
-                    <div className="bg-white rounded-[32px] p-[24px] sm:p-[32px] w-full max-w-[400px] shadow-2xl animate-in zoom-in-95 duration-200 border border-white">
-                        <div className="flex flex-col items-center text-center">
-                            <div className="w-[64px] h-[64px] bg-red-50 rounded-full flex items-center justify-center mb-[24px] border border-red-100 shadow-lg shadow-red-500/10">
-                                <div className="w-[32px] h-[32px] bg-[#ff4d4d] rounded-full flex items-center justify-center animate-pulse">
-                                    <svg className="w-[20px] h-[20px] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
+            {
+                confirmBulkDelete && (
+                    <div className="fixed inset-0 z-120 flex items-center justify-center p-[16px] bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-200">
+                        <div className="bg-white rounded-[32px] p-[24px] sm:p-[32px] w-full max-w-[400px] shadow-2xl animate-in zoom-in-95 duration-200 border border-white">
+                            <div className="flex flex-col items-center text-center">
+                                <div className="w-[64px] h-[64px] bg-red-50 rounded-full flex items-center justify-center mb-[24px] border border-red-100 shadow-lg shadow-red-500/10">
+                                    <div className="w-[32px] h-[32px] bg-[#ff4d4d] rounded-full flex items-center justify-center animate-pulse">
+                                        <svg className="w-[20px] h-[20px] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </div>
                                 </div>
-                            </div>
-                            <h3 className="text-[20px] font-black text-slate-800 mb-[8px] uppercase tracking-tighter">Delete {selectedIds.length} Tasks?</h3>
-                            <p className="text-slate-500 text-[14px] font-medium mb-[32px]">
-                                Are you sure you want to delete these tasks? This action cannot be undone! 🗑️
-                            </p>
-                            <div className="flex w-full gap-[12px]">
-                                <button
-                                    onClick={() => setConfirmBulkDelete(false)}
-                                    className="flex-1 py-[12px] px-[24px] rounded-[12px] font-black text-[11px] tracking-widest uppercase border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={async () => {
-                                        try {
-                                            await Promise.all(selectedIds.map(id => deleteReminder(id)));
-                                            setReminders(prev => prev.filter(r => !selectedIds.includes(r.id)));
-                                            toast.success("Tasks deleted");
-                                            setSelectedIds([]);
-                                            setIsSelectionMode(false);
-                                        } catch (e) { toast.error("Delete failed"); }
-                                        finally { setConfirmBulkDelete(false); }
-                                    }}
-                                    className="flex-1 py-[12px] px-[24px] rounded-[12px] font-black text-[11px] tracking-widest uppercase bg-[#ff4d4d] text-white shadow-lg shadow-red-500/20 hover:bg-red-600 hover:shadow-xl transition-all active:scale-95 cursor-pointer"
-                                >
-                                    Yes, Delete
-                                </button>
+                                <h3 className="text-[20px] font-black text-slate-800 mb-[8px] uppercase tracking-tighter">Delete {selectedIds.length} Tasks?</h3>
+                                <p className="text-slate-500 text-[14px] font-medium mb-[32px]">
+                                    Are you sure you want to delete these tasks? This action cannot be undone! 🗑️
+                                </p>
+                                <div className="flex w-full gap-[12px]">
+                                    <button
+                                        onClick={() => setConfirmBulkDelete(false)}
+                                        className="flex-1 py-[12px] px-[24px] rounded-[12px] font-black text-[11px] tracking-widest uppercase border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all active:scale-95 cursor-pointer"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                await Promise.all(selectedIds.map(id => deleteReminder(id)));
+                                                setReminders(prev => prev.filter(r => !selectedIds.includes(r.id)));
+                                                window.dispatchEvent(new Event('refresh-reminders'));
+                                                toast.success("Tasks deleted");
+                                                setSelectedIds([]);
+                                                setIsSelectionMode(false);
+                                            } catch (e) { toast.error("Delete failed"); }
+                                            finally { setConfirmBulkDelete(false); }
+                                        }}
+                                        className="flex-1 py-[12px] px-[24px] rounded-[12px] font-black text-[11px] tracking-widest uppercase bg-[#ff4d4d] text-white shadow-lg shadow-red-500/20 hover:bg-red-600 hover:shadow-xl transition-all active:scale-95 cursor-pointer"
+                                    >
+                                        Yes, Delete
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                )
+            }
+            {/* Category Manager Modal */}
+            {showCategoryManager && (
+                <CategoryManager
+                    categories={categories}
+                    onUpdate={() => {
+                        getCategories().then(res => setCategories(res.data));
+                        // No need to refresh reminders, but good practice
+                    }}
+                    onClose={() => setShowCategoryManager(false)}
+                />
             )}
         </div>
     );

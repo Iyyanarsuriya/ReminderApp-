@@ -99,11 +99,11 @@ const LandingPage = ({ token, user, onProfileClick, onSignupClick }) => {
                             <div className="relative z-10 scale-105 lg:scale-110">
                                 <div className={`navigate-home-container bg-white rounded-[32px] sm:rounded-[48px] p-2 sm:p-4 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] border border-white ${!isLoggedIn ? 'max-w-[450px]' : 'max-w-[550px]'}`}>
                                     <div className="bg-[#1a1c21] rounded-[24px] sm:rounded-[32px] overflow-hidden shadow-2xl p-1.5 sm:p-2">
-                                        <div className="aspect-4/5 relative rounded-xl sm:rounded-2xl overflow-hidden bg-[#2d5bff]/5">
+                                        <div className="aspect-square relative rounded-xl sm:rounded-2xl overflow-hidden bg-white">
                                             <img
                                                 src="/landing_illustration.png"
                                                 alt="Organizer Display"
-                                                className="w-full h-full object-contain transform hover:scale-105 transition-transform duration-700 p-4 bg-white"
+                                                className="w-full h-full object-contain transform hover:scale-105 transition-transform duration-700"
                                             />
                                         </div>
                                     </div>

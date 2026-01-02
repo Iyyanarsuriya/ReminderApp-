@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { FaGoogle } from 'react-icons/fa';
 import { Settings, LogOut, Calendar, LayoutDashboard } from 'lucide-react';
 
-const Profile = () => {
+const ReminderDashboard = () => {
     const [user, setUser] = useState(() => {
         const saved = localStorage.getItem('user');
         return saved ? JSON.parse(saved) : { username: '', email: '' };
@@ -181,4 +181,4 @@ const Profile = () => {
     );
 };
 
-export default Profile;
+export default ReminderDashboard;
