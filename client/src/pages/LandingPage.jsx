@@ -101,13 +101,9 @@ const LandingPage = ({ token, user, onProfileClick, onSignupClick }) => {
                                     <div className="bg-[#1a1c21] rounded-[24px] sm:rounded-[32px] overflow-hidden shadow-2xl p-1.5 sm:p-2">
                                         <div className="aspect-4/5 relative rounded-xl sm:rounded-2xl overflow-hidden bg-[#2d5bff]/5">
                                             <img
-                                                src="/landing_hero.png"
+                                                src="/landing_illustration.png"
                                                 alt="Organizer Display"
-                                                className="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700"
-                                                onError={(e) => {
-                                                    // High quality colorful clipboard illustration fallback
-                                                    e.target.src = 'https://img.freepik.com/free-vector/clipboard-with-checking-list-icon-illustration_53876-136502.jpg?w=800';
-                                                }}
+                                                className="w-full h-full object-contain transform hover:scale-105 transition-transform duration-700 p-4 bg-white"
                                             />
                                         </div>
                                     </div>
