@@ -132,18 +132,18 @@ const Navbar = ({
                                 onClick={onProfileClick}
                                 className="w-[36px] h-[36px] sm:w-[42px] sm:h-[42px] rounded-full bg-linear-to-br from-[#2d5bff] to-[#6366f1] border-2 border-white/20 overflow-hidden hover:border-white transition-all active:scale-90 cursor-pointer shadow-lg shadow-blue-500/20 flex items-center justify-center group"
                             >
-                                {(user?.profile_image && !imageError) ? (
+                                {/* {(user?.profile_image && !imageError) ? (
                                     <img
                                         src={user.profile_image.startsWith('http') ? user.profile_image : `${API_URL}${user.profile_image}`}
                                         alt="Profile"
                                         className="w-full h-full object-cover"
                                         onError={() => setImageError(true)}
                                     />
-                                ) : (
-                                    <span className="text-white font-black text-[15px] sm:text-[16px] tracking-tight">
-                                        {user?.username ? user.username.charAt(0).toUpperCase() : '?'}
-                                    </span>
-                                )}
+                                ) : ( */}
+                                <span className="text-white font-black text-[15px] sm:text-[16px] tracking-tight">
+                                    {user?.username ? user.username.charAt(0).toUpperCase() : '?'}
+                                </span>
+                                {/* )} */}
                             </button>
                         </div>
                     )}
