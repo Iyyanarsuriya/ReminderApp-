@@ -5,7 +5,7 @@ import { disconnectGoogle, getGoogleAuthUrl, getMe } from '../api/authApi';
 import { API_URL } from '../api/axiosInstance';
 import toast from 'react-hot-toast';
 import { FaGoogle } from 'react-icons/fa';
-import { Settings, LogOut, Calendar, LayoutDashboard } from 'lucide-react';
+import { Settings, LogOut, Calendar, LayoutDashboard, ArrowLeft } from 'lucide-react';
 
 const ReminderDashboard = () => {
     const [user, setUser] = useState(() => {
@@ -118,8 +118,20 @@ const ReminderDashboard = () => {
             <div className="max-w-[1024px] mx-auto">
 
                 {/* Header Row with Date Picker */}
-                <div className="flex justify-end mb-[32px] relative z-60">
-                    <div className="relative group">
+                {/* Header Row with Date Picker */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-[32px] relative z-60">
+                    {/* Back Button */}
+                    <button
+                        onClick={() => navigate('/reminders')}
+                        className="group flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-2xl hover:border-blue-500 transition-all shadow-sm hover:shadow-md cursor-pointer"
+                    >
+                        <div className="w-8 h-8 rounded-full bg-slate-50 group-hover:bg-blue-50 flex items-center justify-center transition-colors">
+                            <ArrowLeft className="w-4 h-4 text-slate-500 group-hover:text-blue-500 transition-colors" />
+                        </div>
+                        <span className="font-black text-xs text-slate-600 group-hover:text-blue-600 uppercase tracking-widest">Back to Reminders</span>
+                    </button>
+
+                    <div className="relative group self-end sm:self-auto">
                         <input
                             type="date"
                             value={filterDate}
@@ -210,7 +222,7 @@ const ReminderDashboard = () => {
 
                 {/* Task Details Modal */}
                 {showModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                         {/* Backdrop */}
                         <div
                             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
