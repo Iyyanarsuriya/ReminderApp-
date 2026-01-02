@@ -12,7 +12,7 @@ const Login = ({ setToken, onClose, onSwitch }) => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  // Load saved email on mount
+  // Load saved email on 
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail');
     if (savedEmail) {
