@@ -18,19 +18,7 @@ export default defineConfig({
     }
   },
   build: {
-    chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('lucide-react')) return 'vendor-lucide';
-            if (id.includes('react')) return 'vendor-react';
-            if (id.includes('axios')) return 'vendor-axios';
-            return 'vendor'; // all other node_modules
-          }
-        }
-      }
-    }
+    chunkSizeWarningLimit: 2000
   }
 })
 
