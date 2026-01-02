@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Toaster, useToasterStore, toast } from 'react-hot-toast';
 import { getReminders } from './api/homeApi';
@@ -8,14 +8,14 @@ import { updateProfile, getMe } from './api/authApi';
 import Navbar from './components/layout/Navbar';
 import GlobalModals from './components/modals/GlobalModals';
 
-// Pages
-import LandingPage from './pages/LandingPage';
-import Home from './pages/Home';
-import Reminders from './pages/Reminders';
-import Profile from './pages/Profile';
-import FinanceProfile from './pages/FinanceProfile';
-import ExpenseTracker from './pages/ExpenseTracker';
-import ForgotPassword from './pages/ForgotPassword';
+// Pages (Lazy Loaded)
+const LandingPage = lazy(() => import('./pages/LandingPage'));
+const Home = lazy(() => import('./pages/Home'));
+const Reminders = lazy(() => import('./pages/Reminders'));
+const Profile = lazy(() => import('./pages/Profile'));
+const FinanceProfile = lazy(() => import('./pages/FinanceProfile'));
+const ExpenseTracker = lazy(() => import('./pages/ExpenseTracker'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -192,16 +192,22 @@ const AppContent = () => {
         setToken={setToken}
       />
 
-      <main className="pt-[72px] sm:pt-[80px]">
-        <Routes>
-          <Route path="/" element={token ? <Home /> : <LandingPage onSignupClick={() => setShowSignupModal(true)} />} />
-          <Route path="/reminders" element={<ProtectedRoute><Reminders /></ProtectedRoute>} />
-          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-          <Route path="/finance" element={<ProtectedRoute><FinanceProfile /></ProtectedRoute>} />
-          <Route path="/expenses" element={<ProtectedRoute><ExpenseTracker /></ProtectedRoute>} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+      <main className="pt-[72px] sm:pt-[80px] overflow-x-hidden">
+        <Suspense fallback={
+          <div className="min-h-[60vh] flex items-center justify-center bg-[#f8fafc]">
+            <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        }>
+          <Routes>
+            <Route path="/" element={token ? <Home /> : <LandingPage onSignupClick={() => setShowSignupModal(true)} />} />
+            <Route path="/reminders" element={<ProtectedRoute><Reminders /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/finance" element={<ProtectedRoute><FinanceProfile /></ProtectedRoute>} />
+            <Route path="/expenses" element={<ProtectedRoute><ExpenseTracker /></ProtectedRoute>} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
       </main>
     </div>
   );
