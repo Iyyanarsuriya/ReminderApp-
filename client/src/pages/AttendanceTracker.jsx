@@ -23,6 +23,8 @@ import {
 } from 'recharts';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { exportToCSV, exportToTXT, exportToPDF } from '../utils/exportUtils';
+import ExportButtons from '../components/ExportButtons';
 import { FaFileAlt } from 'react-icons/fa';
 import ProjectManager from '../components/ProjectManager';
 import MemberManager from '../components/MemberManager';
@@ -212,14 +214,13 @@ const AttendanceTracker = () => {
 
     // Export Functions
     const handleExportCSV = (data = attendances, filters = {}) => {
-        const reportData = data;
-        if (reportData.length === 0) {
+        if (data.length === 0) {
             toast.error("No data to export");
             return;
         }
 
         const headers = ["Date", "Member", "Status", "Subject", "Project", "Note"];
-        const rows = reportData.map(a => [
+        const rows = data.map(a => [
             new Date(a.date).toLocaleDateString('en-GB'),
             a.member_name || 'N/A',
             a.status.toUpperCase(),
@@ -232,116 +233,82 @@ const AttendanceTracker = () => {
             ? `${filters.startDate}_to_${filters.endDate}`
             : currentPeriod;
 
-        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", `attendance_report_${periodStr}.csv`);
-        link.click();
+        exportToCSV(headers, rows, `attendance_report_${periodStr}`);
     };
 
     const handleExportTXT = (data = attendances, reportStats = stats, filters = {}) => {
-        const reportData = data;
-        if (reportData.length === 0) {
+        if (data.length === 0) {
             toast.error("No data to export");
             return;
         }
-
-        let txt = `ATTENDANCE REPORT\n`;
-        const now = new Date();
-        const nowFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${now.getHours() % 12 || 12}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'PM' : 'AM'}`;
 
         const periodStr = filters.startDate && filters.endDate
             ? `${filters.startDate} to ${filters.endDate}`
             : (periodType === 'range' ? `${customRange.start} to ${customRange.end}` : currentPeriod);
 
-        txt += `Period: ${periodStr}\n`;
-        txt += `Generated on: ${nowFormatted}\n\n`;
+        const statsArray = reportStats.map(s => ({
+            label: s.status.toUpperCase(),
+            value: s.count
+        }));
 
-        txt += `SUMMARIZED STATS\n`;
-        txt += `-------------------\n`;
-        reportStats.forEach(s => {
-            txt += `${s.status.toUpperCase()}: ${s.count}\n`;
-        });
-        txt += `\n`;
-
-        txt += `ATTENDANCE LOG\n`;
-        txt += `-------------------\n`;
-        reportData.forEach(a => {
+        const logHeaders = ["Date", "Member", "Status", "Subject"];
+        const logRows = data.map(a => {
             const d = new Date(a.date);
             const dateFmt = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-            txt += `${dateFmt} | ${a.member_name?.padEnd(20) || 'N/A'.padEnd(20)} | ${a.status.toUpperCase().padEnd(10)} | ${a.subject}\n`;
+            return [dateFmt, a.member_name || 'N/A', a.status.toUpperCase(), a.subject];
         });
 
-        const blob = new Blob([txt], { type: 'text/plain;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.setAttribute("href", URL.createObjectURL(blob));
-        link.setAttribute("download", `attendance_report_${periodStr}.txt`);
-        link.click();
+        exportToTXT({
+            title: 'Attendance Report',
+            period: periodStr,
+            stats: statsArray,
+            logHeaders,
+            logRows,
+            filename: `attendance_report_${periodStr}`
+        });
     };
 
     const handleExportPDF = (data = attendances, reportStats = stats, filters = {}) => {
-        const reportData = data;
-        if (reportData.length === 0) {
+        if (data.length === 0) {
             toast.error("No data to export");
             return;
         }
 
-        const doc = new jsPDF();
         const memberName = filters.memberId ? members.find(m => m.id == filters.memberId)?.name : (filterMember ? members.find(m => m.id == filterMember)?.name : 'Everyone');
         const projectName = filters.projectId ? projects.find(p => p.id == filters.projectId)?.name : (filterProject ? projects.find(p => p.id == filterProject)?.name : 'All Projects');
-
-        doc.setFontSize(20);
-        doc.text('Attendance Report', 14, 22);
-
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        const now = new Date();
-        const nowFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${now.getHours() % 12 || 12}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'PM' : 'AM'}`;
-
-        doc.text(`Generated on: ${nowFormatted}`, 14, 30);
 
         const periodStr = filters.startDate && filters.endDate
             ? `${filters.startDate} to ${filters.endDate}`
             : (periodType === 'range' ? `${customRange.start} to ${customRange.end}` : currentPeriod);
 
-        doc.text(`Period: ${periodStr}`, 14, 35);
-        doc.text(`Member: ${memberName} | Project: ${projectName}`, 14, 40);
+        const statsArray = reportStats.map(s => ({
+            label: s.status.toUpperCase(),
+            value: s.count
+        }));
 
-        // Stats Summary
-        doc.setDrawColor(230);
-        doc.setFillColor(245, 247, 250);
-        doc.rect(14, 45, 182, 20, 'F');
-        doc.setFontSize(11);
-        doc.setTextColor(40);
-
-        let statsText = "";
-        reportStats.forEach(s => {
-            statsText += `${s.status.toUpperCase()}: ${s.count}  `;
-        });
-        doc.text(statsText, 20, 58);
-
-        autoTable(doc, {
-            startY: 70,
-            head: [['Date', 'Member', 'Status', 'Subject', 'Project']],
-            body: reportData.map(a => {
-                const d = new Date(a.date);
-                const dateFmt = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-                return [
-                    dateFmt,
-                    a.member_name || 'N/A',
-                    a.status.toUpperCase(),
-                    a.subject,
-                    a.project_name || 'N/A'
-                ];
-            }),
-            theme: 'striped',
-            headStyles: { fillColor: [37, 99, 235] },
-            alternateRowStyles: { fillColor: [250, 250, 250] },
+        const tableHeaders = ['Date', 'Member', 'Status', 'Subject', 'Project'];
+        const tableRows = data.map(a => {
+            const d = new Date(a.date);
+            const dateFmt = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+            return [
+                dateFmt,
+                a.member_name || 'N/A',
+                a.status.toUpperCase(),
+                a.subject,
+                a.project_name || 'N/A'
+            ];
         });
 
-        doc.save(`attendance_report_${periodStr}.pdf`);
+        exportToPDF({
+            title: 'Attendance Report',
+            period: periodStr,
+            subHeader: `Member: ${memberName} | Project: ${projectName}`,
+            stats: statsArray,
+            tableHeaders,
+            tableRows,
+            filename: `attendance_report_${periodStr}`,
+            themeColor: [37, 99, 235]
+        });
     };
 
     const handleGenerateCustomReport = async (format = 'PDF') => {
@@ -535,6 +502,14 @@ const AttendanceTracker = () => {
                                     <FaUserEdit />
                                 </button>
                             </div>
+
+                            <ExportButtons
+                                data={attendances}
+                                onExportCSV={handleExportCSV}
+                                onExportPDF={handleExportPDF}
+                                onExportTXT={handleExportTXT}
+                                className="col-span-2 lg:col-auto justify-center"
+                            />
 
                             <button
                                 onClick={() => setShowAddModal(true)}

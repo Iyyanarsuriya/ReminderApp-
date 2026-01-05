@@ -11,8 +11,8 @@ import {
     PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
     BarChart, Bar, XAxis, YAxis, CartesianGrid
 } from 'recharts';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { exportToCSV, exportToTXT, exportToPDF } from '../utils/exportUtils';
+import { formatAmount, formatDateTime } from '../utils/formatUtils';
 
 import { Settings, Folder } from 'lucide-react';
 import { getExpenseCategories, createExpenseCategory, deleteExpenseCategory } from '../api/expenseCategoryApi';
@@ -21,6 +21,7 @@ import { getActiveMembers } from '../api/memberApi';
 import CategoryManager from '../components/CategoryManager';
 import ProjectManager from '../components/ProjectManager';
 import MemberManager from '../components/MemberManager';
+import ExportButtons from '../components/ExportButtons';
 
 const ExpenseTracker = () => {
     const navigate = useNavigate();
@@ -78,23 +79,7 @@ const ExpenseTracker = () => {
     const expenseCategories = ['Food', 'Shopping', 'Rent', 'Transport', 'Utilities', 'Entertainment', 'Health', 'Other'];
     const incomeCategories = ['Salary', 'Freelance', 'Investment', 'Gift', 'Other'];
 
-    const formatAmount = (value) => {
-        const num = parseFloat(value || 0);
-        return num % 1 === 0 ? num.toString() : num.toFixed(2);
-    };
 
-    const formatDateTime = (dateString) => {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        const day = String(date.getDate()).padStart(2, '0');
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const year = date.getFullYear();
-        const hours = date.getHours();
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        const ampm = hours >= 12 ? 'PM' : 'AM';
-        const formattedHours = hours % 12 || 12;
-        return `${day}/${month}/${year} - ${formattedHours}:${minutes} ${ampm}`;
-    };
 
     const fetchData = async () => {
         try {
@@ -285,15 +270,15 @@ const ExpenseTracker = () => {
     }, [transactions, filterMember]);
 
     // Export Functions
+    // Export Functions
     const handleExportCSV = (data = transactions, filters = {}) => {
-        const reportTransactions = data;
-        if (reportTransactions.length === 0) {
+        if (data.length === 0) {
             toast.error("No data to export");
             return;
         }
 
-        const headers = ["Date", "Title", "Amount", "Type", "Category", "Project", "Member"];
-        const rows = reportTransactions.map(t => [
+        const headers = ["Date", "Description", "Amount", "Type", "Category", "Project", "Member"];
+        const rows = data.map(t => [
             new Date(t.date).toLocaleDateString('en-GB'),
             t.title,
             t.amount,
@@ -307,117 +292,85 @@ const ExpenseTracker = () => {
             ? `${filters.startDate}_to_${filters.endDate}`
             : currentPeriod;
 
-        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
-        link.setAttribute("href", url);
-        link.setAttribute("download", `report_${periodStr}.csv`);
-        link.click();
+        exportToCSV(headers, rows, `expense_report_${periodStr}`);
     };
 
     const handleExportTXT = (data = transactions, reportStats = stats, filters = {}) => {
-        const reportTransactions = data;
-        const currentStats = reportStats;
-
-        if (reportTransactions.length === 0) {
+        if (data.length === 0) {
             toast.error("No data to export");
             return;
         }
-
-        let txt = `FINANCIAL REPORT\n`;
-        const now = new Date();
-        const nowFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${now.getHours() % 12 || 12}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'PM' : 'AM'}`;
 
         const periodStr = filters.startDate && filters.endDate
             ? `${filters.startDate} to ${filters.endDate}`
             : (periodType === 'range' ? `${customRange.start} to ${customRange.end}` : currentPeriod);
 
-        txt += `Period: ${periodStr}\n`;
-        txt += `Generated on: ${nowFormatted}\n\n`;
+        const statsArray = [
+            { label: 'Total Income', value: `₹${formatAmount(reportStats.summary?.total_income)}` },
+            { label: 'Total Expense', value: `₹${formatAmount(reportStats.summary?.total_expense)}` },
+            { label: 'Net Balance', value: `₹${formatAmount(reportStats.summary?.total_income - reportStats.summary?.total_expense)}` }
+        ];
 
-        txt += `SUMMARY\n`;
-        txt += `-------------------\n`;
-        txt += `Total Income: ₹${formatAmount(currentStats.summary?.total_income)}\n`;
-        txt += `Total Expense: ₹${formatAmount(currentStats.summary?.total_expense)}\n`;
-        txt += `Net: ₹${formatAmount(currentStats.summary?.total_income - currentStats.summary?.total_expense)}\n\n`;
-
-        txt += `TRANSACTIONS\n`;
-        txt += `-------------------\n`;
-        reportTransactions.forEach(t => {
+        const logHeaders = ["Date", "Description", "Amount", "Type"];
+        const logRows = data.map(t => {
             const d = new Date(t.date);
             const dateFmt = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-            txt += `${dateFmt} | ${t.title.padEnd(20)} | ₹${t.amount.toString().padEnd(10)} | ${t.type.toUpperCase()}\n`;
+            return [dateFmt, t.title, `₹${t.amount}`, t.type.toUpperCase()];
         });
 
-        const blob = new Blob([txt], { type: 'text/plain;charset=utf-8;' });
-        const link = document.createElement("a");
-        link.setAttribute("href", URL.createObjectURL(blob));
-        link.setAttribute("download", `report_${periodStr}.txt`);
-        link.click();
+        exportToTXT({
+            title: 'Financial Report',
+            period: periodStr,
+            stats: statsArray,
+            logHeaders,
+            logRows,
+            filename: `expense_report_${periodStr}`
+        });
     };
 
     const handleExportPDF = (data = transactions, reportStats = stats, filters = {}) => {
-        const reportTransactions = data;
-        const currentStats = reportStats;
-
-        if (reportTransactions.length === 0) {
+        if (data.length === 0) {
             toast.error("No data to export");
             return;
         }
 
-        const doc = new jsPDF();
         const memberName = filters.memberId ? members.find(m => m.id == filters.memberId)?.name : (filterMember ? members.find(m => m.id == filterMember)?.name : 'Everyone');
         const projectName = filters.projectId ? projects.find(p => p.id == filters.projectId)?.name : (filterProject ? projects.find(p => p.id == filterProject)?.name : 'All Projects');
-
-        doc.setFontSize(20);
-        doc.text('Financial Report', 14, 22);
-
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        const now = new Date();
-        const nowFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${now.getHours() % 12 || 12}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'PM' : 'AM'}`;
-
-        doc.text(`Generated on: ${nowFormatted}`, 14, 30);
 
         const periodStr = filters.startDate && filters.endDate
             ? `${filters.startDate} to ${filters.endDate}`
             : (periodType === 'range' ? `${customRange.start} to ${customRange.end}` : currentPeriod);
 
-        doc.text(`Period: ${periodStr}`, 14, 35);
-        doc.text(`Member: ${memberName} | Project: ${projectName}`, 14, 40);
+        const statsArray = [
+            { label: 'Total Income', value: `₹${formatAmount(reportStats.summary?.total_income)}` },
+            { label: 'Total Expense', value: `₹${formatAmount(reportStats.summary?.total_expense)}` },
+            { label: 'Net Balance', value: `₹${formatAmount(reportStats.summary?.total_income - reportStats.summary?.total_expense)}` }
+        ];
 
-        // Summary Boxes
-        doc.setDrawColor(230);
-        doc.setFillColor(245, 247, 250);
-        doc.rect(14, 45, 182, 25, 'F');
-        doc.setFontSize(12);
-        doc.setTextColor(40);
-        doc.text(`Total Income: ₹${formatAmount(currentStats.summary?.total_income)}`, 20, 55);
-        doc.text(`Total Expense: ₹${formatAmount(currentStats.summary?.total_expense)}`, 20, 62);
-        doc.text(`Net Balance: ₹${formatAmount(currentStats.summary?.total_income - currentStats.summary?.total_expense)}`, 120, 55);
-
-        autoTable(doc, {
-            startY: 75,
-            head: [['Date', 'Description', 'Category', 'Type', 'Member', 'Amount']],
-            body: reportTransactions.map(t => {
-                const d = new Date(t.date);
-                const dateFmt = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-                return [
-                    dateFmt,
-                    t.title,
-                    t.category,
-                    t.type.toUpperCase(),
-                    t.member_name || 'N/A',
-                    `₹${formatAmount(t.amount)}`
-                ];
-            }),
-            theme: 'striped',
-            headStyles: { fillColor: [45, 91, 255] },
-            alternateRowStyles: { fillColor: [250, 250, 250] },
+        const tableHeaders = ['Date', 'Description', 'Category', 'Type', 'Member', 'Amount'];
+        const tableRows = data.map(t => {
+            const d = new Date(t.date);
+            const dateFmt = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+            return [
+                dateFmt,
+                t.title,
+                t.category,
+                t.type.toUpperCase(),
+                t.member_name || 'N/A',
+                `₹${formatAmount(t.amount)}`
+            ];
         });
 
-        doc.save(`report_${periodStr}.pdf`);
+        exportToPDF({
+            title: 'Financial Report',
+            period: periodStr,
+            subHeader: `Member: ${memberName} | Project: ${projectName}`,
+            stats: statsArray,
+            tableHeaders,
+            tableRows,
+            filename: `expense_report_${periodStr}`,
+            themeColor: [45, 91, 255]
+        });
     };
 
     const handleGenerateCustomReport = async (format = 'PDF') => {
@@ -621,17 +574,24 @@ const ExpenseTracker = () => {
 
                         {/* Actions: New Project/Manage Members */}
                         <div className="col-span-2 flex items-center gap-[8px] xl:w-auto">
+                            <ExportButtons
+                                data={transactions}
+                                onExportCSV={handleExportCSV}
+                                onExportPDF={handleExportPDF}
+                                onExportTXT={handleExportTXT}
+                            />
                             <button
                                 onClick={() => setShowProjectManager(true)}
                                 className="flex-1 xl:flex-none h-[40px] flex items-center justify-center gap-[8px] bg-[#2d5bff] text-white px-[16px] rounded-[12px] shadow-lg shadow-blue-500/20 hover:scale-105 transition-transform"
                                 title="New Project"
                             >
                                 <FaFolderPlus className="text-sm" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Project</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Project</span>
+                                <span className="text-[10px] sm:hidden">+</span>
                             </button>
                             <button
                                 onClick={() => setShowMemberManager(true)}
-                                className="w-[40px] h-[40px] bg-white text-slate-500 rounded-[12px] flex items-center justify-center hover:bg-orange-50 hover:text-orange-600 transition-all border border-slate-200 shadow-sm shrink-0"
+                                className="w-[40px] h-[40px] bg-white text-slate-500 rounded-[12px] flex items-center justify-center hover:bg-orange-50 hover:text-orange-600 transition-all border border-slate-200 shadow-sm shrink-0 cursor-pointer"
                                 title="Manage Members"
                             >
                                 <FaUserEdit className="text-[16px]" />

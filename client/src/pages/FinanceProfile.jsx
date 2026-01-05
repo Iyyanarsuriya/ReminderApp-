@@ -4,6 +4,7 @@ import { getTransactions, getTransactionStats } from '../api/transactionApi';
 import { updateProfile, getMe } from '../api/authApi';
 import { API_URL } from '../api/axiosInstance';
 import toast from 'react-hot-toast';
+import { formatAmount } from '../utils/formatUtils';
 import {
     FaWallet, FaArrowLeft, FaUserEdit, FaCamera,
     FaChartPie, FaCreditCard, FaLock, FaBell, FaHistory
@@ -127,7 +128,7 @@ const FinanceProfile = () => {
                                 <div className="grid grid-cols-2 gap-[16px] w-full text-center">
                                     <div>
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Net Worth</p>
-                                        <p className="text-[16px] sm:text-[18px] font-black text-emerald-600">₹{totalBalance.toFixed(0)}</p>
+                                        <p className="text-[16px] sm:text-[18px] font-black text-emerald-600">₹{formatAmount(totalBalance)}</p>
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Efficiency</p>
