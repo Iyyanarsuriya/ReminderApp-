@@ -226,7 +226,7 @@ const ExpenseTracker = () => {
             {/* Main Content */}
             <main className="flex-1 p-[16px] lg:p-[48px] h-screen overflow-y-auto custom-scrollbar">
                 {/* Header */}
-                <div className="flex justify-between items-center mb-[32px] lg:mb-[48px]">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-6 mb-[32px] lg:mb-[48px]">
                     <div>
                         <div className="flex items-center gap-[12px] mb-[8px]">
                             <button
@@ -236,24 +236,37 @@ const ExpenseTracker = () => {
                             >
                                 <Settings className="w-[20px] h-[20px] group-hover/cat-btn:rotate-90 transition-transform" />
                             </button>
-                            <div className="w-[40px] h-[40px] bg-[#2d5bff] rounded-[12px] flex items-center justify-center shadow-lg shadow-blue-500/20">
+                            <div className="w-[40px] h-[40px] bg-[#2d5bff] rounded-[12px] flex items-center justify-center shadow-lg shadow-blue-500/20 shrink-0">
                                 <FaWallet className="text-white text-[20px]" />
                             </div>
-                            <h1 className="text-[20px] sm:text-[30px] font-black tracking-tight">Income and Expense Tracker</h1>
+                            <h1 className="text-[20px] sm:text-[30px] font-black tracking-tight leading-tight">Income and Expense Tracker</h1>
                         </div>
                         <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest ml-[52px]">Take control of your finances</p>
                     </div>
 
                     {/* Month Picker Filter */}
-                    <div className="flex items-center gap-[8px] bg-white border border-slate-200 p-[8px] rounded-[12px] shadow-sm hover:border-blue-500 transition-colors">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-[4px]">Period:</span>
+                    <div className="flex items-center gap-[8px] bg-white border border-slate-200 p-[8px] rounded-[12px] shadow-sm hover:border-blue-500 transition-colors self-start sm:self-auto w-full sm:w-auto">
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-[4px] shrink-0">Period:</span>
                         <input
                             type="month"
                             value={currentMonth}
                             onChange={(e) => setCurrentMonth(e.target.value)}
-                            className="text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit']"
+                            className="text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit'] w-full sm:w-auto"
                         />
                     </div>
+                </div>
+
+                {/* Mobile Tab Navigation */}
+                <div className="lg:hidden flex overflow-x-auto gap-3 mb-8 pb-2 custom-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+                    {['Dashboard', 'Transactions', 'Budgets', 'Reports', 'Savings Goals'].map((tab) => (
+                        <button
+                            key={tab}
+                            onClick={() => setActiveTab(tab)}
+                            className={`whitespace-nowrap px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-[#2d5bff] text-white shadow-lg shadow-blue-500/30' : 'bg-white text-slate-500 border border-slate-200'}`}
+                        >
+                            {tab}
+                        </button>
+                    ))}
                 </div>
 
                 {activeTab === 'Dashboard' ? (
