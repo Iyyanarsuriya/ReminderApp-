@@ -21,6 +21,9 @@ import {
 import {
     PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend
 } from 'recharts';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { FaFileAlt } from 'react-icons/fa';
 import ProjectManager from '../components/ProjectManager';
 import WorkerManager from '../components/WorkerManager';
 
@@ -43,6 +46,15 @@ const AttendanceTracker = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [workerSummary, setWorkerSummary] = useState([]);
     const [activeTab, setActiveTab] = useState('records'); // 'records', 'summary', 'quick'
+    const [showCustomReportModal, setShowCustomReportModal] = useState(false);
+    const [customReportLoading, setCustomReportLoading] = useState(false);
+    const [customReportForm, setCustomReportForm] = useState({
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0],
+        projectId: '',
+        workerId: '',
+        status: 'all'
+    });
 
     const [formData, setFormData] = useState({
         subject: '',
@@ -195,6 +207,179 @@ const AttendanceTracker = () => {
             } catch (error) {
                 toast.error("Failed to delete record");
             }
+        }
+    };
+
+    // Export Functions
+    const handleExportCSV = (data = attendances, filters = {}) => {
+        const reportData = data;
+        if (reportData.length === 0) {
+            toast.error("No data to export");
+            return;
+        }
+
+        const headers = ["Date", "Worker", "Status", "Subject", "Project", "Note"];
+        const rows = reportData.map(a => [
+            new Date(a.date).toLocaleDateString('en-GB'),
+            a.worker_name || 'N/A',
+            a.status.toUpperCase(),
+            a.subject,
+            a.project_name || 'N/A',
+            a.note || ''
+        ]);
+
+        const periodStr = filters.startDate && filters.endDate
+            ? `${filters.startDate}_to_${filters.endDate}`
+            : currentPeriod;
+
+        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `attendance_report_${periodStr}.csv`);
+        link.click();
+    };
+
+    const handleExportTXT = (data = attendances, reportStats = stats, filters = {}) => {
+        const reportData = data;
+        if (reportData.length === 0) {
+            toast.error("No data to export");
+            return;
+        }
+
+        let txt = `ATTENDANCE REPORT\n`;
+        const now = new Date();
+        const nowFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${now.getHours() % 12 || 12}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'PM' : 'AM'}`;
+
+        const periodStr = filters.startDate && filters.endDate
+            ? `${filters.startDate} to ${filters.endDate}`
+            : (periodType === 'range' ? `${customRange.start} to ${customRange.end}` : currentPeriod);
+
+        txt += `Period: ${periodStr}\n`;
+        txt += `Generated on: ${nowFormatted}\n\n`;
+
+        txt += `SUMMARIZED STATS\n`;
+        txt += `-------------------\n`;
+        reportStats.forEach(s => {
+            txt += `${s.status.toUpperCase()}: ${s.count}\n`;
+        });
+        txt += `\n`;
+
+        txt += `ATTENDANCE LOG\n`;
+        txt += `-------------------\n`;
+        reportData.forEach(a => {
+            const d = new Date(a.date);
+            const dateFmt = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+            txt += `${dateFmt} | ${a.worker_name?.padEnd(20) || 'N/A'.padEnd(20)} | ${a.status.toUpperCase().padEnd(10)} | ${a.subject}\n`;
+        });
+
+        const blob = new Blob([txt], { type: 'text/plain;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.setAttribute("href", URL.createObjectURL(blob));
+        link.setAttribute("download", `attendance_report_${periodStr}.txt`);
+        link.click();
+    };
+
+    const handleExportPDF = (data = attendances, reportStats = stats, filters = {}) => {
+        const reportData = data;
+        if (reportData.length === 0) {
+            toast.error("No data to export");
+            return;
+        }
+
+        const doc = new jsPDF();
+        const workerName = filters.workerId ? workers.find(w => w.id == filters.workerId)?.name : (filterWorker ? workers.find(w => w.id == filterWorker)?.name : 'All Workers');
+        const projectName = filters.projectId ? projects.find(p => p.id == filters.projectId)?.name : (filterProject ? projects.find(p => p.id == filterProject)?.name : 'All Projects');
+
+        doc.setFontSize(20);
+        doc.text('Attendance Report', 14, 22);
+
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        const now = new Date();
+        const nowFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${now.getHours() % 12 || 12}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'PM' : 'AM'}`;
+
+        doc.text(`Generated on: ${nowFormatted}`, 14, 30);
+
+        const periodStr = filters.startDate && filters.endDate
+            ? `${filters.startDate} to ${filters.endDate}`
+            : (periodType === 'range' ? `${customRange.start} to ${customRange.end}` : currentPeriod);
+
+        doc.text(`Period: ${periodStr}`, 14, 35);
+        doc.text(`Worker: ${workerName} | Project: ${projectName}`, 14, 40);
+
+        // Stats Summary Summary
+        doc.setDrawColor(230);
+        doc.setFillColor(245, 247, 250);
+        doc.rect(14, 45, 182, 20, 'F');
+        doc.setFontSize(11);
+        doc.setTextColor(40);
+
+        let statsText = "";
+        reportStats.forEach(s => {
+            statsText += `${s.status.toUpperCase()}: ${s.count}  `;
+        });
+        doc.text(statsText, 20, 58);
+
+        autoTable(doc, {
+            startY: 70,
+            head: [['Date', 'Worker', 'Status', 'Subject', 'Project']],
+            body: reportData.map(a => {
+                const d = new Date(a.date);
+                const dateFmt = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+                return [
+                    dateFmt,
+                    a.worker_name || 'N/A',
+                    a.status.toUpperCase(),
+                    a.subject,
+                    a.project_name || 'N/A'
+                ];
+            }),
+            theme: 'striped',
+            headStyles: { fillColor: [37, 99, 235] },
+            alternateRowStyles: { fillColor: [250, 250, 250] },
+        });
+
+        doc.save(`attendance_report_${periodStr}.pdf`);
+    };
+
+    const handleGenerateCustomReport = async (format = 'PDF') => {
+        if (!customReportForm.startDate || !customReportForm.endDate) {
+            toast.error("Please select both start and end dates");
+            return;
+        }
+
+        setCustomReportLoading(format);
+        try {
+            const [attRes, statsRes] = await Promise.all([
+                getAttendances({
+                    projectId: customReportForm.projectId,
+                    workerId: customReportForm.workerId,
+                    startDate: customReportForm.startDate,
+                    endDate: customReportForm.endDate,
+                    status: customReportForm.status === 'all' ? null : customReportForm.status
+                }),
+                getAttendanceStats({
+                    projectId: customReportForm.projectId,
+                    workerId: customReportForm.workerId,
+                    startDate: customReportForm.startDate,
+                    endDate: customReportForm.endDate,
+                    status: customReportForm.status === 'all' ? null : customReportForm.status
+                })
+            ]);
+
+            if (format === 'PDF') handleExportPDF(attRes.data.data, statsRes.data.data, customReportForm);
+            else if (format === 'CSV') handleExportCSV(attRes.data.data, customReportForm);
+            else if (format === 'TXT') handleExportTXT(attRes.data.data, statsRes.data.data, customReportForm);
+
+            setShowCustomReportModal(false);
+            toast.success("Attendance report generated!");
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to generate report");
+        } finally {
+            setCustomReportLoading(false);
         }
     };
 
@@ -384,7 +569,7 @@ const AttendanceTracker = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-1 space-y-6">
                             <div className="bg-white rounded-3xl p-8 shadow-xl border border-slate-100">
-                                <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
+                                <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2 font-['Outfit']">
                                     <FaChartBar className="text-blue-500" />
                                     {periodType.charAt(0).toUpperCase() + periodType.slice(1)} Stats
                                 </h3>
@@ -419,26 +604,9 @@ const AttendanceTracker = () => {
                                     ) : (
                                         <div className="h-full flex flex-col items-center justify-center text-slate-400">
                                             <FaInbox className="text-4xl mb-4 opacity-20" />
-                                            <p className="text-xs font-bold uppercase tracking-widest">No data available</p>
+                                            <p className="text-xs font-bold uppercase tracking-widest font-['Outfit']">No data available</p>
                                         </div>
                                     )}
-                                </div>
-                            </div>
-                            <div className="bg-white rounded-3xl p-8 shadow-xl border border-slate-100">
-                                <h3 className="text-lg font-black text-slate-900 mb-6">Management</h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <button onClick={() => setShowProjectManager(true)} className="p-4 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all group flex flex-col items-center gap-2">
-                                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 group-hover:text-blue-500 shadow-sm transition-colors">
-                                            <FaFolderPlus />
-                                        </div>
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Projects</span>
-                                    </button>
-                                    <button onClick={() => setShowWorkerManager(true)} className="p-4 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all group flex flex-col items-center gap-2">
-                                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 group-hover:text-orange-500 shadow-sm transition-colors">
-                                            <FaUserCheck />
-                                        </div>
-                                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Workers</span>
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -446,7 +614,7 @@ const AttendanceTracker = () => {
                         <div className="lg:col-span-2">
                             <div className="bg-white rounded-3xl p-8 shadow-xl border border-slate-100 min-h-[500px]">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-                                    <h3 className="text-lg font-black text-slate-900">Recent Records</h3>
+                                    <h3 className="text-lg font-black text-slate-900 font-['Outfit']">Recent Records</h3>
                                     <div className="relative flex-1 max-w-xs">
                                         <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
                                         <input
@@ -474,21 +642,21 @@ const AttendanceTracker = () => {
                                                         </div>
                                                         <div className="min-w-0">
                                                             <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                                                                <h4 className="font-black text-slate-900 leading-tight truncate max-w-[150px] sm:max-w-none">{item.subject}</h4>
-                                                                <span className={`px-2.5 py-0.5 rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest ${option?.bg} ${option?.color} border ${option?.border} shadow-sm`}>
+                                                                <h4 className="font-black text-slate-900 leading-tight truncate max-w-[150px] sm:max-w-none font-['Outfit']">{item.subject}</h4>
+                                                                <span className={`px-2.5 py-0.5 rounded-lg text-[8px] sm:text-[9px] font-black uppercase tracking-widest ${option?.bg} ${option?.color} border ${option?.border} shadow-sm font-['Outfit']`}>
                                                                     {option?.label}
                                                                 </span>
                                                             </div>
                                                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider">
-                                                                <span className="flex items-center gap-1.5">
+                                                                <span className="flex items-center gap-1.5 font-['Outfit']">
                                                                     <FaCalendarAlt className="text-blue-400" />
                                                                     {(() => {
                                                                         const d = new Date(item.date);
                                                                         return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
                                                                     })()}
                                                                 </span>
-                                                                {item.project_name && <span className="flex items-center gap-1.5 text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md"><FaFilter className="text-[10px]" />{item.project_name}</span>}
-                                                                {item.worker_name && <span className="flex items-center gap-1.5 text-orange-500 bg-orange-50 px-2 py-0.5 rounded-md"><FaUserCheck className="text-[10px]" />{item.worker_name}</span>}
+                                                                {item.project_name && <span className="flex items-center gap-1.5 text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md font-['Outfit']"><FaFilter className="text-[10px]" />{item.project_name}</span>}
+                                                                {item.worker_name && <span className="flex items-center gap-1.5 text-orange-500 bg-orange-50 px-2 py-0.5 rounded-md font-['Outfit']"><FaUserCheck className="text-[10px]" />{item.worker_name}</span>}
                                                             </div>
                                                         </div>
                                                     </div>
@@ -497,13 +665,13 @@ const AttendanceTracker = () => {
                                                         <button onClick={() => handleDelete(item.id)} className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all active:scale-90"><FaTrash /></button>
                                                     </div>
                                                 </div>
-                                                {item.note && <div className="mt-4 pt-4 border-t border-slate-50 italic text-slate-500 text-xs line-clamp-2">"{item.note}"</div>}
+                                                {item.note && <div className="mt-4 pt-4 border-t border-slate-50 italic text-slate-500 text-xs line-clamp-2 font-['Outfit']">"{item.note}"</div>}
                                             </div>
                                         );
                                     }) : (
                                         <div className="py-20 flex flex-col items-center justify-center text-slate-300">
                                             <FaInbox className="text-6xl mb-4 opacity-10" />
-                                            <p className="text-sm font-black uppercase tracking-widest">No records found</p>
+                                            <p className="text-sm font-black uppercase tracking-widest font-['Outfit']">No records found</p>
                                         </div>
                                     )}
                                 </div>
@@ -515,19 +683,37 @@ const AttendanceTracker = () => {
                         <div className="p-8 border-b border-slate-100 bg-slate-50/50">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                 <div>
-                                    <h3 className="text-xl font-black text-slate-900">Worker Attendance Summary</h3>
-                                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1">Aggregated performance for selected period</p>
+                                    <h3 className="text-xl font-black text-slate-900 font-['Outfit']">Worker Attendance Summary</h3>
+                                    <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1 font-['Outfit']">Aggregated performance for selected period</p>
                                 </div>
-                                <div className="flex bg-white p-1 rounded-xl border border-slate-200">
-                                    <div className="px-4 py-2 text-center border-r border-slate-100">
-                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total</p>
-                                        <p className="text-sm font-black text-slate-900">{workerSummary.length}</p>
-                                    </div>
-                                    <div className="px-4 py-2 text-center">
-                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Avg Rate</p>
-                                        <p className="text-sm font-black text-blue-600">
-                                            {workerSummary.length > 0 ? (workerSummary.reduce((acc, w) => acc + (w.total > 0 ? (w.present + w.half_day * 0.5) / w.total : 0), 0) / workerSummary.length * 100).toFixed(0) + '%' : '0%'}
-                                        </p>
+                                <div className="flex flex-wrap items-center gap-4">
+                                    <button
+                                        onClick={() => {
+                                            setCustomReportForm({
+                                                ...customReportForm,
+                                                projectId: filterProject,
+                                                workerId: filterWorker,
+                                                startDate: periodType === 'range' ? customRange.start : (currentPeriod || new Date().toISOString().split('T')[0]),
+                                                endDate: periodType === 'range' ? customRange.end : (currentPeriod || new Date().toISOString().split('T')[0])
+                                            });
+                                            setShowCustomReportModal(true);
+                                        }}
+                                        className="px-6 py-3 bg-blue-600 text-white rounded-[16px] text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 group order-last sm:order-0 w-full sm:w-auto font-['Outfit']"
+                                    >
+                                        <FaFileAlt className="group-hover:rotate-12 transition-transform" />
+                                        Custom Report
+                                    </button>
+                                    <div className="flex bg-white p-1 rounded-xl border border-slate-200">
+                                        <div className="px-4 py-2 text-center border-r border-slate-100">
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-['Outfit']">Total</p>
+                                            <p className="text-sm font-black text-slate-900 font-['Outfit']">{workerSummary.length}</p>
+                                        </div>
+                                        <div className="px-4 py-2 text-center">
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-['Outfit']">Avg Rate</p>
+                                            <p className="text-sm font-black text-blue-600 font-['Outfit']">
+                                                {workerSummary.length > 0 ? (workerSummary.reduce((acc, w) => acc + (w.total > 0 ? (w.present + w.half_day * 0.5) / w.total : 0), 0) / workerSummary.length * 100).toFixed(0) + '%' : '0%'}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -536,13 +722,13 @@ const AttendanceTracker = () => {
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="bg-slate-50/50">
-                                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Worker</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-emerald-500 text-center">P</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-red-500 text-center">A</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-amber-500 text-center">L</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-blue-500 text-center">H</th>
-                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-900 text-center">Total</th>
-                                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Performance</th>
+                                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 font-['Outfit']">Worker</th>
+                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-emerald-500 text-center font-['Outfit']">P</th>
+                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-red-500 text-center font-['Outfit']">A</th>
+                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-amber-500 text-center font-['Outfit']">L</th>
+                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-blue-500 text-center font-['Outfit']">H</th>
+                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-900 text-center font-['Outfit']">Total</th>
+                                        <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right font-['Outfit']">Performance</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
@@ -552,28 +738,28 @@ const AttendanceTracker = () => {
                                             <tr key={w.id} className="hover:bg-slate-50/80 transition-colors group">
                                                 <td className="px-8 py-5">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 font-black text-xs group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                                        <div className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 font-black text-xs group-hover:bg-blue-600 group-hover:text-white transition-colors font-['Outfit']">
                                                             {w.name.charAt(0)}
                                                         </div>
                                                         <div>
-                                                            <p className="font-black text-slate-900 leading-none">{w.name}</p>
-                                                            <p className="text-[9px] font-black text-slate-400 uppercase mt-1">ID: #{w.id}</p>
+                                                            <p className="font-black text-slate-900 leading-none font-['Outfit']">{w.name}</p>
+                                                            <p className="text-[9px] font-black text-slate-400 uppercase mt-1 font-['Outfit']">ID: #{w.id}</p>
                                                         </div>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-5 text-center">
-                                                    <span className="inline-flex w-7 h-7 items-center justify-center bg-emerald-50 text-emerald-600 rounded-lg font-black text-[11px] border border-emerald-100">{w.present}</span>
+                                                    <span className="inline-flex w-7 h-7 items-center justify-center bg-emerald-50 text-emerald-600 rounded-lg font-black text-[11px] border border-emerald-100 font-['Outfit']">{w.present}</span>
                                                 </td>
                                                 <td className="px-6 py-5 text-center">
-                                                    <span className="inline-flex w-7 h-7 items-center justify-center bg-red-50 text-red-600 rounded-lg font-black text-[11px] border border-red-100">{w.absent}</span>
+                                                    <span className="inline-flex w-7 h-7 items-center justify-center bg-red-50 text-red-600 rounded-lg font-black text-[11px] border border-red-100 font-['Outfit']">{w.absent}</span>
                                                 </td>
                                                 <td className="px-6 py-5 text-center">
-                                                    <span className="inline-flex w-7 h-7 items-center justify-center bg-amber-50 text-amber-600 rounded-lg font-black text-[11px] border border-amber-100">{w.late}</span>
+                                                    <span className="inline-flex w-7 h-7 items-center justify-center bg-amber-50 text-amber-600 rounded-lg font-black text-[11px] border border-amber-100 font-['Outfit']">{w.late}</span>
                                                 </td>
                                                 <td className="px-6 py-5 text-center">
-                                                    <span className="inline-flex w-7 h-7 items-center justify-center bg-blue-50 text-blue-600 rounded-lg font-black text-[11px] border border-blue-100">{w.half_day}</span>
+                                                    <span className="inline-flex w-7 h-7 items-center justify-center bg-blue-50 text-blue-600 rounded-lg font-black text-[11px] border border-blue-100 font-['Outfit']">{w.half_day}</span>
                                                 </td>
-                                                <td className="px-6 py-5 text-center font-black text-slate-900 text-[11px]">{w.total}</td>
+                                                <td className="px-6 py-5 text-center font-black text-slate-900 text-[11px] font-['Outfit']">{w.total}</td>
                                                 <td className="px-8 py-5 text-right">
                                                     <div className="flex items-center justify-end gap-3">
                                                         <div className="w-20 sm:w-28 h-2 bg-slate-100 rounded-full overflow-hidden">
@@ -582,7 +768,7 @@ const AttendanceTracker = () => {
                                                                 style={{ width: `${rate}%` }}
                                                             ></div>
                                                         </div>
-                                                        <span className={`text-[11px] font-black min-w-[32px] ${rate >= 90 ? 'text-emerald-600' : rate >= 75 ? 'text-blue-600' : 'text-amber-600'}`}>{rate.toFixed(0)}%</span>
+                                                        <span className={`text-[11px] font-black min-w-[32px] font-['Outfit'] ${rate >= 90 ? 'text-emerald-600' : rate >= 75 ? 'text-blue-600' : 'text-amber-600'}`}>{rate.toFixed(0)}%</span>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -592,7 +778,7 @@ const AttendanceTracker = () => {
                                         <tr>
                                             <td colSpan="7" className="px-8 py-20 text-center">
                                                 <FaInbox className="text-5xl mx-auto mb-4 text-slate-200" />
-                                                <p className="text-sm font-black text-slate-400 uppercase tracking-widest">No worker data available</p>
+                                                <p className="text-sm font-black text-slate-400 uppercase tracking-widest font-['Outfit']">No worker data available</p>
                                             </td>
                                         </tr>
                                     )}
@@ -606,18 +792,18 @@ const AttendanceTracker = () => {
                         <div className="p-8 sm:p-12 border-b border-slate-100 bg-linear-to-br from-slate-900 to-slate-800 text-white">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                                 <div>
-                                    <h3 className="text-2xl font-black mb-2">Daily Attendance Sheet</h3>
+                                    <h3 className="text-2xl font-black mb-2 font-['Outfit']">Daily Attendance Sheet</h3>
                                     <div className="flex items-center gap-3">
                                         <FaCalendarAlt className="text-blue-400" />
-                                        <span className="text-slate-400 font-bold uppercase tracking-widest text-xs">
+                                        <span className="text-slate-400 font-bold uppercase tracking-widest text-xs font-['Outfit']">
                                             {periodType === 'day' ? new Date(currentPeriod).toLocaleDateString('en-GB', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }) : 'Please select a specific day to use the sheet'}
                                         </span>
                                     </div>
                                 </div>
                                 {periodType === 'day' && (
                                     <div className="bg-white/10 px-6 py-3 rounded-2xl border border-white/10 backdrop-blur-md">
-                                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-300 mb-1">Marking Mode</p>
-                                        <p className="text-sm font-black">Single Click Upsert</p>
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-300 mb-1 font-['Outfit']">Marking Mode</p>
+                                        <p className="text-sm font-black font-['Outfit']">Single Click Upsert</p>
                                     </div>
                                 )}
                             </div>
@@ -629,9 +815,9 @@ const AttendanceTracker = () => {
                                     <table className="w-full text-left">
                                         <thead>
                                             <tr className="bg-slate-50/50">
-                                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400">Worker Name</th>
-                                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Attendance Marking</th>
-                                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right">Status</th>
+                                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 font-['Outfit']">Worker Name</th>
+                                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center font-['Outfit']">Attendance Marking</th>
+                                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right font-['Outfit']">Status</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
@@ -646,8 +832,8 @@ const AttendanceTracker = () => {
                                                                     <FaUserCheck />
                                                                 </div>
                                                                 <div className="min-w-0">
-                                                                    <h4 className="font-black text-slate-900 leading-tight truncate text-sm sm:text-base">{w.name}</h4>
-                                                                    <p className="text-[8px] sm:text-[9px] font-black uppercase tracking-tighter text-slate-400 mt-0.5">#{w.id}</p>
+                                                                    <h4 className="font-black text-slate-900 leading-tight truncate text-sm sm:text-base font-['Outfit']">{w.name}</h4>
+                                                                    <p className="text-[8px] sm:text-[9px] font-black uppercase tracking-tighter text-slate-400 mt-0.5 font-['Outfit']">#{w.id}</p>
                                                                 </div>
                                                             </div>
                                                         </td>
@@ -655,13 +841,13 @@ const AttendanceTracker = () => {
                                                             <div className="flex items-center justify-center gap-2 sm:gap-4">
                                                                 <button
                                                                     onClick={() => handleQuickMark(w.id, 'present')}
-                                                                    className={`flex-1 sm:flex-none px-3 sm:px-8 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${currentStatus === 'present' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-105' : 'bg-slate-100/50 text-slate-400 border border-slate-100'}`}
+                                                                    className={`flex-1 sm:flex-none px-3 sm:px-8 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer font-['Outfit'] ${currentStatus === 'present' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-105' : 'bg-slate-100/50 text-slate-400 border border-slate-100 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-500/30'}`}
                                                                 >
                                                                     P<span className="hidden sm:inline">resent</span>
                                                                 </button>
                                                                 <button
                                                                     onClick={() => handleQuickMark(w.id, 'absent')}
-                                                                    className={`flex-1 sm:flex-none px-3 sm:px-8 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer ${currentStatus === 'absent' ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 scale-105' : 'bg-slate-100/50 text-slate-400 border border-slate-100'}`}
+                                                                    className={`flex-1 sm:flex-none px-3 sm:px-8 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer font-['Outfit'] ${currentStatus === 'absent' ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 scale-105' : 'bg-slate-100/50 text-slate-400 border border-slate-100 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-lg hover:shadow-red-500/30'}`}
                                                                 >
                                                                     A<span className="hidden sm:inline">bsent</span>
                                                                 </button>
@@ -670,12 +856,12 @@ const AttendanceTracker = () => {
                                                         <td className="px-4 sm:px-8 py-4 sm:py-6 text-right">
                                                             <div className="flex justify-end">
                                                                 {option ? (
-                                                                    <div className={`inline-flex items-center gap-1.5 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest ${option.bg} ${option.color} border ${option.border}`}>
+                                                                    <div className={`inline-flex items-center gap-1.5 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest font-['Outfit'] ${option.bg} ${option.color} border ${option.border}`}>
                                                                         <option.icon className="text-[10px] sm:text-xs" />
                                                                         <span className="truncate max-w-[40px] sm:max-w-none">{option.label}</span>
                                                                     </div>
                                                                 ) : (
-                                                                    <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-slate-300">Wait</span>
+                                                                    <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-slate-300 font-['Outfit']">Wait</span>
                                                                 )}
                                                             </div>
                                                         </td>
@@ -686,8 +872,8 @@ const AttendanceTracker = () => {
                                                 <tr>
                                                     <td colSpan="3" className="px-8 py-20 text-center">
                                                         <FaInbox className="text-6xl mx-auto mb-6 opacity-10" />
-                                                        <h4 className="text-lg font-black text-slate-900 mb-2">No Workers Found</h4>
-                                                        <p className="text-slate-500 text-sm font-medium">Add some workers first to start using the Daily Sheet</p>
+                                                        <h4 className="text-lg font-black text-slate-900 mb-2 font-['Outfit']">No Workers Found</h4>
+                                                        <p className="text-slate-500 text-sm font-medium font-['Outfit']">Add some workers first to start using the Daily Sheet</p>
                                                     </td>
                                                 </tr>
                                             )}
@@ -700,11 +886,11 @@ const AttendanceTracker = () => {
                                 <div className="w-24 h-24 bg-blue-50 rounded-[40px] flex items-center justify-center mx-auto mb-8">
                                     <FaCalendarAlt className="text-4xl text-blue-500 opacity-20" />
                                 </div>
-                                <h4 className="text-xl font-black text-slate-900 mb-4">Select a Day to Begin</h4>
-                                <p className="text-slate-500 max-w-sm mx-auto font-medium">The Daily Sheet works only when a specific day is selected from the filters above.</p>
+                                <h4 className="text-xl font-black text-slate-900 mb-4 font-['Outfit']">Select a Day to Begin</h4>
+                                <p className="text-slate-500 max-w-sm mx-auto font-medium font-['Outfit']">The Daily Sheet works only when a specific day is selected from the filters above.</p>
                                 <button
                                     onClick={() => setPeriodType('day')}
-                                    className="mt-8 bg-slate-900 text-white px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 shadow-xl"
+                                    className="mt-8 bg-slate-900 text-white px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 shadow-xl font-['Outfit']"
                                 >
                                     Switch to Day View
                                 </button>
@@ -714,12 +900,11 @@ const AttendanceTracker = () => {
                 )}
             </main>
 
-            {/* Modal & Managers (Unchanged) */}
             {showAddModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
                     <div className="bg-white rounded-[40px] p-8 sm:p-10 w-full max-w-lg shadow-2xl relative animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto custom-scrollbar">
                         <button onClick={() => { setShowAddModal(false); resetForm(); }} className="absolute top-8 right-8 text-slate-400 hover:text-slate-800 transition-colors"><FaTimes /></button>
-                        <div className="mb-8"><h2 className="text-2xl font-black text-slate-900 flex items-center gap-3"><div className="w-2 h-8 bg-blue-600 rounded-full"></div>{editingId ? 'Edit Record' : 'Mark Attendance'}</h2></div>
+                        <div className="mb-8"><h2 className="text-2xl font-black text-slate-900 flex items-center gap-3 font-['Outfit']"><div className="w-2 h-8 bg-blue-600 rounded-full"></div>{editingId ? 'Edit Record' : 'Mark Attendance'}</h2></div>
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 {statusOptions.map(opt => (
@@ -740,17 +925,139 @@ const AttendanceTracker = () => {
                     </div>
                 </div>
             )}
-            {showProjectManager && (
-                <ProjectManager
-                    projects={projects}
-                    onCreate={createProject}
-                    onDelete={deleteProject}
-                    onClose={() => { setShowProjectManager(false); fetchData(); }}
-                    onRefresh={() => getProjects().then(res => setProjects(res.data))}
-                />
-            )}
+
+            {
+                showProjectManager && (
+                    <ProjectManager
+                        projects={projects}
+                        onCreate={createProject}
+                        onDelete={deleteProject}
+                        onClose={() => { setShowProjectManager(false); fetchData(); }}
+                        onRefresh={() => getProjects().then(res => setProjects(res.data))}
+                    />
+                )
+            }
             {showWorkerManager && <WorkerManager onClose={() => { setShowWorkerManager(false); fetchData(); }} onUpdate={fetchData} />}
-        </div>
+
+            {/* Custom Report Modal */}
+            {
+                showCustomReportModal && (
+                    <div className="fixed inset-0 z-150 flex items-center justify-center p-[16px] bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+                        <div className="bg-white rounded-[40px] p-[32px] sm:p-[40px] w-full max-w-[500px] shadow-2xl relative animate-in zoom-in-95 duration-300">
+                            <button onClick={() => setShowCustomReportModal(false)} className="absolute top-[32px] right-[32px] text-slate-400 hover:text-slate-800 transition-colors">
+                                <FaTimes />
+                            </button>
+                            <h2 className="text-[24px] font-black mb-[32px] flex items-center gap-[12px] font-['Outfit']">
+                                <div className="w-[8px] h-[32px] bg-blue-600 rounded-full"></div>
+                                Attendance Report
+                            </h2>
+
+                            <div className="space-y-[24px]">
+                                <div className="grid grid-cols-2 gap-[16px]">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Start Date</label>
+                                        <input
+                                            type="date"
+                                            value={customReportForm.startDate}
+                                            onChange={(e) => setCustomReportForm({ ...customReportForm, startDate: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-blue-600 transition-all font-['Outfit']"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">End Date</label>
+                                        <input
+                                            type="date"
+                                            value={customReportForm.endDate}
+                                            onChange={(e) => setCustomReportForm({ ...customReportForm, endDate: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-blue-600 transition-all font-['Outfit']"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-[16px]">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Project</label>
+                                        <select
+                                            value={customReportForm.projectId}
+                                            onChange={(e) => setCustomReportForm({ ...customReportForm, projectId: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-blue-600 transition-all cursor-pointer font-['Outfit']"
+                                        >
+                                            <option value="">All Projects</option>
+                                            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Worker</label>
+                                        <select
+                                            value={customReportForm.workerId}
+                                            onChange={(e) => setCustomReportForm({ ...customReportForm, workerId: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-blue-600 transition-all cursor-pointer font-['Outfit']"
+                                        >
+                                            <option value="">All Workers</option>
+                                            {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Status Filter</label>
+                                    <select
+                                        value={customReportForm.status}
+                                        onChange={(e) => setCustomReportForm({ ...customReportForm, status: e.target.value })}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-blue-600 transition-all cursor-pointer font-['Outfit']"
+                                    >
+                                        <option value="all">All Statuses</option>
+                                        {statusOptions.map(opt => <option key={opt.id} value={opt.id}>{opt.label}</option>)}
+                                    </select>
+                                </div>
+
+                                <div className="flex flex-col gap-[12px]">
+                                    <button
+                                        onClick={() => handleGenerateCustomReport('PDF')}
+                                        disabled={!!customReportLoading}
+                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-[18px] rounded-[20px] transition-all active:scale-95 shadow-xl flex items-center justify-center gap-[12px] text-[14px] disabled:opacity-50 disabled:cursor-not-allowed font-['Outfit']"
+                                    >
+                                        {customReportLoading === 'PDF' ? (
+                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        ) : (
+                                            <FaFileAlt />
+                                        )}
+                                        {customReportLoading === 'PDF' ? 'Generating...' : 'Download PDF Report'}
+                                    </button>
+
+                                    <div className="grid grid-cols-2 gap-[12px]">
+                                        <button
+                                            onClick={() => handleGenerateCustomReport('CSV')}
+                                            disabled={!!customReportLoading}
+                                            className="bg-emerald-500 hover:bg-emerald-600 text-white font-black py-[16px] rounded-[20px] transition-all active:scale-95 shadow-lg flex items-center justify-center gap-[8px] text-[12px] disabled:opacity-50 disabled:cursor-not-allowed font-['Outfit']"
+                                        >
+                                            {customReportLoading === 'CSV' ? (
+                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                            ) : (
+                                                <FaFileAlt />
+                                            )}
+                                            CSV (Excel)
+                                        </button>
+                                        <button
+                                            onClick={() => handleGenerateCustomReport('TXT')}
+                                            disabled={!!customReportLoading}
+                                            className="bg-slate-700 hover:bg-slate-800 text-white font-black py-[16px] rounded-[20px] transition-all active:scale-95 shadow-lg flex items-center justify-center gap-[8px] text-[12px] disabled:opacity-50 disabled:cursor-not-allowed font-['Outfit']"
+                                        >
+                                            {customReportLoading === 'TXT' ? (
+                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                            ) : (
+                                                <FaFileAlt />
+                                            )}
+                                            Text Log
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     );
 };
 

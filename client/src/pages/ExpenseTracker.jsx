@@ -4,9 +4,8 @@ import { getTransactions, createTransaction, updateTransaction, deleteTransactio
 import { API_URL } from '../api/axiosInstance';
 import toast from 'react-hot-toast';
 import {
-    FaWallet, FaPlus, FaTrash, FaChartBar, FaTag, FaHome,
-    FaExchangeAlt, FaPiggyBank, FaFileAlt, FaSignOutAlt, FaTimes,
-    FaArrowLeft, FaEdit, FaFolderPlus, FaUserCheck, FaUserEdit
+    FaWallet, FaPlus, FaTrash, FaChartBar, FaExchangeAlt, FaFileAlt, FaEdit, FaTimes,
+    FaPlusCircle, FaArrowRight, FaArrowLeft, FaCheckCircle, FaUserCheck, FaFolderPlus, FaUserEdit
 } from 'react-icons/fa';
 import {
     PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
@@ -65,6 +64,16 @@ const ExpenseTracker = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [showModal, setShowModal] = useState(null); // 'income', 'expense', or null
     const [modalTransactions, setModalTransactions] = useState([]);
+    const [showCustomReportModal, setShowCustomReportModal] = useState(false);
+    const [customReportLoading, setCustomReportLoading] = useState(false);
+    const [customReportForm, setCustomReportForm] = useState({
+        startDate: new Date().toISOString().split('T')[0],
+        endDate: new Date().toISOString().split('T')[0],
+        projectId: '',
+        workerId: '',
+        category: 'all',
+        type: 'all'
+    });
 
     const expenseCategories = ['Food', 'Shopping', 'Rent', 'Transport', 'Utilities', 'Entertainment', 'Health', 'Other'];
     const incomeCategories = ['Salary', 'Freelance', 'Investment', 'Gift', 'Other'];
@@ -266,9 +275,6 @@ const ExpenseTracker = () => {
 
     // Derived values
     const totalBalance = (stats.summary?.total_income || 0) - (stats.summary?.total_expense || 0);
-    const savingsRate = stats.summary?.total_income > 0
-        ? (((stats.summary.total_income - stats.summary.total_expense) / stats.summary.total_income) * 100).toFixed(1)
-        : 0;
 
     const workerStats = useMemo(() => {
         if (!filterWorker) return null;
@@ -282,14 +288,15 @@ const ExpenseTracker = () => {
     }, [transactions, filterWorker]);
 
     // Export Functions
-    const handleExportCSV = () => {
-        if (transactions.length === 0) {
+    const handleExportCSV = (data = transactions, filters = {}) => {
+        const reportTransactions = data;
+        if (reportTransactions.length === 0) {
             toast.error("No data to export");
             return;
         }
 
         const headers = ["Date", "Title", "Amount", "Type", "Category", "Project", "Worker"];
-        const rows = transactions.map(t => [
+        const rows = reportTransactions.map(t => [
             new Date(t.date).toLocaleDateString('en-GB'),
             t.title,
             t.amount,
@@ -299,17 +306,24 @@ const ExpenseTracker = () => {
             t.worker_name || 'N/A'
         ]);
 
+        const periodStr = filters.startDate && filters.endDate
+            ? `${filters.startDate}_to_${filters.endDate}`
+            : currentPeriod;
+
         const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
         const url = URL.createObjectURL(blob);
         link.setAttribute("href", url);
-        link.setAttribute("download", `report_${currentPeriod}.csv`);
+        link.setAttribute("download", `report_${periodStr}.csv`);
         link.click();
     };
 
-    const handleExportTXT = () => {
-        if (transactions.length === 0) {
+    const handleExportTXT = (data = transactions, reportStats = stats, filters = {}) => {
+        const reportTransactions = data;
+        const currentStats = reportStats;
+
+        if (reportTransactions.length === 0) {
             toast.error("No data to export");
             return;
         }
@@ -318,18 +332,22 @@ const ExpenseTracker = () => {
         const now = new Date();
         const nowFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${now.getHours() % 12 || 12}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'PM' : 'AM'}`;
 
-        txt += `Period: ${periodType === 'range' ? `${customRange.start} to ${customRange.end}` : currentPeriod}\n`;
+        const periodStr = filters.startDate && filters.endDate
+            ? `${filters.startDate} to ${filters.endDate}`
+            : (periodType === 'range' ? `${customRange.start} to ${customRange.end}` : currentPeriod);
+
+        txt += `Period: ${periodStr}\n`;
         txt += `Generated on: ${nowFormatted}\n\n`;
 
         txt += `SUMMARY\n`;
         txt += `-------------------\n`;
-        txt += `Total Income: ₹${formatAmount(stats.summary?.total_income)}\n`;
-        txt += `Total Expense: ₹${formatAmount(stats.summary?.total_expense)}\n`;
-        txt += `Net: ₹${formatAmount(stats.summary?.total_income - stats.summary?.total_expense)}\n\n`;
+        txt += `Total Income: ₹${formatAmount(currentStats.summary?.total_income)}\n`;
+        txt += `Total Expense: ₹${formatAmount(currentStats.summary?.total_expense)}\n`;
+        txt += `Net: ₹${formatAmount(currentStats.summary?.total_income - currentStats.summary?.total_expense)}\n\n`;
 
         txt += `TRANSACTIONS\n`;
         txt += `-------------------\n`;
-        transactions.forEach(t => {
+        reportTransactions.forEach(t => {
             const d = new Date(t.date);
             const dateFmt = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
             txt += `${dateFmt} | ${t.title.padEnd(20)} | ₹${t.amount.toString().padEnd(10)} | ${t.type.toUpperCase()}\n`;
@@ -338,19 +356,22 @@ const ExpenseTracker = () => {
         const blob = new Blob([txt], { type: 'text/plain;charset=utf-8;' });
         const link = document.createElement("a");
         link.setAttribute("href", URL.createObjectURL(blob));
-        link.setAttribute("download", `report_${currentPeriod}.txt`);
+        link.setAttribute("download", `report_${periodStr}.txt`);
         link.click();
     };
 
-    const handleExportPDF = () => {
-        if (transactions.length === 0) {
+    const handleExportPDF = (data = transactions, reportStats = stats, filters = {}) => {
+        const reportTransactions = data;
+        const currentStats = reportStats;
+
+        if (reportTransactions.length === 0) {
             toast.error("No data to export");
             return;
         }
 
         const doc = new jsPDF();
-        const workerName = filterWorker ? workers.find(w => w.id == filterWorker)?.name : 'All Workers';
-        const projectName = filterProject ? projects.find(p => p.id == filterProject)?.name : 'All Projects';
+        const workerName = filters.workerId ? workers.find(w => w.id == filters.workerId)?.name : (filterWorker ? workers.find(w => w.id == filterWorker)?.name : 'All Workers');
+        const projectName = filters.projectId ? projects.find(p => p.id == filters.projectId)?.name : (filterProject ? projects.find(p => p.id == filterProject)?.name : 'All Projects');
 
         doc.setFontSize(20);
         doc.text('Financial Report', 14, 22);
@@ -361,7 +382,12 @@ const ExpenseTracker = () => {
         const nowFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${now.getHours() % 12 || 12}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'PM' : 'AM'}`;
 
         doc.text(`Generated on: ${nowFormatted}`, 14, 30);
-        doc.text(`Period: ${periodType === 'range' ? `${customRange.start} to ${customRange.end}` : currentPeriod}`, 14, 35);
+
+        const periodStr = filters.startDate && filters.endDate
+            ? `${filters.startDate} to ${filters.endDate}`
+            : (periodType === 'range' ? `${customRange.start} to ${customRange.end}` : currentPeriod);
+
+        doc.text(`Period: ${periodStr}`, 14, 35);
         doc.text(`Worker: ${workerName} | Project: ${projectName}`, 14, 40);
 
         // Summary Boxes
@@ -370,14 +396,14 @@ const ExpenseTracker = () => {
         doc.rect(14, 45, 182, 25, 'F');
         doc.setFontSize(12);
         doc.setTextColor(40);
-        doc.text(`Total Income: ₹${formatAmount(stats.summary?.total_income)}`, 20, 55);
-        doc.text(`Total Expense: ₹${formatAmount(stats.summary?.total_expense)}`, 20, 62);
-        doc.text(`Net Balance: ₹${formatAmount(stats.summary?.total_income - stats.summary?.total_expense)}`, 120, 55);
+        doc.text(`Total Income: ₹${formatAmount(currentStats.summary?.total_income)}`, 20, 55);
+        doc.text(`Total Expense: ₹${formatAmount(currentStats.summary?.total_expense)}`, 20, 62);
+        doc.text(`Net Balance: ₹${formatAmount(currentStats.summary?.total_income - currentStats.summary?.total_expense)}`, 120, 55);
 
         autoTable(doc, {
             startY: 75,
             head: [['Date', 'Description', 'Category', 'Type', 'Amount']],
-            body: transactions.map(t => {
+            body: reportTransactions.map(t => {
                 const d = new Date(t.date);
                 const dateFmt = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
                 return [
@@ -393,7 +419,41 @@ const ExpenseTracker = () => {
             alternateRowStyles: { fillColor: [250, 250, 250] },
         });
 
-        doc.save(`report_${currentPeriod}.pdf`);
+        doc.save(`report_${periodStr}.pdf`);
+    };
+
+    const handleGenerateCustomReport = async (format = 'PDF') => {
+        if (!customReportForm.startDate || !customReportForm.endDate) {
+            toast.error("Please select both start and end dates");
+            return;
+        }
+
+        setCustomReportLoading(format);
+        try {
+            const [transRes, statsRes] = await Promise.all([
+                getTransactions({
+                    projectId: customReportForm.projectId,
+                    workerId: customReportForm.workerId,
+                    startDate: customReportForm.startDate,
+                    endDate: customReportForm.endDate,
+                    category: customReportForm.category === 'all' ? null : customReportForm.category,
+                    type: customReportForm.type === 'all' ? null : customReportForm.type
+                }),
+                getTransactionStats(null, customReportForm.projectId, customReportForm.startDate, customReportForm.endDate, customReportForm.workerId)
+            ]);
+
+            if (format === 'PDF') handleExportPDF(transRes.data, statsRes.data, customReportForm);
+            else if (format === 'CSV') handleExportCSV(transRes.data, customReportForm);
+            else if (format === 'TXT') handleExportTXT(transRes.data, statsRes.data, customReportForm);
+
+            setShowCustomReportModal(false);
+            toast.success("Custom report generated successfully!");
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to generate custom report");
+        } finally {
+            setCustomReportLoading(false);
+        }
     };
 
     // Charts Data
@@ -439,9 +499,7 @@ const ExpenseTracker = () => {
                 <nav className="flex-1 space-y-2">
                     <SidebarItem icon={FaChartBar} label="Dashboard" />
                     <SidebarItem icon={FaExchangeAlt} label="Transactions" />
-                    <SidebarItem icon={FaWallet} label="Budgets" />
                     <SidebarItem icon={FaFileAlt} label="Reports" />
-                    <SidebarItem icon={FaPiggyBank} label="Savings Goals" />
                 </nav>
 
                 <button className="flex items-center gap-4 px-6 py-4 text-slate-400 hover:text-red-500 font-black text-xs uppercase tracking-widest transition-colors">
@@ -471,58 +529,16 @@ const ExpenseTracker = () => {
                     </div>
 
                     {/* Filters: Project, Period Type, Date */}
-                    <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-
-                        {/* Create Project Button */}
-                        <button
-                            onClick={() => setShowProjectManager(true)}
-                            className="h-[40px] flex items-center gap-2 bg-[#2d5bff] text-white px-4 rounded-xl shadow-lg shadow-blue-500/20 hover:scale-105 transition-transform shrink-0"
-                        >
-                            <FaFolderPlus className="text-sm" />
-                            <span className="text-xs font-black uppercase tracking-widest hidden sm:inline">New Project</span>
-                            <span className="text-xs font-black uppercase tracking-widest sm:hidden">New</span>
-                        </button>
-
-                        {/* Project Filter */}
-                        <div className="h-[40px] flex items-center gap-2 bg-white border border-slate-200 px-3 rounded-[12px] shadow-sm hover:border-blue-500 transition-colors">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0 hidden sm:inline">Project:</span>
-                            <select
-                                value={filterProject}
-                                onChange={(e) => setFilterProject(e.target.value)}
-                                className="text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit'] min-w-[80px] sm:min-w-[100px]"
-                            >
-                                <option value="">All Projects</option>
-                                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                            </select>
-                        </div>
-
-                        {/* Worker Filter and Manage Button */}
-                        <div className="h-[40px] flex items-center gap-2 bg-white border border-slate-200 px-3 rounded-[12px] shadow-sm hover:border-blue-500 transition-colors">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0 hidden sm:inline">Worker:</span>
-                            <select
-                                value={filterWorker}
-                                onChange={(e) => setFilterWorker(e.target.value)}
-                                className="text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit'] min-w-[80px] sm:min-w-[100px]"
-                            >
-                                <option value="">All Workers</option>
-                                {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-                            </select>
-                            <button
-                                onClick={() => setShowWorkerManager(true)}
-                                className="w-[24px] h-[24px] bg-slate-100 text-slate-500 rounded-[8px] flex items-center justify-center hover:bg-orange-50 hover:text-orange-600 transition-all border border-slate-200 shrink-0"
-                                title="Manage Workers"
-                            >
-                                <FaUserEdit className="text-[12px]" />
-                            </button>
-                        </div>
+                    {/* Filters: Period Type, Date, Project, Worker */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:flex xl:flex-wrap items-center gap-[8px] sm:gap-[12px] w-full xl:w-auto">
 
                         {/* Period Type Toggle */}
-                        <div className="h-[40px] flex items-center p-1 bg-white border border-slate-200 rounded-[12px] overflow-x-auto custom-scrollbar max-w-full">
+                        <div className="col-span-2 md:col-span-1 h-[40px] flex items-center p-[4px] bg-white border border-slate-200 rounded-[12px] shadow-sm overflow-x-auto custom-scrollbar">
                             {['day', 'week', 'month', 'year', 'range'].map((type) => (
                                 <button
                                     key={type}
                                     onClick={() => setPeriodType(type)}
-                                    className={`h-full px-3 rounded-[8px] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center ${periodType === type ? 'bg-slate-800 text-white' : 'text-slate-400 hover:text-slate-600'}`}
+                                    className={`flex-1 h-full px-[12px] rounded-[8px] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center justify-center ${periodType === type ? 'bg-slate-800 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}
                                 >
                                     {type}
                                 </button>
@@ -530,28 +546,27 @@ const ExpenseTracker = () => {
                         </div>
 
                         {/* Date Picker or Range Pickers */}
-                        <div className="h-[40px] flex items-center gap-2 bg-white border border-slate-200 px-3 rounded-[12px] shadow-sm hover:border-blue-500 transition-colors">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest shrink-0 hidden sm:inline">Period:</span>
+                        <div className="col-span-2 md:col-span-1 h-[40px] flex items-center bg-white border border-slate-200 px-[12px] rounded-[12px] shadow-sm hover:border-blue-500 transition-colors">
                             {periodType === 'day' ? (
                                 <input
                                     type="date"
                                     value={currentPeriod.length === 10 ? currentPeriod : ''}
                                     onChange={(e) => setCurrentPeriod(e.target.value)}
-                                    className="text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit']"
+                                    className="w-full text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit']"
                                 />
                             ) : periodType === 'week' ? (
                                 <input
                                     type="week"
                                     value={currentPeriod.includes('W') ? currentPeriod : ''}
                                     onChange={(e) => setCurrentPeriod(e.target.value)}
-                                    className="text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit']"
+                                    className="w-full text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit']"
                                 />
                             ) : periodType === 'month' ? (
                                 <input
                                     type="month"
                                     value={currentPeriod.length === 7 ? currentPeriod : ''}
                                     onChange={(e) => setCurrentPeriod(e.target.value)}
-                                    className="text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit']"
+                                    className="w-full text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit']"
                                 />
                             ) : periodType === 'year' ? (
                                 <input
@@ -560,25 +575,68 @@ const ExpenseTracker = () => {
                                     max="2100"
                                     value={currentPeriod.slice(0, 4)}
                                     onChange={(e) => setCurrentPeriod(e.target.value)}
-                                    className="text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit'] w-[60px]"
+                                    className="w-full text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit']"
                                 />
                             ) : (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-[8px] w-full">
                                     <input
                                         type="date"
                                         value={customRange.start}
                                         onChange={(e) => setCustomRange({ ...customRange, start: e.target.value })}
-                                        className="text-[10px] sm:text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit'] w-[85px] sm:w-[100px]"
+                                        className="text-[10px] sm:text-[11px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit'] w-full min-w-0"
                                     />
-                                    <span className="text-xs text-slate-400">-</span>
+                                    <span className="text-slate-400">-</span>
                                     <input
                                         type="date"
                                         value={customRange.end}
                                         onChange={(e) => setCustomRange({ ...customRange, end: e.target.value })}
-                                        className="text-[10px] sm:text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit'] w-[85px] sm:w-[100px]"
+                                        className="text-[10px] sm:text-[11px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit'] w-full min-w-0"
                                     />
                                 </div>
                             )}
+                        </div>
+
+                        {/* Project Filter */}
+                        <div className="col-span-1 h-[40px] flex items-center gap-[8px] bg-white border border-slate-200 px-[12px] rounded-[12px] shadow-sm hover:border-blue-500 transition-colors">
+                            <select
+                                value={filterProject}
+                                onChange={(e) => setFilterProject(e.target.value)}
+                                className="w-full text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit']"
+                            >
+                                <option value="">Projects</option>
+                                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                            </select>
+                        </div>
+
+                        {/* Worker Filter */}
+                        <div className="col-span-1 h-[40px] flex items-center gap-[8px] bg-white border border-slate-200 px-[12px] rounded-[12px] shadow-sm hover:border-blue-500 transition-colors">
+                            <select
+                                value={filterWorker}
+                                onChange={(e) => setFilterWorker(e.target.value)}
+                                className="w-full text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit']"
+                            >
+                                <option value="">Workers</option>
+                                {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                            </select>
+                        </div>
+
+                        {/* Actions: New Project/Manage Workers */}
+                        <div className="col-span-2 flex items-center gap-[8px] xl:w-auto">
+                            <button
+                                onClick={() => setShowProjectManager(true)}
+                                className="flex-1 xl:flex-none h-[40px] flex items-center justify-center gap-[8px] bg-[#2d5bff] text-white px-[16px] rounded-[12px] shadow-lg shadow-blue-500/20 hover:scale-105 transition-transform"
+                                title="New Project"
+                            >
+                                <FaFolderPlus className="text-sm" />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Project</span>
+                            </button>
+                            <button
+                                onClick={() => setShowWorkerManager(true)}
+                                className="w-[40px] h-[40px] bg-white text-slate-500 rounded-[12px] flex items-center justify-center hover:bg-orange-50 hover:text-orange-600 transition-all border border-slate-200 shadow-sm shrink-0"
+                                title="Manage Workers"
+                            >
+                                <FaUserEdit className="text-[16px]" />
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -586,7 +644,7 @@ const ExpenseTracker = () => {
                 {/* Mobile Tab Navigation */}
                 < div className="lg:hidden flex overflow-x-auto gap-3 mb-8 pb-2 custom-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0" >
                     {
-                        ['Dashboard', 'Transactions', 'Budgets', 'Reports', 'Savings Goals'].map((tab) => (
+                        ['Dashboard', 'Transactions', 'Reports'].map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
@@ -617,7 +675,6 @@ const ExpenseTracker = () => {
                                 subtitle={currentPeriod}
                                 onClick={() => handleShowTransactions('expense')}
                             />
-                            <StatCard title="Savings Rate" value={`${savingsRate}%`} color="text-emerald-500" subtitle="% of income" />
                         </div>
 
                         {/* Charts Section */}
@@ -674,26 +731,10 @@ const ExpenseTracker = () => {
                         </div>
 
                         {/* Budgets & Recent Activity */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-[24px] sm:gap-[32px] mb-[32px] lg:mb-[48px]">
-                            {/* Budgets Progress */}
-                            <div className="lg:col-span-1 bg-white rounded-[32px] p-[24px] sm:p-[32px] shadow-xl border border-slate-100">
-                                <div className="flex justify-between items-center mb-[24px]">
-                                    <h3 className="text-[16px] sm:text-[18px] font-black flex items-center gap-[8px]">
-                                        <div className="w-[8px] h-[24px] bg-emerald-500 rounded-full"></div>
-                                        Monthly Budgets
-                                    </h3>
-                                    <button onClick={() => setActiveTab('Budgets')} className="text-[10px] sm:text-[12px] font-black text-[#2d5bff] uppercase tracking-widest hover:underline">Manage</button>
-                                </div>
-                                <div className="space-y-[24px]">
-                                    <BudgetProgress label="Food & Dining" spent={stats.categories.find(c => c.category === 'Food')?.total || 0} limit={500} color="bg-blue-500" />
-                                    <BudgetProgress label="Shopping" spent={stats.categories.find(c => c.category === 'Shopping')?.total || 0} limit={300} color="bg-emerald-500" />
-                                    <BudgetProgress label="Entertainment" spent={stats.categories.find(c => c.category === 'Entertainment')?.total || 0} limit={200} color="bg-purple-500" />
-                                    <BudgetProgress label="Transport" spent={stats.categories.find(c => c.category === 'Transport')?.total || 0} limit={150} color="bg-orange-500" />
-                                </div>
-                            </div>
+                        <div className="grid grid-cols-1 gap-[24px] sm:gap-[32px] mb-[32px] lg:mb-[48px]">
 
                             {/* Recent Activity */}
-                            <div className="lg:col-span-2 bg-white rounded-[32px] p-[24px] sm:p-[32px] shadow-xl border border-slate-100">
+                            <div className="bg-white rounded-[32px] p-[24px] sm:p-[32px] shadow-xl border border-slate-100">
                                 <div className="flex justify-between items-center mb-[24px]">
                                     <h3 className="text-[16px] sm:text-[18px] font-black flex items-center gap-[8px]">
                                         <div className="w-[8px] h-[24px] bg-slate-800 rounded-full"></div>
@@ -817,48 +858,7 @@ const ExpenseTracker = () => {
                             )}
                         </div>
                     </div>
-                ) : activeTab === 'Budgets' ? (
-                    <div className="animate-in slide-in-from-right-10 duration-500">
-                        <div className="flex justify-between items-center mb-[32px]">
-                            <h2 className="text-[20px] sm:text-[24px] font-black">Monthly Budgets</h2>
-                            <button className="bg-emerald-500 text-white px-[20px] py-[10px] rounded-[16px] shadow-lg shadow-emerald-500/20 text-[12px] font-black uppercase tracking-widest hover:scale-105 transition-all">Set Budget</button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-[24px]">
-                            <div className="bg-white p-[32px] rounded-[32px] shadow-xl border border-slate-100 flex flex-col justify-between">
-                                <div>
-                                    <div className="flex justify-between items-start mb-[24px]">
-                                        <div className="w-[48px] h-[48px] bg-blue-50 text-blue-500 rounded-[16px] flex items-center justify-center">
-                                            <FaTag />
-                                        </div>
-                                        <span className="text-[24px] font-black tracking-tighter text-blue-500">76%</span>
-                                    </div>
-                                    <h4 className="text-[18px] font-black mb-[8px]">Food & Dining</h4>
-                                    <p className="text-[12px] text-slate-500 font-bold uppercase tracking-widest mb-[24px]">Budget: ₹500.00</p>
-                                    <div className="w-full h-[12px] bg-slate-50 rounded-full overflow-hidden mb-[8px]">
-                                        <div className="h-full bg-blue-500 w-[76%] rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
-                                    </div>
-                                </div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-[24px]">Remaining: ₹120.00</p>
-                            </div>
-                            <div className="bg-white p-[32px] rounded-[32px] shadow-xl border border-slate-100 flex flex-col justify-between">
-                                <div>
-                                    <div className="flex justify-between items-start mb-[24px]">
-                                        <div className="w-[48px] h-[48px] bg-emerald-50 text-emerald-500 rounded-[16px] flex items-center justify-center">
-                                            <FaPiggyBank />
-                                        </div>
-                                        <span className="text-[24px] font-black tracking-tighter text-emerald-500">45%</span>
-                                    </div>
-                                    <h4 className="text-[18px] font-black mb-[8px]">Health & Wellness</h4>
-                                    <p className="text-[12px] text-slate-500 font-bold uppercase tracking-widest mb-[24px]">Budget: ₹200.00</p>
-                                    <div className="w-full h-[12px] bg-slate-50 rounded-full overflow-hidden mb-[8px]">
-                                        <div className="h-full bg-emerald-500 w-[45%] rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
-                                    </div>
-                                </div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-[24px]">Remaining: ₹110.00</p>
-                            </div>
-                        </div>
-                    </div>
-                ) : activeTab === 'Reports' ? (
+                ) : (
                     <div className="animate-in slide-in-from-right-10 duration-500">
                         <div className="flex justify-between items-center mb-[32px]">
                             <h2 className="text-[20px] sm:text-[24px] font-black">Financial Reports</h2>
@@ -932,11 +932,13 @@ const ExpenseTracker = () => {
                                     ) : (
                                         <>
                                             <div className="p-[24px] bg-slate-50 rounded-[24px] border border-slate-100">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px]">Savings Ratio</p>
-                                                <p className="text-[32px] font-black tracking-tighter text-slate-800">{savingsRate}%</p>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px]">Efficiency Score</p>
+                                                <p className="text-[32px] font-black tracking-tighter text-slate-800">
+                                                    {stats.summary?.total_income > 0 ? (((stats.summary.total_income - stats.summary.total_expense) / stats.summary.total_income) * 100).toFixed(0) : 0}%
+                                                </p>
                                                 <div className="mt-[16px] flex items-center gap-[8px]">
                                                     <div className="w-[8px] h-[8px] rounded-full bg-emerald-500"></div>
-                                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Healthy</span>
+                                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Calculated</span>
                                                 </div>
                                             </div>
                                             <div className="p-[24px] bg-slate-50 rounded-[24px] border border-slate-100">
@@ -1043,49 +1045,27 @@ const ExpenseTracker = () => {
                                 )}
 
                                 <div className="flex justify-center">
-                                    <button className="text-[12px] font-black text-blue-500 uppercase tracking-widest hover:bg-blue-50 px-[32px] py-[12px] rounded-[16px] transition-all">Generate Custom Report</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="animate-in slide-in-from-right-10 duration-500">
-                        <div className="flex justify-between items-center mb-[32px]">
-                            <h2 className="text-[20px] sm:text-[24px] font-black">Savings Goals</h2>
-                            <button className="bg-[#1a1c21] text-white px-[20px] py-[10px] rounded-[16px] shadow-lg shadow-black/10 text-[12px] font-black uppercase tracking-widest hover:scale-105 transition-all">New Goal</button>
-                        </div>
-                        <div className="bg-linear-to-br from-[#2d5bff] to-[#6366f1] p-[32px] sm:p-[48px] rounded-[40px] text-white shadow-2xl relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-white/10 rounded-full blur-[80px] -mr-[200px] -mt-[200px]"></div>
-                            <div className="relative">
-                                <div className="flex items-center gap-[24px] mb-[40px]">
-                                    <div className="w-[72px] h-[72px] bg-white/20 backdrop-blur-md rounded-[24px] flex items-center justify-center text-[32px]">
-                                        🏠
-                                    </div>
-                                    <div>
-                                        <h3 className="text-[24px] font-black">Dreams House Fund</h3>
-                                        <p className="text-white/60 text-[12px] font-bold uppercase tracking-widest">Target: ₹500,000</p>
-                                    </div>
-                                </div>
-
-                                <div className="mb-[12px] flex justify-between items-end">
-                                    <span className="text-[48px] font-black tracking-tighter">₹125,400</span>
-                                    <span className="text-[18px] font-black opacity-80 mb-[12px]">25% reached</span>
-                                </div>
-
-                                <div className="w-full h-[16px] bg-white/20 rounded-full overflow-hidden mb-[32px]">
-                                    <div className="h-full bg-white shadow-[0_0_20px_rgba(255,255,255,0.8)]" style={{ width: '25%' }}></div>
-                                </div>
-
-                                <div className="flex gap-[16px]">
-                                    <button className="bg-white text-[#2d5bff] px-[32px] py-[14px] rounded-[16px] font-black text-[12px] uppercase tracking-widest hover:shadow-xl transition-all active:scale-95">Add Funds</button>
-                                    <button className="bg-white/10 hover:bg-white/20 px-[32px] py-[14px] rounded-[16px] font-black text-[12px] uppercase tracking-widest transition-all">Edit Goal</button>
+                                    <button
+                                        onClick={() => {
+                                            setCustomReportForm({
+                                                ...customReportForm,
+                                                projectId: filterProject,
+                                                workerId: filterWorker,
+                                                startDate: periodType === 'range' ? customRange.start : (currentPeriod || new Date().toISOString().split('T')[0]),
+                                                endDate: periodType === 'range' ? customRange.end : (currentPeriod || new Date().toISOString().split('T')[0])
+                                            });
+                                            setShowCustomReportModal(true);
+                                        }}
+                                        className="text-[12px] font-black text-blue-500 uppercase tracking-widest hover:bg-blue-50 px-[32px] py-[12px] rounded-[16px] transition-all"
+                                    >
+                                        Generate Custom Report
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 )}
-
-            </main >
+            </main>
 
             {/* Add Modal */}
             {
@@ -1302,56 +1282,195 @@ const ExpenseTracker = () => {
                 )
             }
 
-            {showWorkerManager && (
-                <WorkerManager
-                    onUpdate={fetchData}
-                    onClose={() => setShowWorkerManager(false)}
-                />
-            )}
+            {
+                showWorkerManager && (
+                    <WorkerManager
+                        onUpdate={fetchData}
+                        onClose={() => setShowWorkerManager(false)}
+                    />
+                )
+            }
 
-            {/* Modern Export Confirmation Modal */}
-            {showExportModal && (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl flex items-center justify-center z-200 p-[24px] animate-in fade-in duration-500">
-                    <div className="bg-white rounded-[48px] p-[48px] w-full max-w-[480px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] border border-slate-100 animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 relative overflow-hidden group">
-                        <div className="absolute top-0 left-0 w-full h-[6px] bg-linear-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
-                        <div className="absolute -top-[100px] -right-[100px] w-[200px] h-[200px] bg-blue-500/5 rounded-full blur-[80px]"></div>
+            {/* Custom Report Modal */}
+            {
+                showCustomReportModal && (
+                    <div className="fixed inset-0 z-150 flex items-center justify-center p-[16px] bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+                        <div className="bg-white rounded-[40px] p-[32px] sm:p-[40px] w-full max-w-[500px] shadow-2xl relative animate-in zoom-in-95 duration-300">
+                            <button onClick={() => setShowCustomReportModal(false)} className="absolute top-[32px] right-[32px] text-slate-400 hover:text-slate-800 transition-colors">
+                                <FaTimes />
+                            </button>
+                            <h2 className="text-[24px] font-black mb-[32px] flex items-center gap-[12px]">
+                                <div className="w-[8px] h-[32px] bg-indigo-500 rounded-full"></div>
+                                Custom Report
+                            </h2>
 
-                        <div className="relative">
-                            <div className="w-[100px] h-[100px] rounded-[36px] bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-[40px] mx-auto shadow-2xl shadow-blue-500/30 group-hover:scale-110 transition-transform duration-700">
-                                <FaFileAlt className="text-[40px] text-white" />
-                            </div>
+                            <div className="space-y-[24px]">
+                                <div className="grid grid-cols-2 gap-[16px]">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Start Date</label>
+                                        <input
+                                            type="date"
+                                            value={customReportForm.startDate}
+                                            onChange={(e) => setCustomReportForm({ ...customReportForm, startDate: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">End Date</label>
+                                        <input
+                                            type="date"
+                                            value={customReportForm.endDate}
+                                            onChange={(e) => setCustomReportForm({ ...customReportForm, endDate: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all"
+                                        />
+                                    </div>
+                                </div>
 
-                            <div className="text-center space-y-[16px] mb-[48px]">
-                                <h3 className="text-[28px] font-black text-slate-800 tracking-tight leading-tight">Export Statement</h3>
-                                <p className="text-slate-500 font-bold leading-relaxed px-[10px]">
-                                    Generate a high-resolution <span className="text-blue-600 font-black">{exportType}</span> report for the period of <span className="text-indigo-600 font-black">{currentPeriod}</span>?
-                                </p>
-                            </div>
+                                <div className="grid grid-cols-2 gap-[16px]">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Project</label>
+                                        <select
+                                            value={customReportForm.projectId}
+                                            onChange={(e) => setCustomReportForm({ ...customReportForm, projectId: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all cursor-pointer"
+                                        >
+                                            <option value="">All Projects</option>
+                                            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Worker</label>
+                                        <select
+                                            value={customReportForm.workerId}
+                                            onChange={(e) => setCustomReportForm({ ...customReportForm, workerId: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all cursor-pointer"
+                                        >
+                                            <option value="">All Workers</option>
+                                            {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
 
-                            <div className="flex flex-col gap-[12px]">
-                                <button
-                                    onClick={() => {
-                                        setShowExportModal(false);
-                                        if (exportType === 'PDF') handleExportPDF();
-                                        else if (exportType === 'CSV') handleExportCSV();
-                                        else if (exportType === 'Text') handleExportTXT();
-                                    }}
-                                    className="w-full px-[32px] py-[22px] rounded-[24px] text-[14px] font-black uppercase tracking-widest bg-slate-900 text-white shadow-2xl shadow-slate-900/20 hover:bg-blue-600 hover:shadow-blue-500/40 hover:-translate-y-1 active:translate-y-0 transition-all duration-300"
-                                >
-                                    Confirm & Download
-                                </button>
-                                <button
-                                    onClick={() => setShowExportModal(false)}
-                                    className="w-full px-[32px] py-[20px] rounded-[24px] text-[12px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all duration-300"
-                                >
-                                    Go Back
-                                </button>
+                                <div className="grid grid-cols-2 gap-[16px]">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Type</label>
+                                        <select
+                                            value={customReportForm.type}
+                                            onChange={(e) => setCustomReportForm({ ...customReportForm, type: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all cursor-pointer"
+                                        >
+                                            <option value="all">All Transactions</option>
+                                            <option value="income">Income Only</option>
+                                            <option value="expense">Expenses Only</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Category</label>
+                                        <select
+                                            value={customReportForm.category}
+                                            onChange={(e) => setCustomReportForm({ ...customReportForm, category: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all cursor-pointer"
+                                        >
+                                            <option value="all">All Categories</option>
+                                            {[...new Set([...expenseCategories, ...incomeCategories, ...categories.map(c => c.name)])].map(cat => (
+                                                <option key={cat} value={cat}>{cat}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-[12px]">
+                                    <button
+                                        onClick={() => handleGenerateCustomReport('PDF')}
+                                        disabled={!!customReportLoading}
+                                        className="w-full bg-[#2d5bff] hover:bg-blue-600 text-white font-black py-[18px] rounded-[20px] transition-all active:scale-95 shadow-xl flex items-center justify-center gap-[12px] text-[14px] disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {customReportLoading === 'PDF' ? (
+                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        ) : (
+                                            <FaFileAlt />
+                                        )}
+                                        {customReportLoading === 'PDF' ? 'Generating...' : 'Download PDF Report'}
+                                    </button>
+
+                                    <div className="grid grid-cols-2 gap-[12px]">
+                                        <button
+                                            onClick={() => handleGenerateCustomReport('CSV')}
+                                            disabled={!!customReportLoading}
+                                            className="bg-emerald-500 hover:bg-emerald-600 text-white font-black py-[16px] rounded-[20px] transition-all active:scale-95 shadow-lg flex items-center justify-center gap-[8px] text-[12px] disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {customReportLoading === 'CSV' ? (
+                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                            ) : (
+                                                <FaFileAlt />
+                                            )}
+                                            CSV
+                                        </button>
+                                        <button
+                                            onClick={() => handleGenerateCustomReport('TXT')}
+                                            disabled={!!customReportLoading}
+                                            className="bg-slate-700 hover:bg-slate-800 text-white font-black py-[16px] rounded-[20px] transition-all active:scale-95 shadow-lg flex items-center justify-center gap-[8px] text-[12px] disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {customReportLoading === 'TXT' ? (
+                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                            ) : (
+                                                <FaFileAlt />
+                                            )}
+                                            Text
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div >
+                )
+            }
+
+            {/* Modern Export Confirmation Modal */}
+            {
+                showExportModal && (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl flex items-center justify-center z-200 p-[24px] animate-in fade-in duration-500">
+                        <div className="bg-white rounded-[48px] p-[48px] w-full max-w-[480px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] border border-slate-100 animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 relative overflow-hidden group">
+                            <div className="absolute top-0 left-0 w-full h-[6px] bg-linear-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
+                            <div className="absolute -top-[100px] -right-[100px] w-[200px] h-[200px] bg-blue-500/5 rounded-full blur-[80px]"></div>
+
+                            <div className="relative">
+                                <div className="w-[100px] h-[100px] rounded-[36px] bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-[40px] mx-auto shadow-2xl shadow-blue-500/30 group-hover:scale-110 transition-transform duration-700">
+                                    <FaFileAlt className="text-[40px] text-white" />
+                                </div>
+
+                                <div className="text-center space-y-[16px] mb-[48px]">
+                                    <h3 className="text-[28px] font-black text-slate-800 tracking-tight leading-tight">Export Statement</h3>
+                                    <p className="text-slate-500 font-bold leading-relaxed px-[10px]">
+                                        Generate a high-resolution <span className="text-blue-600 font-black">{exportType}</span> report for the period of <span className="text-indigo-600 font-black">{currentPeriod}</span>?
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-col gap-[12px]">
+                                    <button
+                                        onClick={() => {
+                                            setShowExportModal(false);
+                                            if (exportType === 'PDF') handleExportPDF();
+                                            else if (exportType === 'CSV') handleExportCSV();
+                                            else if (exportType === 'Text') handleExportTXT();
+                                        }}
+                                        className="w-full px-[32px] py-[22px] rounded-[24px] text-[14px] font-black uppercase tracking-widest bg-slate-900 text-white shadow-2xl shadow-slate-900/20 hover:bg-blue-600 hover:shadow-blue-500/40 hover:-translate-y-1 active:translate-y-0 transition-all duration-300"
+                                    >
+                                        Confirm & Download
+                                    </button>
+                                    <button
+                                        onClick={() => setShowExportModal(false)}
+                                        className="w-full px-[32px] py-[20px] rounded-[24px] text-[12px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all duration-300"
+                                    >
+                                        Go Back
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+        </div>
     );
 };
 
@@ -1369,22 +1488,5 @@ const StatCard = ({ title, value, color, subtitle, onClick }) => (
     </div>
 );
 
-const BudgetProgress = ({ label, spent, limit, color }) => {
-    const percentage = Math.min((spent / limit) * 100, 100);
-    return (
-        <div>
-            <div className="flex justify-between items-center mb-[8px]">
-                <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{label}</span>
-                <span className="text-[10px] font-black text-slate-800">₹{parseFloat(spent).toFixed(0)} / ₹{limit}</span>
-            </div>
-            <div className="w-full h-[8px] bg-slate-100 rounded-full overflow-hidden">
-                <div
-                    className={`h-full ${color} transition-all duration-1000`}
-                    style={{ width: `${percentage}%` }}
-                ></div>
-            </div>
-        </div>
-    );
-};
 
 export default ExpenseTracker;
