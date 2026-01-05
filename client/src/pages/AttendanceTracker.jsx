@@ -35,8 +35,10 @@ const AttendanceTracker = () => {
     const [showWorkerManager, setShowWorkerManager] = useState(false);
     const [filterProject, setFilterProject] = useState('');
     const [filterWorker, setFilterWorker] = useState('');
+    const [periodType, setPeriodType] = useState('month'); // 'month', 'year', 'day', 'range'
+    const [currentPeriod, setCurrentPeriod] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+    const [customRange, setCustomRange] = useState({ start: '', end: '' });
     const [searchQuery, setSearchQuery] = useState('');
-    const [currentMonth, setCurrentMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
 
     const [formData, setFormData] = useState({
         subject: '',
@@ -56,14 +58,32 @@ const AttendanceTracker = () => {
 
     const fetchData = async () => {
         try {
+            const isRange = periodType === 'range';
+            const rangeStart = isRange ? customRange.start : null;
+            const rangeEnd = isRange ? customRange.end : null;
+
+            if (isRange && (!rangeStart || !rangeEnd)) return;
+
             const [attRes, statsRes, projRes, workersRes] = await Promise.all([
-                getAttendances({ projectId: filterProject, workerId: filterWorker, month: currentMonth }),
-                getAttendanceStats({ month: currentMonth, projectId: filterProject, workerId: filterWorker }),
+                getAttendances({
+                    projectId: filterProject,
+                    workerId: filterWorker,
+                    period: isRange ? null : currentPeriod,
+                    startDate: rangeStart,
+                    endDate: rangeEnd
+                }),
+                getAttendanceStats({
+                    projectId: filterProject,
+                    workerId: filterWorker,
+                    period: isRange ? null : currentPeriod,
+                    startDate: rangeStart,
+                    endDate: rangeEnd
+                }),
                 getProjects(),
                 getActiveWorkers()
             ]);
             setAttendances(attRes.data.data);
-            setStats(statsRes.data.data);
+            setStats(attRes.data.data.length > 0 ? statsRes.data.data : []); // Fallback if no records
             setProjects(projRes.data);
             setWorkers(workersRes.data.data);
             setLoading(false);
@@ -74,8 +94,25 @@ const AttendanceTracker = () => {
     };
 
     useEffect(() => {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+
+        if (periodType === 'year') {
+            if (currentPeriod.length !== 4) setCurrentPeriod(`${yyyy}`);
+        } else if (periodType === 'month') {
+            if (currentPeriod.length !== 7) setCurrentPeriod(`${yyyy}-${mm}`);
+        } else if (periodType === 'day') {
+            if (currentPeriod.length !== 10) setCurrentPeriod(`${yyyy}-${mm}-${dd}`);
+        } else if (periodType === 'range') {
+            if (!customRange.start) setCustomRange({ start: `${yyyy}-${mm}-${dd}`, end: `${yyyy}-${mm}-${dd}` });
+        }
+    }, [periodType]);
+
+    useEffect(() => {
         fetchData();
-    }, [currentMonth, filterProject, filterWorker]);
+    }, [currentPeriod, filterProject, filterWorker, periodType, customRange.start, customRange.end]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -183,19 +220,65 @@ const AttendanceTracker = () => {
                         </div>
 
                         <div className="flex flex-wrap items-center gap-3">
-                            <div className="flex items-center bg-slate-100 rounded-xl p-1 gap-1">
-                                <input
-                                    type="month"
-                                    value={currentMonth}
-                                    onChange={(e) => setCurrentMonth(e.target.value)}
-                                    className="bg-transparent border-none text-sm font-bold text-slate-700 focus:ring-0 cursor-pointer px-3 py-1"
-                                />
+                            <div className="h-[40px] flex items-center p-1 bg-white border border-slate-200 rounded-[12px] shadow-sm overflow-x-auto custom-scrollbar">
+                                {['day', 'month', 'year', 'range'].map((type) => (
+                                    <button
+                                        key={type}
+                                        onClick={() => setPeriodType(type)}
+                                        className={`h-full px-4 rounded-[8px] text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap flex items-center ${periodType === type ? 'bg-slate-900 text-white' : 'text-slate-400 hover:text-slate-600'}`}
+                                    >
+                                        {type}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="h-[40px] flex items-center bg-white border border-slate-200 px-3 rounded-[12px] shadow-sm hover:border-blue-500 transition-colors">
+                                {periodType === 'day' ? (
+                                    <input
+                                        type="date"
+                                        value={currentPeriod.length === 10 ? currentPeriod : ''}
+                                        onChange={(e) => setCurrentPeriod(e.target.value)}
+                                        className="text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit']"
+                                    />
+                                ) : periodType === 'month' ? (
+                                    <input
+                                        type="month"
+                                        value={currentPeriod.length === 7 ? currentPeriod : ''}
+                                        onChange={(e) => setCurrentPeriod(e.target.value)}
+                                        className="text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit']"
+                                    />
+                                ) : periodType === 'year' ? (
+                                    <input
+                                        type="number"
+                                        min="2000"
+                                        max="2100"
+                                        value={currentPeriod.slice(0, 4)}
+                                        onChange={(e) => setCurrentPeriod(e.target.value)}
+                                        className="text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit'] w-[60px]"
+                                    />
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="date"
+                                            value={customRange.start}
+                                            onChange={(e) => setCustomRange({ ...customRange, start: e.target.value })}
+                                            className="text-[10px] sm:text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit'] w-[85px] sm:w-[100px]"
+                                        />
+                                        <span className="text-xs text-slate-400">-</span>
+                                        <input
+                                            type="date"
+                                            value={customRange.end}
+                                            onChange={(e) => setCustomRange({ ...customRange, end: e.target.value })}
+                                            className="text-[10px] sm:text-[12px] font-bold text-slate-700 outline-none bg-transparent cursor-pointer font-['Outfit'] w-[85px] sm:w-[100px]"
+                                        />
+                                    </div>
+                                )}
                             </div>
 
                             <select
                                 value={filterProject}
                                 onChange={(e) => setFilterProject(e.target.value)}
-                                className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all cursor-pointer shadow-sm"
+                                className="bg-white border border-slate-200 rounded-xl px-4 h-[40px] py-1 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all cursor-pointer shadow-sm"
                             >
                                 <option value="">All Projects</option>
                                 {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
@@ -204,7 +287,7 @@ const AttendanceTracker = () => {
                             <select
                                 value={filterWorker}
                                 onChange={(e) => setFilterWorker(e.target.value)}
-                                className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all cursor-pointer shadow-sm"
+                                className="bg-white border border-slate-200 rounded-xl px-4 h-[40px] py-1 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all cursor-pointer shadow-sm"
                             >
                                 <option value="">All Workers</option>
                                 {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}

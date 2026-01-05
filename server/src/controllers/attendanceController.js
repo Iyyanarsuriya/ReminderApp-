@@ -14,8 +14,9 @@ const getAttendances = async (req, res) => {
         const filters = {
             projectId: req.query.projectId,
             workerId: req.query.workerId,
-            date: req.query.date,
-            month: req.query.month
+            period: req.query.period,
+            startDate: req.query.startDate,
+            endDate: req.query.endDate
         };
         const attendances = await Attendance.getAllByUserId(req.user.id, filters);
         res.status(200).json({ success: true, data: attendances });
@@ -53,7 +54,9 @@ const deleteAttendance = async (req, res) => {
 const getAttendanceStats = async (req, res) => {
     try {
         const stats = await Attendance.getStats(req.user.id, {
-            month: req.query.month,
+            period: req.query.period,
+            startDate: req.query.startDate,
+            endDate: req.query.endDate,
             projectId: req.query.projectId,
             workerId: req.query.workerId
         });

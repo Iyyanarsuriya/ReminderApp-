@@ -28,14 +28,25 @@ class Attendance {
             params.push(filters.workerId);
         }
 
-        if (filters.date) {
-            query += ' AND a.date = ?';
-            params.push(filters.date);
+        if (filters.period) {
+            if (filters.period.length === 10) {
+                // YYYY-MM-DD (Day)
+                query += " AND DATE(a.date) = ?";
+                params.push(filters.period);
+            } else if (filters.period.length === 7) {
+                // YYYY-MM (Month)
+                query += " AND DATE_FORMAT(a.date, '%Y-%m') = ?";
+                params.push(filters.period);
+            } else if (filters.period.length === 4) {
+                // YYYY (Year)
+                query += " AND DATE_FORMAT(a.date, '%Y') = ?";
+                params.push(filters.period);
+            }
         }
 
-        if (filters.month) {
-            query += " AND DATE_FORMAT(a.date, '%Y-%m') = ?";
-            params.push(filters.month);
+        if (filters.startDate && filters.endDate) {
+            query += " AND DATE(a.date) BETWEEN ? AND ?";
+            params.push(filters.startDate, filters.endDate);
         }
 
         query += ' ORDER BY a.date DESC, a.created_at DESC';
@@ -71,14 +82,22 @@ class Attendance {
         `;
         const params = [userId];
 
-        if (filters.month) {
-            query += " AND DATE_FORMAT(date, '%Y-%m') = ?";
-            params.push(filters.month);
+        if (filters.period) {
+            if (filters.period.length === 10) {
+                query += " AND DATE(date) = ?";
+                params.push(filters.period);
+            } else if (filters.period.length === 7) {
+                query += " AND DATE_FORMAT(date, '%Y-%m') = ?";
+                params.push(filters.period);
+            } else if (filters.period.length === 4) {
+                query += " AND DATE_FORMAT(date, '%Y') = ?";
+                params.push(filters.period);
+            }
         }
 
-        if (filters.projectId) {
-            query += " AND project_id = ?";
-            params.push(filters.projectId);
+        if (filters.startDate && filters.endDate) {
+            query += " AND DATE(date) BETWEEN ? AND ?";
+            params.push(filters.startDate, filters.endDate);
         }
 
         if (filters.workerId) {
