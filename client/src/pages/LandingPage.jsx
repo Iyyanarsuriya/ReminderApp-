@@ -17,7 +17,8 @@ import {
     Instagram,
     Sun,
     Clock,
-    Github
+    Github,
+    UserCheck
 } from 'lucide-react';
 
 const LandingPage = ({ token, user, onProfileClick, onSignupClick }) => {
@@ -56,6 +57,10 @@ const LandingPage = ({ token, user, onProfileClick, onSignupClick }) => {
                                         <Wallet className="w-5 h-5" />
                                         Track Expenses
                                     </Link>
+                                    <Link to="/attendance" className="inline-flex items-center gap-3 bg-orange-500 hover:bg-orange-600 text-white font-black px-8 py-4 rounded-2xl shadow-xl shadow-orange-500/10 transition-all active:scale-95 group">
+                                        <UserCheck className="w-5 h-5" />
+                                        Check Attendance
+                                    </Link>
                                 </div>
                             ) : (
                                 <button
@@ -67,7 +72,7 @@ const LandingPage = ({ token, user, onProfileClick, onSignupClick }) => {
                             )}
 
                             {/* Center Feature Cards */}
-                            <div className="grid sm:grid-cols-2 gap-6 max-w-2xl">
+                            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl">
                                 <div className="p-8 rounded-[40px] bg-[#eff6ff] border border-blue-100 flex flex-col items-center text-center group cursor-pointer hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-500">
                                     <div className="w-16 h-16 bg-[#2d5bff] rounded-[24px] flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
                                         <Bell className="w-8 h-8 text-white" />
@@ -90,6 +95,18 @@ const LandingPage = ({ token, user, onProfileClick, onSignupClick }) => {
                                     </p>
                                     <div className="text-[10px] font-black uppercase text-[#00d1a0] tracking-widest flex items-center gap-2 group-hover:gap-3 transition-all">
                                         View Features <ArrowRight className="w-3 h-3" />
+                                    </div>
+                                </div>
+                                <div className="p-8 rounded-[40px] bg-[#fff7ed] border border-orange-100 flex flex-col items-center text-center group cursor-pointer hover:shadow-xl hover:shadow-orange-500/5 transition-all duration-500">
+                                    <div className="w-16 h-16 bg-orange-500 rounded-[24px] flex items-center justify-center mb-6 shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform">
+                                        <UserCheck className="w-8 h-8 text-white" />
+                                    </div>
+                                    <h3 className="text-xl font-black text-orange-600 mb-3">Attendance</h3>
+                                    <p className="text-slate-400 text-sm font-medium leading-relaxed mb-4">
+                                        Log presence and track consistency like a pro every single day.
+                                    </p>
+                                    <div className="text-[10px] font-black uppercase text-orange-600 tracking-widest flex items-center gap-2 group-hover:gap-3 transition-all">
+                                        Get Started <ArrowRight className="w-3 h-3" />
                                     </div>
                                 </div>
                             </div>
@@ -117,34 +134,41 @@ const LandingPage = ({ token, user, onProfileClick, onSignupClick }) => {
             {/* Features Icon Row */}
             <section className="py-24 bg-white">
                 <div className="max-w-7xl mx-auto px-6">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8">
                         <div className="flex flex-col items-center text-center group">
                             <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center mb-6 group-hover:bg-blue-100 transition-colors">
                                 <RefreshCcw className="w-7 h-7 text-blue-500" />
                             </div>
-                            <h4 className="font-black text-[#1a1c21] text-base mb-2">Smart Sync: Your</h4>
-                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Expenses work together</p>
+                            <h4 className="font-black text-[#1a1c21] text-base mb-2">Smart Sync</h4>
+                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Work life together</p>
                         </div>
                         <div className="flex flex-col items-center text-center group">
                             <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mb-6 group-hover:bg-emerald-100 transition-colors">
                                 <BarChart3 className="w-7 h-7 text-emerald-500" />
                             </div>
                             <h4 className="font-black text-[#1a1c21] text-base mb-2">Analytics View</h4>
-                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Real-time data insights</p>
+                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Real-time insights</p>
+                        </div>
+                        <div className="flex flex-col items-center text-center group">
+                            <div className="w-14 h-14 rounded-2xl bg-orange-50 flex items-center justify-center mb-6 group-hover:bg-orange-100 transition-colors">
+                                <UserCheck className="w-7 h-7 text-orange-500" />
+                            </div>
+                            <h4 className="font-black text-[#1a1c21] text-base mb-2">Attendance Log</h4>
+                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Daily consistency</p>
                         </div>
                         <div className="flex flex-col items-center text-center group">
                             <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center mb-6 group-hover:bg-indigo-100 transition-colors">
                                 <TrendingUp className="w-7 h-7 text-indigo-500" />
                             </div>
-                            <h4 className="font-black text-[#1a1c21] text-base mb-2">Analytics Reports</h4>
-                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Productivity habits</p>
+                            <h4 className="font-black text-[#1a1c21] text-base mb-2">Habit Analysis</h4>
+                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Productivity sync</p>
                         </div>
                         <div className="flex flex-col items-center text-center group">
                             <div className="w-14 h-14 rounded-2xl bg-sky-50 flex items-center justify-center mb-6 group-hover:bg-sky-100 transition-colors">
                                 <Cloud className="w-7 h-7 text-sky-400" />
                             </div>
                             <h4 className="font-black text-[#1a1c21] text-base mb-2">Cloud Backup</h4>
-                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Never lose information</p>
+                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Never lose data</p>
                         </div>
                     </div>
                 </div>

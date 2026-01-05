@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import {
     FaWallet, FaPlus, FaTrash, FaChartBar, FaTag, FaHome,
     FaExchangeAlt, FaPiggyBank, FaFileAlt, FaSignOutAlt, FaTimes,
-    FaArrowLeft, FaEdit, FaFolderPlus
+    FaArrowLeft, FaEdit, FaFolderPlus, FaUserCheck
 } from 'react-icons/fa';
 import {
     PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
@@ -257,7 +257,10 @@ const ExpenseTracker = () => {
 
     const SidebarItem = ({ icon: Icon, label }) => (
         <button
-            onClick={() => setActiveTab(label)}
+            onClick={() => {
+                if (label === 'Attendance') navigate('/attendance');
+                else setActiveTab(label);
+            }}
             className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 group ${activeTab === label ? 'bg-[#2d5bff] text-white shadow-lg shadow-blue-500/30' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'}`}
         >
             <Icon className={`text-lg transition-transform group-hover:scale-110 ${activeTab === label ? 'text-white' : 'text-slate-400'}`} />
@@ -284,6 +287,7 @@ const ExpenseTracker = () => {
                 <nav className="flex-1 space-y-2">
                     <SidebarItem icon={FaChartBar} label="Dashboard" />
                     <SidebarItem icon={FaExchangeAlt} label="Transactions" />
+                    <SidebarItem icon={FaUserCheck} label="Attendance" />
                     <SidebarItem icon={FaWallet} label="Budgets" />
                     <SidebarItem icon={FaFileAlt} label="Reports" />
                     <SidebarItem icon={FaPiggyBank} label="Savings Goals" />

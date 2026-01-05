@@ -6,7 +6,7 @@ import { API_URL } from '../api/axiosInstance';
 import toast from 'react-hot-toast';
 import {
     FaWallet, FaArrowLeft, FaUserEdit, FaCamera,
-    FaChartPie, FaCreditCard, FaLock, FaBell
+    FaChartPie, FaCreditCard, FaLock, FaBell, FaHistory
 } from 'react-icons/fa';
 
 const FinanceProfile = () => {
@@ -135,7 +135,8 @@ const FinanceProfile = () => {
 
                         {/* Navigation Menu */}
                         <div className="glass rounded-[32px] p-[16px] border border-white shadow-xl overflow-hidden">
-                            <MenuBtn icon={FaChartPie} label="Spending Analysis" color="text-teal-500" />
+                            <MenuBtn icon={FaChartPie} label="Spending Analysis" color="text-teal-500" onClick={() => navigate('/expenses')} />
+                            <MenuBtn icon={FaHistory} label="Attendance History" color="text-orange-500" onClick={() => navigate('/attendance')} />
                             <MenuBtn icon={FaCreditCard} label="Payment Methods" color="text-blue-500" />
                             <MenuBtn icon={FaBell} label="Alert Settings" color="text-orange-500" />
                             <MenuBtn icon={FaLock} label="Security" color="text-red-500" />
@@ -211,8 +212,8 @@ const FinanceProfile = () => {
     );
 };
 
-const MenuBtn = ({ icon: Icon, label, color }) => (
-    <button className="w-full flex items-center justify-between p-[12px] sm:p-[16px] rounded-[16px] sm:rounded-[20px] hover:bg-slate-50 transition-colors group">
+const MenuBtn = ({ icon: Icon, label, color, onClick }) => (
+    <button onClick={onClick} className="w-full flex items-center justify-between p-[12px] sm:p-[16px] rounded-[16px] sm:rounded-[20px] hover:bg-slate-50 transition-colors group">
         <div className="flex items-center gap-[12px] sm:gap-[16px]">
             <div className={`w-[32px] h-[32px] sm:w-[40px] sm:h-[40px] rounded-[10px] sm:rounded-[12px] bg-slate-100 flex items-center justify-center ${color} group-hover:bg-white group-hover:shadow-md transition-all`}>
                 <Icon className="text-[12px] sm:text-[14px]" />

@@ -15,6 +15,7 @@ const Reminders = lazy(() => import('./pages/Reminders'));
 const Profile = lazy(() => import('./pages/ReminderDashboard'));
 const FinanceProfile = lazy(() => import('./pages/FinanceProfile'));
 const ExpenseTracker = lazy(() => import('./pages/ExpenseTracker'));
+const AttendanceTracker = lazy(() => import('./pages/AttendanceTracker'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 
 // Protected Route Component
@@ -217,6 +218,7 @@ const AppContent = () => {
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/finance" element={<ProtectedRoute><FinanceProfile /></ProtectedRoute>} />
             <Route path="/expenses" element={<ProtectedRoute><ExpenseTracker /></ProtectedRoute>} />
+            <Route path="/attendance" element={<ProtectedRoute><AttendanceTracker /></ProtectedRoute>} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

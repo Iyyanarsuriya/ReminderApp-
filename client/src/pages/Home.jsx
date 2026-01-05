@@ -11,7 +11,8 @@ import {
     Facebook,
     Twitter,
     Linkedin,
-    Instagram
+    Instagram,
+    UserCheck
 } from 'lucide-react';
 import { API_URL } from '../api/axiosInstance';
 
@@ -44,6 +45,10 @@ const Home = () => {
                                 <Link to="/expenses" className="inline-flex items-center gap-3 bg-[#00d1a0] hover:bg-[#00b890] text-white font-black px-8 py-4 rounded-2xl shadow-xl shadow-emerald-500/10 transition-all active:scale-95 group">
                                     <Wallet className="w-5 h-5" />
                                     Track Spending
+                                </Link>
+                                <Link to="/attendance" className="inline-flex items-center gap-3 bg-orange-500 hover:bg-orange-600 text-white font-black px-8 py-4 rounded-2xl shadow-xl shadow-orange-500/10 transition-all active:scale-95 group">
+                                    <UserCheck className="w-5 h-5" />
+                                    Check In
                                 </Link>
                             </div>
 
@@ -134,10 +139,24 @@ const Home = () => {
                             </div>
                             <h3 className="text-2xl font-black text-slate-800 mb-4">Data Analytics</h3>
                             <p className="text-slate-500 font-medium leading-relaxed mb-6">
-                                deep dive into your productivity habits and financial statistics.
+                                Deep dive into your productivity habits and financial statistics.
                             </p>
                             <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2 group-hover:gap-3 transition-all">
                                 View Analysis <ArrowRight className="w-3 h-3" />
+                            </span>
+                        </Link>
+
+                        {/* Attendance Tracker Card */}
+                        <Link to="/attendance" className="p-10 rounded-[40px] bg-[#fff7ed] border border-orange-100 group hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-500">
+                            <div className="w-16 h-16 bg-orange-500 rounded-[24px] flex items-center justify-center mb-8 shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform">
+                                <UserCheck className="w-8 h-8 text-white" />
+                            </div>
+                            <h3 className="text-2xl font-black text-orange-600 mb-4">Check-ins</h3>
+                            <p className="text-slate-500 font-medium leading-relaxed mb-6">
+                                Log your daily presence and maintain consistency with the attendance log.
+                            </p>
+                            <span className="text-[10px] font-black uppercase text-orange-600 tracking-widest flex items-center gap-2 group-hover:gap-3 transition-all">
+                                Mark Attendance <ArrowRight className="w-3 h-3" />
                             </span>
                         </Link>
                     </div>
@@ -167,6 +186,7 @@ const Home = () => {
                                 <ul className="space-y-2">
                                     <li><Link to="/reminders" className="text-sm font-bold text-slate-400 hover:text-white transition-colors">Reminders</Link></li>
                                     <li><Link to="/expenses" className="text-sm font-bold text-slate-400 hover:text-white transition-colors">Expense Tracker</Link></li>
+                                    <li><Link to="/attendance" className="text-sm font-bold text-slate-400 hover:text-white transition-colors">Attendance Tracker</Link></li>
                                     <li><Link to="/finance" className="text-sm font-bold text-slate-400 hover:text-white transition-colors">Statistics</Link></li>
                                 </ul>
                             </div>
