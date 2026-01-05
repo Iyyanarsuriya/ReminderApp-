@@ -36,7 +36,8 @@ const Reminders = () => {
     const [mailConfig, setMailConfig] = useState({
         startDate: new Date().toISOString().split('T')[0],
         endDate: '',
-        customMessage: ''
+        customMessage: '',
+        status: 'pending'
     });
 
     const lastFetchRef = useRef(0);
@@ -337,7 +338,8 @@ const Reminders = () => {
             await triggerMissedAlert({
                 date: mailConfig.startDate,
                 endDate: mailConfig.endDate,
-                customMessage: mailConfig.customMessage
+                customMessage: mailConfig.customMessage,
+                status: mailConfig.status
             });
             toast.success("Email report sent successfully!");
             setShowMailModal(false);
@@ -884,6 +886,24 @@ const Reminders = () => {
                                         </div>
                                     </div>
                                     <p className="text-[10px] text-slate-400 mt-[6px] ml-[4px]">Leave end date empty for single day.</p>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Filter Status</label>
+                                    <div className="relative">
+                                        <select
+                                            value={mailConfig.status}
+                                            onChange={(e) => setMailConfig({ ...mailConfig, status: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-[12px] px-[16px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-blue-500 transition-all font-['Outfit'] appearance-none cursor-pointer"
+                                        >
+                                            <option value="pending">Pending Only</option>
+                                            <option value="completed">Completed Only</option>
+                                            <option value="all">All Tasks</option>
+                                        </select>
+                                        <svg className="w-[12px] h-[12px] text-slate-400 absolute right-[16px] top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </div>
                                 </div>
 
                                 <div>

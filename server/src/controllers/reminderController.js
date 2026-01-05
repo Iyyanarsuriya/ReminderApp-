@@ -88,10 +88,10 @@ exports.updateReminder = async (req, res) => {
 const { runMissedTaskCheck } = require('../jobs/cronService');
 
 exports.triggerMissedTaskEmail = async (req, res) => {
-    const { date, endDate, customMessage } = req.body;
+    const { date, endDate, customMessage, status } = req.body;
     try {
         // Trigger the check specifically for this user and date
-        const result = await runMissedTaskCheck(req.user.id, date, endDate, customMessage);
+        const result = await runMissedTaskCheck(req.user.id, date, endDate, customMessage, status);
         res.json({ message: `Task report check ran for ${date || 'today'}`, ...result });
     } catch (error) {
         console.error('Manual trigger error:', error);
