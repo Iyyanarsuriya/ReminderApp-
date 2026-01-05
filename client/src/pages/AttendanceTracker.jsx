@@ -482,7 +482,10 @@ const AttendanceTracker = () => {
                                                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] sm:text-xs text-slate-400 font-bold uppercase tracking-wider">
                                                                 <span className="flex items-center gap-1.5">
                                                                     <FaCalendarAlt className="text-blue-400" />
-                                                                    {new Date(item.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}
+                                                                    {(() => {
+                                                                        const d = new Date(item.date);
+                                                                        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+                                                                    })()}
                                                                 </span>
                                                                 {item.project_name && <span className="flex items-center gap-1.5 text-blue-500 bg-blue-50 px-2 py-0.5 rounded-md"><FaFilter className="text-[10px]" />{item.project_name}</span>}
                                                                 {item.worker_name && <span className="flex items-center gap-1.5 text-orange-500 bg-orange-50 px-2 py-0.5 rounded-md"><FaUserCheck className="text-[10px]" />{item.worker_name}</span>}

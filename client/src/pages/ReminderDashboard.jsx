@@ -277,7 +277,10 @@ const ReminderDashboard = () => {
                                                             )}
                                                             {task.due_date && (
                                                                 <span className="px-2 py-1 rounded-full bg-slate-200 text-slate-700 font-bold">
-                                                                    {new Date(task.due_date).toLocaleDateString()}
+                                                                    {(() => {
+                                                                        const d = new Date(task.due_date);
+                                                                        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+                                                                    })()}
                                                                 </span>
                                                             )}
                                                         </div>

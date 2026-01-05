@@ -44,7 +44,7 @@ const ProjectManager = ({ projects = [], onCreate, onDelete, onClose, onRefresh 
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-            <div className="bg-white rounded-[40px] p-8 w-full max-w-md shadow-2xl relative animate-in zoom-in-95 duration-300">
+            <div className="bg-white rounded-[40px] p-[32px] sm:p-[48px] w-full max-w-[550px] shadow-2xl relative animate-in zoom-in-95 duration-300 z-110">
                 <button
                     onClick={onClose}
                     className="absolute top-8 right-8 text-slate-400 hover:text-slate-800 transition-colors"
@@ -116,7 +116,7 @@ const ProjectManager = ({ projects = [], onCreate, onDelete, onClose, onRefresh 
 
                 {/* Custom Delete Confirmation Modal */}
                 {deleteModal.show && (
-                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="fixed inset-0 z-110 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
                         <div className="bg-white rounded-[32px] p-8 w-full max-w-xs shadow-2xl animate-in zoom-in-95 duration-200 border border-slate-100">
                             <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-6">
                                 <FaTrash />

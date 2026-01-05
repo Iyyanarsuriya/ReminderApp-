@@ -35,7 +35,7 @@ class Transaction {
                 params.push(filters.period);
             } else if (filters.period.length === 8 && filters.period.includes('W')) {
                 // YYYY-Www (Week)
-                query += " AND DATE_FORMAT(t.date, '%Y-W%u') = ?";
+                query += " AND DATE_FORMAT(t.date, '%x-W%v') = ?";
                 params.push(filters.period);
             } else if (filters.period.length === 7) {
                 // YYYY-MM (Month)
@@ -88,7 +88,7 @@ class Transaction {
                 query += " AND DATE(date) = ?";
                 params.push(period);
             } else if (period.length === 8 && period.includes('W')) {
-                query += " AND DATE_FORMAT(date, '%Y-W%u') = ?";
+                query += " AND DATE_FORMAT(date, '%x-W%v') = ?";
                 params.push(period);
             } else if (period.length === 7) {
                 query += " AND DATE_FORMAT(date, '%Y-%m') = ?";
@@ -159,7 +159,7 @@ class Transaction {
                 query += " AND DATE(date) = ?";
                 params.push(period);
             } else if (period.length === 8 && period.includes('W')) {
-                query += " AND DATE_FORMAT(date, '%Y-W%u') = ?";
+                query += " AND DATE_FORMAT(date, '%x-W%v') = ?";
                 params.push(period);
             } else if (period.length === 7) {
                 query += " AND DATE_FORMAT(date, '%Y-%m') = ?";

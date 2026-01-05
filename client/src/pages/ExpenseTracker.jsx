@@ -12,6 +12,8 @@ import {
     PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
     BarChart, Bar, XAxis, YAxis, CartesianGrid
 } from 'recharts';
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 import { Settings, Folder } from 'lucide-react';
 import { getExpenseCategories, createExpenseCategory, deleteExpenseCategory } from '../api/expenseCategoryApi';
@@ -56,6 +58,8 @@ const ExpenseTracker = () => {
     const [editingId, setEditingId] = useState(null);
 
     const [filterType, setFilterType] = useState('all');
+    const [showExportModal, setShowExportModal] = useState(false);
+    const [exportType, setExportType] = useState(null);
     const [filterCat, setFilterCat] = useState('all');
     const [sortBy, setSortBy] = useState('date_desc');
     const [searchQuery, setSearchQuery] = useState('');
@@ -73,14 +77,14 @@ const ExpenseTracker = () => {
     const formatDateTime = (dateString) => {
         if (!dateString) return '';
         const date = new Date(dateString);
-        return date.toLocaleString('en-GB', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            hour12: true
-        }).replace(',', ' -');
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        const hours = date.getHours();
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const formattedHours = hours % 12 || 12;
+        return `${day}/${month}/${year} - ${formattedHours}:${minutes} ${ampm}`;
     };
 
     const fetchData = async () => {
@@ -137,13 +141,17 @@ const ExpenseTracker = () => {
         } else if (periodType === 'month') {
             if (currentPeriod.length !== 7) setCurrentPeriod(`${yyyy}-${mm}`);
         } else if (periodType === 'week') {
-            // Simple week calculation for default
             if (!currentPeriod.includes('W')) {
-                // Gets current week number approx
-                const start = new Date(today.getFullYear(), 0, 1);
-                const days = Math.floor((today - start) / (24 * 60 * 60 * 1000));
-                const weekNumber = Math.ceil(days / 7);
-                setCurrentPeriod(`${yyyy}-W${String(weekNumber).padStart(2, '0')}`);
+                const target = new Date();
+                const dayNr = (target.getDay() + 6) % 7;
+                target.setDate(target.getDate() - dayNr + 3);
+                const firstThursday = target.getTime();
+                target.setMonth(0, 1);
+                if (target.getDay() !== 4) {
+                    target.setMonth(0, 1 + ((4 - target.getDay() + 7) % 7));
+                }
+                const weekNum = 1 + Math.ceil((firstThursday - target) / 604800000);
+                setCurrentPeriod(`${target.getFullYear()}-W${String(weekNum).padStart(2, '0')}`);
             }
         } else if (periodType === 'day') {
             if (currentPeriod.length !== 10) setCurrentPeriod(`${yyyy}-${mm}-${dd}`);
@@ -272,6 +280,121 @@ const ExpenseTracker = () => {
             .reduce((acc, t) => acc + parseFloat(t.amount), 0);
         return { totalSalary, totalAdvances };
     }, [transactions, filterWorker]);
+
+    // Export Functions
+    const handleExportCSV = () => {
+        if (transactions.length === 0) {
+            toast.error("No data to export");
+            return;
+        }
+
+        const headers = ["Date", "Title", "Amount", "Type", "Category", "Project", "Worker"];
+        const rows = transactions.map(t => [
+            new Date(t.date).toLocaleDateString('en-GB'),
+            t.title,
+            t.amount,
+            t.type,
+            t.category,
+            t.project_name || 'N/A',
+            t.worker_name || 'N/A'
+        ]);
+
+        const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `report_${currentPeriod}.csv`);
+        link.click();
+    };
+
+    const handleExportTXT = () => {
+        if (transactions.length === 0) {
+            toast.error("No data to export");
+            return;
+        }
+
+        let txt = `FINANCIAL REPORT\n`;
+        const now = new Date();
+        const nowFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${now.getHours() % 12 || 12}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'PM' : 'AM'}`;
+
+        txt += `Period: ${periodType === 'range' ? `${customRange.start} to ${customRange.end}` : currentPeriod}\n`;
+        txt += `Generated on: ${nowFormatted}\n\n`;
+
+        txt += `SUMMARY\n`;
+        txt += `-------------------\n`;
+        txt += `Total Income: ₹${formatAmount(stats.summary?.total_income)}\n`;
+        txt += `Total Expense: ₹${formatAmount(stats.summary?.total_expense)}\n`;
+        txt += `Net: ₹${formatAmount(stats.summary?.total_income - stats.summary?.total_expense)}\n\n`;
+
+        txt += `TRANSACTIONS\n`;
+        txt += `-------------------\n`;
+        transactions.forEach(t => {
+            const d = new Date(t.date);
+            const dateFmt = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+            txt += `${dateFmt} | ${t.title.padEnd(20)} | ₹${t.amount.toString().padEnd(10)} | ${t.type.toUpperCase()}\n`;
+        });
+
+        const blob = new Blob([txt], { type: 'text/plain;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.setAttribute("href", URL.createObjectURL(blob));
+        link.setAttribute("download", `report_${currentPeriod}.txt`);
+        link.click();
+    };
+
+    const handleExportPDF = () => {
+        if (transactions.length === 0) {
+            toast.error("No data to export");
+            return;
+        }
+
+        const doc = new jsPDF();
+        const workerName = filterWorker ? workers.find(w => w.id == filterWorker)?.name : 'All Workers';
+        const projectName = filterProject ? projects.find(p => p.id == filterProject)?.name : 'All Projects';
+
+        doc.setFontSize(20);
+        doc.text('Financial Report', 14, 22);
+
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        const now = new Date();
+        const nowFormatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${now.getHours() % 12 || 12}:${String(now.getMinutes()).padStart(2, '0')} ${now.getHours() >= 12 ? 'PM' : 'AM'}`;
+
+        doc.text(`Generated on: ${nowFormatted}`, 14, 30);
+        doc.text(`Period: ${periodType === 'range' ? `${customRange.start} to ${customRange.end}` : currentPeriod}`, 14, 35);
+        doc.text(`Worker: ${workerName} | Project: ${projectName}`, 14, 40);
+
+        // Summary Boxes
+        doc.setDrawColor(230);
+        doc.setFillColor(245, 247, 250);
+        doc.rect(14, 45, 182, 25, 'F');
+        doc.setFontSize(12);
+        doc.setTextColor(40);
+        doc.text(`Total Income: ₹${formatAmount(stats.summary?.total_income)}`, 20, 55);
+        doc.text(`Total Expense: ₹${formatAmount(stats.summary?.total_expense)}`, 20, 62);
+        doc.text(`Net Balance: ₹${formatAmount(stats.summary?.total_income - stats.summary?.total_expense)}`, 120, 55);
+
+        autoTable(doc, {
+            startY: 75,
+            head: [['Date', 'Description', 'Category', 'Type', 'Amount']],
+            body: transactions.map(t => {
+                const d = new Date(t.date);
+                const dateFmt = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+                return [
+                    dateFmt,
+                    t.title,
+                    t.category,
+                    t.type.toUpperCase(),
+                    `₹${formatAmount(t.amount)}`
+                ];
+            }),
+            theme: 'striped',
+            headStyles: { fillColor: [45, 91, 255] },
+            alternateRowStyles: { fillColor: [250, 250, 250] },
+        });
+
+        doc.save(`report_${currentPeriod}.pdf`);
+    };
 
     // Charts Data
     const pieData = stats.categories
@@ -739,9 +862,25 @@ const ExpenseTracker = () => {
                     <div className="animate-in slide-in-from-right-10 duration-500">
                         <div className="flex justify-between items-center mb-[32px]">
                             <h2 className="text-[20px] sm:text-[24px] font-black">Financial Reports</h2>
-                            <div className="flex gap-[12px]">
-                                <button className="bg-white border border-slate-200 px-[16px] py-[8px] rounded-[12px] text-[10px] font-black uppercase tracking-widest hover:border-blue-500 transition-all">This Month</button>
-                                <button className="bg-[#1a1c21] text-white px-[16px] py-[8px] rounded-[12px] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-black/10">Download PDF</button>
+                            <div className="flex items-center gap-[8px]">
+                                <button
+                                    onClick={() => { setExportType('PDF'); setShowExportModal(true); }}
+                                    className="bg-[#1a1c21] text-white px-[16px] py-[10px] rounded-[14px] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-black/10 hover:scale-105 transition-all whitespace-nowrap"
+                                >
+                                    PDF
+                                </button>
+                                <button
+                                    onClick={() => { setExportType('CSV'); setShowExportModal(true); }}
+                                    className="bg-white border border-slate-200 px-[16px] py-[10px] rounded-[14px] text-[10px] font-black uppercase tracking-widest hover:border-blue-500 hover:text-blue-500 transition-all whitespace-nowrap"
+                                >
+                                    CSV
+                                </button>
+                                <button
+                                    onClick={() => { setExportType('Text'); setShowExportModal(true); }}
+                                    className="bg-white border border-slate-200 px-[16px] py-[10px] rounded-[14px] text-[10px] font-black uppercase tracking-widest hover:border-blue-500 hover:text-blue-500 transition-all whitespace-nowrap"
+                                >
+                                    Text
+                                </button>
                             </div>
                         </div>
                         <div className="bg-white p-[32px] sm:p-[48px] rounded-[40px] shadow-2xl border border-slate-100 overflow-hidden relative">
@@ -835,7 +974,12 @@ const ExpenseTracker = () => {
                                                         [...transactions].sort((a, b) => new Date(b.date) - new Date(a.date)).map((t) => (
                                                             <tr key={t.id} className="border-b border-slate-50 hover:bg-white transition-colors group">
                                                                 <td className="px-[24px] py-[16px]">
-                                                                    <p className="text-[12px] font-bold text-slate-600">{new Date(t.date).toLocaleDateString('en-GB')}</p>
+                                                                    <p className="text-[12px] font-bold text-slate-600">
+                                                                        {(() => {
+                                                                            const d = new Date(t.date);
+                                                                            return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+                                                                        })()}
+                                                                    </p>
                                                                 </td>
                                                                 <td className="px-[24px] py-[16px]">
                                                                     <p className="text-[14px] font-black text-slate-800">{t.title}</p>
@@ -1163,6 +1307,49 @@ const ExpenseTracker = () => {
                     onUpdate={fetchData}
                     onClose={() => setShowWorkerManager(false)}
                 />
+            )}
+
+            {/* Modern Export Confirmation Modal */}
+            {showExportModal && (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xl flex items-center justify-center z-200 p-[24px] animate-in fade-in duration-500">
+                    <div className="bg-white rounded-[48px] p-[48px] w-full max-w-[480px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] border border-slate-100 animate-in zoom-in-95 slide-in-from-bottom-10 duration-500 relative overflow-hidden group">
+                        <div className="absolute top-0 left-0 w-full h-[6px] bg-linear-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
+                        <div className="absolute -top-[100px] -right-[100px] w-[200px] h-[200px] bg-blue-500/5 rounded-full blur-[80px]"></div>
+
+                        <div className="relative">
+                            <div className="w-[100px] h-[100px] rounded-[36px] bg-linear-to-br from-blue-500 to-indigo-600 flex items-center justify-center mb-[40px] mx-auto shadow-2xl shadow-blue-500/30 group-hover:scale-110 transition-transform duration-700">
+                                <FaFileAlt className="text-[40px] text-white" />
+                            </div>
+
+                            <div className="text-center space-y-[16px] mb-[48px]">
+                                <h3 className="text-[28px] font-black text-slate-800 tracking-tight leading-tight">Export Statement</h3>
+                                <p className="text-slate-500 font-bold leading-relaxed px-[10px]">
+                                    Generate a high-resolution <span className="text-blue-600 font-black">{exportType}</span> report for the period of <span className="text-indigo-600 font-black">{currentPeriod}</span>?
+                                </p>
+                            </div>
+
+                            <div className="flex flex-col gap-[12px]">
+                                <button
+                                    onClick={() => {
+                                        setShowExportModal(false);
+                                        if (exportType === 'PDF') handleExportPDF();
+                                        else if (exportType === 'CSV') handleExportCSV();
+                                        else if (exportType === 'Text') handleExportTXT();
+                                    }}
+                                    className="w-full px-[32px] py-[22px] rounded-[24px] text-[14px] font-black uppercase tracking-widest bg-slate-900 text-white shadow-2xl shadow-slate-900/20 hover:bg-blue-600 hover:shadow-blue-500/40 hover:-translate-y-1 active:translate-y-0 transition-all duration-300"
+                                >
+                                    Confirm & Download
+                                </button>
+                                <button
+                                    onClick={() => setShowExportModal(false)}
+                                    className="w-full px-[32px] py-[20px] rounded-[24px] text-[12px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all duration-300"
+                                >
+                                    Go Back
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
         </div >
     );
