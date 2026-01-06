@@ -122,6 +122,8 @@ const ExpenseTrackerMain = () => {
                 endDate: rangeEnd
             };
 
+            console.log('Fetching with params:', params); // Debug log
+
             const [transRes, statsRes, catRes, projRes, membersRes] = await Promise.all([
                 getTransactions(params),
                 getTransactionStats(params),
@@ -187,12 +189,13 @@ const ExpenseTrackerMain = () => {
                 const dayNr = (target.getDay() + 6) % 7;
                 target.setDate(target.getDate() - dayNr + 3);
                 const firstThursday = target.getTime();
+                const isoWeekYear = target.getFullYear(); // Use the year of the Thursday
                 target.setMonth(0, 1);
                 if (target.getDay() !== 4) {
                     target.setMonth(0, 1 + ((4 - target.getDay() + 7) % 7));
                 }
                 const weekNum = 1 + Math.ceil((firstThursday - target) / 604800000);
-                setCurrentPeriod(`${target.getFullYear()}-W${String(weekNum).padStart(2, '0')}`);
+                setCurrentPeriod(`${isoWeekYear}-W${String(weekNum).padStart(2, '0')}`);
             }
         } else if (periodType === 'day') {
             if (currentPeriod.length !== 10) setCurrentPeriod(`${yyyy}-${mm}-${dd}`);
