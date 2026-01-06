@@ -79,6 +79,11 @@ const FinanceProfile = () => {
 
     const totalBalance = (stats.summary?.total_income || 0) - (stats.summary?.total_expense || 0);
 
+    const formatCurrency = (val) => {
+        const absVal = Math.abs(val || 0);
+        return '₹' + formatAmount(absVal);
+    };
+
     return (
         <div className="min-h-screen bg-slate-50 p-[16px] sm:p-[32px] lg:p-[48px] font-['Outfit']">
             <div className="max-w-6xl mx-auto">
@@ -128,7 +133,9 @@ const FinanceProfile = () => {
                                 <div className="grid grid-cols-2 gap-[16px] w-full text-center">
                                     <div>
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Net Worth</p>
-                                        <p className="text-[16px] sm:text-[18px] font-black text-emerald-600">₹{formatAmount(totalBalance)}</p>
+                                        <p className={`text-[16px] sm:text-[18px] font-black ${totalBalance >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+                                            {formatCurrency(totalBalance)}
+                                        </p>
                                     </div>
                                     <div>
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Efficiency</p>

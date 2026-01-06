@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import {
     FaWallet, FaPlus, FaTrash, FaChartBar, FaExchangeAlt, FaFileAlt, FaEdit, FaTimes,
     FaPlusCircle, FaArrowRight, FaArrowLeft, FaCheckCircle, FaUserCheck, FaFolderPlus, FaUserEdit,
-    FaCheck, FaQuestionCircle
+    FaCheck, FaQuestionCircle, FaCalculator, FaMoneyBillWave
 } from 'react-icons/fa';
 import {
     PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
@@ -20,6 +20,7 @@ import { Settings, Folder } from 'lucide-react';
 import { getExpenseCategories, createExpenseCategory, deleteExpenseCategory } from '../api/expenseCategoryApi';
 import { getProjects, createProject, deleteProject } from '../api/projectApi';
 import { getActiveMembers } from '../api/memberApi';
+import { getAttendanceStats } from '../api/attendanceApi';
 import CategoryManager from '../components/CategoryManager';
 import ProjectManager from '../components/ProjectManager';
 import MemberManager from '../components/MemberManager';
@@ -77,6 +78,16 @@ const ExpenseTracker = () => {
     });
     const [confirmModal, setConfirmModal] = useState({ show: false, type: null, label: '' });
 
+    // Salary Calculator States
+    const [attendanceStats, setAttendanceStats] = useState(null);
+    const [salaryMode, setSalaryMode] = useState('daily'); // 'daily', 'monthly', or 'production'
+    const [dailyWage, setDailyWage] = useState(0);
+    const [monthlySalary, setMonthlySalary] = useState(0);
+    const [unitsProduced, setUnitsProduced] = useState(0);
+    const [ratePerUnit, setRatePerUnit] = useState(0);
+    const [bonus, setBonus] = useState(0);
+    const [salaryLoading, setSalaryLoading] = useState(false);
+
     const expenseCategories = ['Food', 'Shopping', 'Rent', 'Transport', 'Utilities', 'Entertainment', 'Health', 'Other'];
     const incomeCategories = ['Salary', 'Freelance', 'Investment', 'Gift', 'Other'];
 
@@ -109,6 +120,31 @@ const ExpenseTracker = () => {
             setCategories(catRes.data);
             setProjects(projRes.data);
             setMembers(membersRes.data.data);
+
+            if (filterMember) {
+                setSalaryLoading(true);
+                const attRes = await getAttendanceStats({
+                    memberId: filterMember,
+                    period: isRange ? null : currentPeriod,
+                    startDate: rangeStart,
+                    endDate: rangeEnd
+                });
+
+                // Transform array stats into summary object
+                const statsArray = attRes.data?.data || [];
+                const summary = {
+                    present: statsArray.find(s => s.status === 'present')?.count || 0,
+                    absent: statsArray.find(s => s.status === 'absent')?.count || 0,
+                    late: statsArray.find(s => s.status === 'late')?.count || 0,
+                    half_day: statsArray.find(s => s.status === 'half-day')?.count || 0,
+                };
+
+                setAttendanceStats({ summary, raw: statsArray });
+                setSalaryLoading(false);
+            } else {
+                setAttendanceStats(null);
+            }
+
             setLoading(false);
         } catch (error) {
             console.error("Fetch Data Error Details:", error.response || error);
@@ -257,7 +293,13 @@ const ExpenseTracker = () => {
     }, [transactions, filterType, filterCat, sortBy, searchQuery, filterProject, filterMember]);
 
     // Derived values
-    const totalBalance = (stats.summary?.total_income || 0) - (stats.summary?.total_expense || 0);
+    const availableBalance = (stats.lifetime?.total_income || 0) - (stats.lifetime?.total_expense || 0);
+    const periodBalance = (stats.summary?.total_income || 0) - (stats.summary?.total_expense || 0);
+
+    const formatCurrency = (val) => {
+        const absVal = Math.abs(val || 0);
+        return '₹' + formatAmount(absVal);
+    };
 
     const memberStats = useMemo(() => {
         if (!filterMember) return null;
@@ -307,20 +349,59 @@ const ExpenseTracker = () => {
             : (periodType === 'range' ? `${customRange.start} to ${customRange.end}` : currentPeriod);
 
         const statsArray = [
-            { label: 'Total Income', value: `₹${formatAmount(reportStats.summary?.total_income)}` },
-            { label: 'Total Expense', value: `₹${formatAmount(reportStats.summary?.total_expense)}` },
-            { label: 'Net Balance', value: `₹${formatAmount(reportStats.summary?.total_income - reportStats.summary?.total_expense)}` }
+            { label: 'Total Income', value: `Rs. ${formatAmount(reportStats.summary?.total_income)}` },
+            { label: 'Total Expense', value: `Rs. ${formatAmount(reportStats.summary?.total_expense)}` }
         ];
+
+        // Add Attendance & Salary Stats if filtered by member
+        if (filterMember && attendanceStats) {
+            const absences = attendanceStats.summary?.absent || 0;
+            const halfDays = attendanceStats.summary?.half_day || 0;
+            const present = attendanceStats.summary?.present || 0;
+
+            statsArray.push(
+                { label: 'Days Present', value: present },
+                { label: 'Half Days', value: halfDays },
+                { label: 'Days Absent', value: absences }
+            );
+
+            // Add Salary Calculation Breakdown
+            statsArray.push({ label: '--- SALARY BREAKDOWN ---', value: '' });
+            let earned = 0;
+            if (salaryMode === 'daily') {
+                earned = (present * dailyWage) + (halfDays * dailyWage / 2);
+                statsArray.push({ label: 'Daily Earnings', value: `Rs. ${formatAmount(earned)}` });
+            } else if (salaryMode === 'monthly') {
+                earned = (monthlySalary / 30) * (present + halfDays * 0.5);
+                statsArray.push({ label: 'Basic Monthly Rate', value: `Rs. ${formatAmount(monthlySalary)}` });
+                statsArray.push({ label: 'Worked Days Pay', value: `Rs. ${formatAmount(earned)}` });
+                statsArray.push({ label: 'Days Factor', value: `${present + halfDays * 0.5} days` });
+            } else {
+                earned = (unitsProduced * ratePerUnit);
+                statsArray.push({ label: 'Production Pay', value: `Rs. ${formatAmount(earned)}` });
+            }
+            statsArray.push({ label: 'Extra Bonus', value: `Rs. ${formatAmount(bonus)}` });
+
+            const gross = earned + bonus;
+            const paid = reportStats.summary?.total_expense || 0;
+            const pending = Math.max(0, gross - paid);
+
+            statsArray.push({ label: 'Total Gross Pay', value: `Rs. ${formatAmount(gross)}` });
+            statsArray.push({ label: 'Already Paid (Ad-hoc)', value: `Rs. -${formatAmount(paid)}` });
+            statsArray.push({ label: '--- FINAL PENDING ---', value: `Rs. ${formatAmount(pending)}` });
+        } else {
+            statsArray.push({ label: 'NET PENDING BALANCE', value: `Rs. ${formatAmount(reportStats.summary?.total_income - reportStats.summary?.total_expense)}` });
+        }
 
         const logHeaders = ["Date", "Description", "Amount", "Type"];
         const logRows = data.map(t => {
             const d = new Date(t.date);
             const dateFmt = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-            return [dateFmt, t.title, `₹${t.amount}`, t.type.toUpperCase()];
+            return [dateFmt, t.title, `Rs. ${t.amount}`, t.type.toUpperCase()];
         });
 
         exportToTXT({
-            title: 'Financial Report',
+            title: filterMember ? `${members.find(m => m.id == filterMember)?.name}'s Statement` : 'Financial Report',
             period: periodStr,
             stats: statsArray,
             logHeaders,
@@ -343,10 +424,49 @@ const ExpenseTracker = () => {
             : (periodType === 'range' ? `${customRange.start} to ${customRange.end}` : currentPeriod);
 
         const statsArray = [
-            { label: 'Total Income', value: `₹${formatAmount(reportStats.summary?.total_income)}` },
-            { label: 'Total Expense', value: `₹${formatAmount(reportStats.summary?.total_expense)}` },
-            { label: 'Net Balance', value: `₹${formatAmount(reportStats.summary?.total_income - reportStats.summary?.total_expense)}` }
+            { label: 'Total Income (Previous)', value: `Rs. ${formatAmount(reportStats.summary?.total_income)}` },
+            { label: 'Total Expense (Payments)', value: `Rs. ${formatAmount(reportStats.summary?.total_expense)}` }
         ];
+
+        // Add Attendance & Salary Details if filtered by member
+        if ((filters.memberId || filterMember) && attendanceStats) {
+            const absences = attendanceStats.summary?.absent || 0;
+            const halfDays = attendanceStats.summary?.half_day || 0;
+            const present = attendanceStats.summary?.present || 0;
+
+            statsArray.push(
+                { label: 'Attendance: Present', value: present },
+                { label: 'Attendance: Half Day', value: halfDays },
+                { label: 'Attendance: Absent', value: absences }
+            );
+
+            // Detailed Salary Breakdown
+            statsArray.push({ label: '--- SALARY BREAKDOWN ---', value: '' });
+            let earned = 0;
+            if (salaryMode === 'daily') {
+                earned = (present * dailyWage) + (halfDays * dailyWage / 2);
+                statsArray.push({ label: 'Daily Earnings', value: `Rs. ${formatAmount(earned)}` });
+            } else if (salaryMode === 'monthly') {
+                earned = (monthlySalary / 30) * (present + halfDays * 0.5);
+                statsArray.push({ label: 'Monthly Fixed Rate', value: `Rs. ${formatAmount(monthlySalary)}` });
+                statsArray.push({ label: 'Worked Period Earnings', value: `Rs. ${formatAmount(earned)}` });
+                statsArray.push({ label: 'Effective Days', value: `${present + halfDays * 0.5} days` });
+            } else {
+                earned = (unitsProduced * ratePerUnit);
+                statsArray.push({ label: 'Production Earnings', value: `Rs. ${formatAmount(earned)}` });
+            }
+            statsArray.push({ label: 'Extra Bonus', value: `Rs. ${formatAmount(bonus)}` });
+
+            const gross = earned + bonus;
+            const paid = reportStats.summary?.total_expense || 0;
+            const pending = Math.max(0, gross - paid);
+
+            statsArray.push({ label: 'Total Gross Payable', value: `Rs. ${formatAmount(gross)}` });
+            statsArray.push({ label: 'Less: Already Paid', value: `Rs. -${formatAmount(paid)}` });
+            statsArray.push({ label: 'TOTAL BALANCE DUE', value: `Rs. ${formatAmount(pending)}` });
+        } else {
+            statsArray.push({ label: 'NET PAYABLE / BALANCE', value: `Rs. ${formatAmount(reportStats.summary?.total_income - reportStats.summary?.total_expense)}` });
+        }
 
         const tableHeaders = ['Date', 'Description', 'Category', 'Type', 'Member', 'Amount'];
         const tableRows = data.map(t => {
@@ -358,7 +478,7 @@ const ExpenseTracker = () => {
                 t.category,
                 t.type.toUpperCase(),
                 t.member_name || 'N/A',
-                `₹${formatAmount(t.amount)}`
+                `Rs. ${formatAmount(t.amount)}`
             ];
         });
 
@@ -453,6 +573,7 @@ const ExpenseTracker = () => {
                     <SidebarItem icon={FaChartBar} label="Dashboard" />
                     <SidebarItem icon={FaExchangeAlt} label="Transactions" />
                     <SidebarItem icon={FaFileAlt} label="Reports" />
+                    <SidebarItem icon={FaCalculator} label="Salary" />
                 </nav>
 
                 <button className="flex items-center gap-4 px-6 py-4 text-slate-400 hover:text-red-500 font-black text-xs uppercase tracking-widest transition-colors">
@@ -618,20 +739,19 @@ const ExpenseTracker = () => {
                 {activeTab === 'Dashboard' ? (
                     <div className="animate-in fade-in duration-500">
                         {/* Summary Cards */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[16px] sm:gap-[24px] mb-[32px] lg:mb-[48px]">
-                            <StatCard title="Total Balance" value={`₹${formatAmount(totalBalance)}`} color="text-slate-800" subtitle={`${totalBalance >= 0 ? '+' : ''}0% from last month`} />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-[16px] sm:gap-[24px] mb-[32px] lg:mb-[48px]">
                             <StatCard
                                 title={`${periodType === 'range' ? 'Range' : periodType === 'day' ? 'Daily' : periodType.charAt(0).toUpperCase() + periodType.slice(1) + 'ly'} Income`}
-                                value={`₹${formatAmount(stats.summary?.total_income)}`}
-                                color="text-blue-500"
+                                value={formatCurrency(stats.summary?.total_income)}
+                                color="text-emerald-500"
                                 subtitle={periodType === 'range' ? `${customRange.start} to ${customRange.end}` : currentPeriod}
                                 onClick={() => handleShowTransactions('income')}
                             />
                             <StatCard
-                                title={`${periodType === 'range' ? 'Range' : periodType === 'day' ? 'Daily' : periodType.charAt(0).toUpperCase() + periodType.slice(1) + 'ly'} Expenses`}
-                                value={`₹${formatAmount(stats.summary?.total_expense)}`}
-                                color="text-red-500"
-                                subtitle={currentPeriod}
+                                title={`${periodType === 'range' ? 'Range' : periodType === 'day' ? 'Daily' : periodType.charAt(0).toUpperCase() + periodType.slice(1) + 'ly'} Expense`}
+                                value={formatCurrency(stats.summary?.total_expense)}
+                                color="text-rose-500"
+                                subtitle={periodType === 'range' ? `${customRange.start} to ${customRange.end}` : currentPeriod}
                                 onClick={() => handleShowTransactions('expense')}
                             />
                         </div>
@@ -817,7 +937,7 @@ const ExpenseTracker = () => {
                             )}
                         </div>
                     </div>
-                ) : (
+                ) : activeTab === 'Reports' ? (
                     <div className="animate-in slide-in-from-right-10 duration-500">
                         <div className="flex justify-between items-center mb-[32px]">
                             <h2 className="text-[20px] sm:text-[24px] font-black">Financial Reports</h2>
@@ -891,24 +1011,14 @@ const ExpenseTracker = () => {
                                     ) : (
                                         <>
                                             <div className="p-[24px] bg-slate-50 rounded-[24px] border border-slate-100">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px]">Efficiency Score</p>
-                                                <p className="text-[32px] font-black tracking-tighter text-slate-800">
-                                                    {stats.summary?.total_income > 0 ? (((stats.summary.total_income - stats.summary.total_expense) / stats.summary.total_income) * 100).toFixed(0) : 0}%
-                                                </p>
-                                                <div className="mt-[16px] flex items-center gap-[8px]">
-                                                    <div className="w-[8px] h-[8px] rounded-full bg-emerald-500"></div>
-                                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Calculated</span>
-                                                </div>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px]">Total Income</p>
+                                                <p className="text-[32px] font-black tracking-tighter text-emerald-600">₹{formatAmount(stats.lifetime?.total_income || 0)}</p>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-[16px]">Lifetime Earnings</p>
                                             </div>
                                             <div className="p-[24px] bg-slate-50 rounded-[24px] border border-slate-100">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px]">Total Wealth</p>
-                                                <p className="text-[32px] font-black tracking-tighter text-slate-800">₹{formatAmount(totalBalance)}</p>
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-[16px]">Net Balance</p>
-                                            </div>
-                                            <div className="p-[24px] bg-slate-50 rounded-[24px] border border-slate-100">
-                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px]">Income Growth</p>
-                                                <p className="text-[32px] font-black tracking-tighter text-blue-500">+12%</p>
-                                                <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mt-[16px]">from last month</p>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px]">Total Expense</p>
+                                                <p className="text-[32px] font-black tracking-tighter text-rose-600">₹{formatAmount(stats.lifetime?.total_expense || 0)}</p>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-[16px]">Lifetime Spending</p>
                                             </div>
                                         </>
                                     )}
@@ -1022,6 +1132,345 @@ const ExpenseTracker = () => {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                ) : (
+                    <div className="animate-in slide-in-from-right-10 duration-500">
+                        <div className="flex justify-between items-center mb-[32px]">
+                            <h2 className="text-[20px] sm:text-[24px] font-black">Salary Calculator</h2>
+                            <div className="flex items-center gap-3">
+                                {filterMember && (
+                                    <button
+                                        onClick={() => handleExportPDF(filteredTransactions)}
+                                        className="px-4 py-2 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-800 transition-all"
+                                    >
+                                        <FaFileAlt /> Download Report
+                                    </button>
+                                )}
+                                <div className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest">
+                                    Based on {periodType} Attendance
+                                </div>
+                            </div>
+                        </div>
+
+                        {!filterMember ? (
+                            <div className="bg-white rounded-[40px] p-[64px] text-center border border-slate-100 shadow-xl">
+                                <div className="w-[80px] h-[80px] bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-[24px]">
+                                    <FaMoneyBillWave className="text-slate-300 text-[32px]" />
+                                </div>
+                                <h3 className="text-[18px] font-black text-slate-800 mb-[8px]">Select a Member</h3>
+                                <p className="text-slate-400 text-[12px] font-bold uppercase tracking-widest mb-[32px]">Please select a member from the filters above to calculate their salary</p>
+                                <select
+                                    onChange={(e) => setFilterMember(e.target.value)}
+                                    className="px-[32px] py-[16px] bg-slate-100 rounded-[20px] font-black text-[12px] uppercase tracking-widest outline-none cursor-pointer hover:bg-slate-200 transition-all"
+                                >
+                                    <option value="">Choose Member...</option>
+                                    {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                                </select>
+                            </div>
+                        ) : salaryLoading ? (
+                            <div className="h-[400px] flex items-center justify-center">
+                                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-[#2d5bff]"></div>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-[32px]">
+                                {/* Stats Column */}
+                                <div className="lg:col-span-2 space-y-[32px]">
+                                    <div className="bg-white rounded-[40px] p-[32px] sm:p-[48px] shadow-xl border border-slate-100">
+                                        <div className="flex items-center gap-[16px] mb-[40px]">
+                                            <div className="w-[56px] h-[56px] bg-indigo-50 text-indigo-500 rounded-[20px] flex items-center justify-center text-[24px]">
+                                                <FaUserCheck />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-[20px] font-black">{members.find(m => m.id == filterMember)?.name}</h3>
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Attendance Summary</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-3 gap-[16px] mb-[48px]">
+                                            <div className="p-6 bg-emerald-50 rounded-[28px] border border-emerald-100 text-center">
+                                                <p className="text-[24px] font-black text-emerald-600">{attendanceStats?.summary?.present || 0}</p>
+                                                <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Present</p>
+                                            </div>
+                                            <div className="p-6 bg-blue-50 rounded-[28px] border border-blue-100 text-center">
+                                                <p className="text-[24px] font-black text-blue-600">{attendanceStats?.summary?.half_day || 0}</p>
+                                                <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Half Days</p>
+                                            </div>
+                                            <div className="p-6 bg-red-50 rounded-[28px] border border-red-100 text-center">
+                                                <p className="text-[24px] font-black text-red-600">{attendanceStats?.summary?.absent || 0}</p>
+                                                <p className="text-[10px] font-black text-red-500 uppercase tracking-widest">Absent</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-[24px]">
+                                            <div className="flex items-center justify-between mb-[12px]">
+                                                <div className="flex items-center gap-[12px]">
+                                                    <div className="w-[8px] h-[24px] bg-slate-800 rounded-full"></div>
+                                                    <h4 className="text-[14px] font-black uppercase tracking-widest">Calculation Mode</h4>
+                                                </div>
+                                                <div className="flex p-1 bg-slate-100 rounded-xl">
+                                                    <button
+                                                        onClick={() => setSalaryMode('daily')}
+                                                        className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${salaryMode === 'daily' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400'}`}
+                                                    >
+                                                        Daily
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setSalaryMode('monthly')}
+                                                        className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${salaryMode === 'monthly' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400'}`}
+                                                    >
+                                                        Monthly
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setSalaryMode('production')}
+                                                        className={`px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${salaryMode === 'production' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400'}`}
+                                                    >
+                                                        Piece Rate
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-[24px]">
+                                                {salaryMode === 'daily' ? (
+                                                    <div className="space-y-4">
+                                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Rate Per Day (₹)</label>
+                                                        <div className="relative group">
+                                                            <FaMoneyBillWave className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-blue-500 transition-colors" />
+                                                            <input
+                                                                type="number"
+                                                                value={dailyWage}
+                                                                onChange={(e) => setDailyWage(parseFloat(e.target.value) || 0)}
+                                                                className="w-full bg-slate-50 border border-slate-200 rounded-[24px] pl-16 pr-8 py-5 text-[18px] font-black outline-none focus:border-blue-500 focus:bg-white transition-all"
+                                                                placeholder="500"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ) : salaryMode === 'monthly' ? (
+                                                    <div className="space-y-4">
+                                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Base Monthly Salary (₹)</label>
+                                                        <div className="relative group">
+                                                            <FaMoneyBillWave className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-500 transition-colors" />
+                                                            <input
+                                                                type="number"
+                                                                value={monthlySalary}
+                                                                onChange={(e) => setMonthlySalary(parseFloat(e.target.value) || 0)}
+                                                                className="w-full bg-slate-50 border border-slate-200 rounded-[24px] pl-16 pr-8 py-5 text-[18px] font-black outline-none focus:border-indigo-500 focus:bg-white transition-all"
+                                                                placeholder="15000"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-4 col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <div className="space-y-4">
+                                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Units Produced (Qty)</label>
+                                                            <div className="relative group">
+                                                                <FaPlusCircle className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-orange-500 transition-colors" />
+                                                                <input
+                                                                    type="number"
+                                                                    value={unitsProduced}
+                                                                    onChange={(e) => setUnitsProduced(parseFloat(e.target.value) || 0)}
+                                                                    className="w-full bg-slate-50 border border-slate-200 rounded-[24px] pl-16 pr-8 py-5 text-[18px] font-black outline-none focus:border-orange-500 focus:bg-white transition-all"
+                                                                    placeholder="100"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-4">
+                                                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Rate Per Unit (₹)</label>
+                                                            <div className="relative group">
+                                                                <FaMoneyBillWave className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-orange-500 transition-colors" />
+                                                                <input
+                                                                    type="number"
+                                                                    value={ratePerUnit}
+                                                                    onChange={(e) => setRatePerUnit(parseFloat(e.target.value) || 0)}
+                                                                    className="w-full bg-slate-50 border border-slate-200 rounded-[24px] pl-16 pr-8 py-5 text-[18px] font-black outline-none focus:border-orange-500 focus:bg-white transition-all"
+                                                                    placeholder="10"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {salaryMode !== 'production' && (
+                                                    <div className="space-y-4">
+                                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Bonus / Incentives (₹)</label>
+                                                        <div className="relative group">
+                                                            <FaPlusCircle className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors" />
+                                                            <input
+                                                                type="number"
+                                                                value={bonus}
+                                                                onChange={(e) => setBonus(parseFloat(e.target.value) || 0)}
+                                                                className="w-full bg-slate-50 border border-slate-200 rounded-[24px] pl-16 pr-8 py-5 text-[18px] font-black outline-none focus:border-emerald-500 focus:bg-white transition-all"
+                                                                placeholder="0"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {salaryMode === 'production' && (
+                                                <div className="space-y-4">
+                                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Extra Bonus (₹)</label>
+                                                    <div className="relative group">
+                                                        <FaPlusCircle className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-emerald-500 transition-colors" />
+                                                        <input
+                                                            type="number"
+                                                            value={bonus}
+                                                            onChange={(e) => setBonus(parseFloat(e.target.value) || 0)}
+                                                            className="w-full bg-slate-50 border border-slate-200 rounded-[24px] pl-16 pr-8 py-5 text-[18px] font-black outline-none focus:border-emerald-500 focus:bg-white transition-all"
+                                                            placeholder="0"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Summary Column */}
+                                <div className="space-y-[32px]">
+                                    <div className="bg-slate-900 rounded-[40px] p-[32px] sm:p-[48px] shadow-2xl relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-[200px] h-[200px] bg-blue-500/10 rounded-full blur-[80px] -mr-[100px] -mt-[100px]"></div>
+
+                                        <div className="relative z-10">
+                                            <p className="text-blue-400 text-[10px] font-black uppercase tracking-[0.3em] mb-[32px]">Payable Summary</p>
+
+                                            <div className="space-y-[24px] mb-[48px]">
+                                                {salaryMode === 'daily' ? (
+                                                    <>
+                                                        <div className="flex justify-between items-center opacity-60">
+                                                            <span className="text-white text-[12px] font-bold">Base Pay ({attendanceStats?.summary?.present || 0}d)</span>
+                                                            <span className="text-white font-black">₹{formatAmount((attendanceStats?.summary?.present || 0) * dailyWage)}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center opacity-60">
+                                                            <span className="text-white text-[12px] font-bold">Half Days ({attendanceStats?.summary?.half_day || 0}d)</span>
+                                                            <span className="text-white font-black">₹{formatAmount((attendanceStats?.summary?.half_day || 0) * (dailyWage / 2))}</span>
+                                                        </div>
+                                                    </>
+                                                ) : salaryMode === 'monthly' ? (
+                                                    <>
+                                                        <div className="flex justify-between items-center opacity-60">
+                                                            <span className="text-white text-[12px] font-bold">Standard Monthly Pay</span>
+                                                            <span className="text-white font-black">₹{formatAmount(monthlySalary)}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center text-teal-400">
+                                                            <span className="text-[12px] font-bold">Earned ({(attendanceStats?.summary?.present || 0) + (attendanceStats?.summary?.half_day || 0) * 0.5} days worked)</span>
+                                                            <span className="font-black">₹{formatAmount(((attendanceStats?.summary?.present || 0) + (attendanceStats?.summary?.half_day || 0) * 0.5) * (monthlySalary / 30))}</span>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className="flex justify-between items-center opacity-60">
+                                                            <span className="text-white text-[12px] font-bold">Production Pay ({unitsProduced} units)</span>
+                                                            <span className="text-white font-black">₹{formatAmount(unitsProduced * ratePerUnit)}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center text-blue-400/60">
+                                                            <span className="text-[10px] font-bold">Rate: ₹{ratePerUnit}/unit</span>
+                                                        </div>
+                                                    </>
+                                                )}
+                                                <div className="flex justify-between items-center opacity-60">
+                                                    <span className="text-white text-[12px] font-bold">Extra Bonus</span>
+                                                    <span className="text-white font-black">₹{formatAmount(bonus)}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-teal-400">
+                                                    <span className="text-[12px] font-bold">Already Paid (this period)</span>
+                                                    <span className="font-black">₹{formatAmount(stats.summary?.total_expense || 0)}</span>
+                                                </div>
+                                                <div className="h-px bg-white/10 my-4"></div>
+                                                <div className="flex justify-between items-center">
+                                                    <span className="text-white text-[14px] font-black uppercase tracking-widest">Net Payable</span>
+                                                    <span className="text-blue-400 text-[28px] font-black tracking-tighter">
+                                                        ₹{formatAmount(Math.max(0, (
+                                                            salaryMode === 'daily'
+                                                                ? ((attendanceStats?.summary?.present || 0) * dailyWage) + ((attendanceStats?.summary?.half_day || 0) * (dailyWage / 2)) + bonus
+                                                                : salaryMode === 'monthly'
+                                                                    ? (((attendanceStats?.summary?.present || 0) + (attendanceStats?.summary?.half_day || 0) * 0.5) * (monthlySalary / 30)) + bonus
+                                                                    : (unitsProduced * ratePerUnit) + bonus
+                                                        ) - (stats.summary?.total_expense || 0)))}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <button
+                                                onClick={() => {
+                                                    const gross = salaryMode === 'daily'
+                                                        ? ((attendanceStats?.summary?.present || 0) * dailyWage) + ((attendanceStats?.summary?.half_day || 0) * (dailyWage / 2)) + bonus
+                                                        : salaryMode === 'monthly'
+                                                            ? (((attendanceStats?.summary?.present || 0) + (attendanceStats?.summary?.half_day || 0) * 0.5) * (monthlySalary / 30)) + bonus
+                                                            : (unitsProduced * ratePerUnit) + bonus;
+
+                                                    const calculated = Math.max(0, gross - (stats.summary?.total_expense || 0));
+                                                    setFormData({
+                                                        ...formData,
+                                                        title: `Salary Payout (${salaryMode}) - ${members.find(m => m.id == filterMember)?.name}`,
+                                                        amount: calculated,
+                                                        type: 'expense',
+                                                        category: 'Salary',
+                                                        member_id: filterMember
+                                                    });
+                                                    setShowAddModal(true);
+                                                }}
+                                                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-black py-5 rounded-[24px] shadow-xl shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center gap-3 text-[14px]"
+                                            >
+                                                <FaPlusCircle /> Add to Expenses
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white rounded-[40px] p-[32px] border border-slate-100 shadow-xl">
+                                        <h4 className="text-[14px] font-black mb-[16px] flex items-center gap-2">
+                                            <FaQuestionCircle className="text-slate-300" />
+                                            {salaryMode === 'daily' ? 'Daily Wage' : salaryMode === 'monthly' ? 'Monthly Salary' : 'Piece Rate'} Logic
+                                        </h4>
+                                        <p className="text-[12px] text-slate-500 leading-relaxed font-bold">
+                                            {salaryMode === 'daily'
+                                                ? "Earn for every day you work. Present = 1 day, Half Day = 0.5 days."
+                                                : salaryMode === 'monthly'
+                                                    ? "Start with a fixed monthly pay. We deduct 1/30th for every day you are absent and 1/60th for every half day."
+                                                    : "Pay based on production volume. Total = (Units Produced × Rate Per Piece) + Bonus."
+                                            }
+                                        </p>
+                                    </div>
+
+                                    {/* Recent Payouts History */}
+                                    {filterMember && (
+                                        <div className="bg-white rounded-[40px] p-[32px] border border-slate-100 shadow-xl overflow-hidden">
+                                            <div className="flex items-center gap-[12px] mb-[20px]">
+                                                <div className="w-[6px] h-[18px] bg-blue-500 rounded-full"></div>
+                                                <h4 className="text-[12px] font-black uppercase tracking-widest text-slate-800">Recent Payouts</h4>
+                                            </div>
+                                            <div className="space-y-3">
+                                                {transactions
+                                                    .filter(t => t.member_id == filterMember && (
+                                                        t.category?.toLowerCase().includes('salary') ||
+                                                        t.category?.toLowerCase().includes('advance') ||
+                                                        t.title?.toLowerCase().includes('salary') ||
+                                                        t.title?.toLowerCase().includes('advance')
+                                                    ))
+                                                    .slice(0, 5)
+                                                    .map(t => (
+                                                        <div key={t.id} className="flex justify-between items-center p-3 hover:bg-slate-50 rounded-2xl transition-all border-b border-slate-50 last:border-0">
+                                                            <div className="flex-1 pr-2">
+                                                                <p className="text-[12px] font-black text-slate-800 line-clamp-1">{t.title}</p>
+                                                                <p className="text-[10px] font-bold text-slate-400 capitalize">{t.category}</p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <p className="text-[12px] font-black text-rose-500">₹{formatAmount(t.amount)}</p>
+                                                                <p className="text-[8px] font-black text-slate-300 uppercase">{new Date(t.date).toLocaleDateString('en-GB')}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                {transactions.filter(t => t.member_id == filterMember && (
+                                                    t.category?.toLowerCase().includes('salary') ||
+                                                    t.category?.toLowerCase().includes('advance') ||
+                                                    t.title?.toLowerCase().includes('salary') ||
+                                                    t.title?.toLowerCase().includes('advance')
+                                                )).length === 0 && (
+                                                        <p className="text-[10px] font-bold text-slate-400 text-center py-4">No recent payouts found</p>
+                                                    )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </main>
@@ -1387,7 +1836,7 @@ const ExpenseTracker = () => {
 
             {/* Export Confirmation Modal (Portal) */}
             {confirmModal.show && ReactDOM.createPortal(
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-[16px] w-full h-full">
+                <div className="fixed inset-0 z-9999 flex items-center justify-center p-[16px] w-full h-full">
                     <div
                         className="absolute inset-0 bg-[#0f172a]/70 backdrop-blur-md animate-in fade-in duration-300"
                         onClick={() => setConfirmModal({ show: false, type: null, label: '' })}
@@ -1409,9 +1858,9 @@ const ExpenseTracker = () => {
                             </button>
                             <button
                                 onClick={() => {
-                                    if (confirmModal.type === 'CSV') handleExportCSV(transactions);
-                                    if (confirmModal.type === 'PDF') handleExportPDF(transactions);
-                                    if (confirmModal.type === 'TXT') handleExportTXT(transactions);
+                                    if (confirmModal.type === 'CSV') handleExportCSV(filteredTransactions);
+                                    if (confirmModal.type === 'PDF') handleExportPDF(filteredTransactions);
+                                    if (confirmModal.type === 'TXT') handleExportTXT(filteredTransactions);
                                     setConfirmModal({ show: false, type: null, label: '' });
                                 }}
                                 className="py-[16px] rounded-[20px] bg-slate-900 text-white text-[13px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20 cursor-pointer flex items-center justify-center gap-[10px]"

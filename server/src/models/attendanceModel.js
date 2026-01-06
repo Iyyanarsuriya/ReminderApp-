@@ -33,9 +33,9 @@ class Attendance {
                 // YYYY-MM-DD (Day)
                 query += " AND DATE(a.date) = ?";
                 params.push(filters.period);
-            } else if (filters.period.length === 7) {
-                // YYYY-MM (Month)
-                query += " AND DATE_FORMAT(a.date, '%Y-%m') = ?";
+            } else if (filters.period.length === 8 && filters.period.includes('W')) {
+                // YYYY-Www (Week)
+                query += " AND DATE_FORMAT(a.date, '%x-W%v') = ?";
                 params.push(filters.period);
             } else if (filters.period.length === 4) {
                 // YYYY (Year)
@@ -86,6 +86,9 @@ class Attendance {
             if (filters.period.length === 10) {
                 query += " AND DATE(date) = ?";
                 params.push(filters.period);
+            } else if (filters.period.length === 8 && filters.period.includes('W')) {
+                query += " AND DATE_FORMAT(date, '%x-W%v') = ?";
+                params.push(filters.period);
             } else if (filters.period.length === 7) {
                 query += " AND DATE_FORMAT(date, '%Y-%m') = ?";
                 params.push(filters.period);
@@ -130,6 +133,9 @@ class Attendance {
         if (filters.period) {
             if (filters.period.length === 10) {
                 joinConditions.push("DATE(a.date) = ?");
+                params.push(filters.period);
+            } else if (filters.period.length === 8 && filters.period.includes('W')) {
+                joinConditions.push("DATE_FORMAT(a.date, '%x-W%v') = ?");
                 params.push(filters.period);
             } else if (filters.period.length === 7) {
                 joinConditions.push("DATE_FORMAT(a.date, '%Y-%m') = ?");
