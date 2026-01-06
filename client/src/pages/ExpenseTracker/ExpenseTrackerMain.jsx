@@ -5,7 +5,7 @@ import { getTransactions, createTransaction, updateTransaction, deleteTransactio
 import toast from 'react-hot-toast';
 import {
     FaWallet, FaPlus, FaTrash, FaChartBar, FaExchangeAlt, FaFileAlt, FaEdit, FaTimes,
-    FaPlusCircle, FaFolderPlus, FaUserEdit,
+    FaPlusCircle, FaFolderPlus, FaUserEdit, FaBoxes,
     FaCheck, FaQuestionCircle, FaCalculator
 } from 'react-icons/fa';
 import { getExpenseCategories, createExpenseCategory, deleteExpenseCategory } from '../../api/expenseCategoryApi';
@@ -20,6 +20,7 @@ import { Settings } from 'lucide-react';
 import CategoryManager from '../../components/CategoryManager';
 import ProjectManager from '../../components/ProjectManager';
 import MemberManager from '../../components/MemberManager';
+import DailyWorkLogManager from '../../components/DailyWorkLogManager';
 import ExportButtons from '../../components/ExportButtons';
 
 // Sub-components
@@ -45,6 +46,7 @@ const ExpenseTrackerMain = () => {
     const [showCategoryManager, setShowCategoryManager] = useState(false);
     const [showProjectManager, setShowProjectManager] = useState(false);
     const [showMemberManager, setShowMemberManager] = useState(false);
+    const [showDailyWorkLogManager, setShowDailyWorkLogManager] = useState(false);
 
     // Data Lists
     const [categories, setCategories] = useState([]);
@@ -445,6 +447,7 @@ const ExpenseTrackerMain = () => {
                             <ExportButtons onExportCSV={() => setConfirmModal({ show: true, type: 'CSV', label: 'CSV Report' })} onExportPDF={() => setConfirmModal({ show: true, type: 'PDF', label: 'PDF Report' })} onExportTXT={() => setConfirmModal({ show: true, type: 'TXT', label: 'Plain Text Report' })} />
                             <button onClick={() => setShowProjectManager(true)} className="flex-1 xl:flex-none h-[40px] flex items-center justify-center gap-[8px] bg-[#2d5bff] text-white px-[16px] rounded-[12px] shadow-lg shadow-blue-500/20 hover:scale-105 transition-transform" title="New Project"><FaFolderPlus /><span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Project</span></button>
                             <button onClick={() => setShowMemberManager(true)} className="w-[40px] h-[40px] bg-white text-slate-500 rounded-[12px] flex items-center justify-center hover:bg-orange-50 transition-all border border-slate-200 shadow-sm"><FaUserEdit /></button>
+                            <button onClick={() => setShowDailyWorkLogManager(true)} className="w-[40px] h-[40px] bg-white text-slate-500 rounded-[12px] flex items-center justify-center hover:bg-indigo-50 transition-all border border-slate-200 shadow-sm" title="Daily Work Logs"><FaBoxes /></button>
                         </div>
                     </div>
                 </div>
@@ -564,6 +567,7 @@ const ExpenseTrackerMain = () => {
             {showCategoryManager && <CategoryManager categories={categories} onUpdate={() => getExpenseCategories().then(res => setCategories(res.data))} onCreate={createExpenseCategory} onDelete={deleteExpenseCategory} onClose={() => setShowCategoryManager(false)} />}
             {showProjectManager && <ProjectManager projects={projects} onCreate={createProject} onDelete={deleteProject} onRefresh={fetchData} onClose={() => setShowProjectManager(false)} />}
             {showMemberManager && <MemberManager onUpdate={fetchData} onClose={() => setShowMemberManager(false)} />}
+            {showDailyWorkLogManager && <DailyWorkLogManager onClose={() => setShowDailyWorkLogManager(false)} />}
 
             {showCustomReportModal && (
                 <div className="fixed inset-0 z-150 flex items-center justify-center p-[16px] bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
