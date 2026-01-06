@@ -131,8 +131,8 @@ const MemberManager = ({ onClose, onUpdate }) => {
                     <form onSubmit={handleSubmit} className="mb-6 sm:mb-8 p-[16px] sm:p-[20px] md:p-[24px] bg-slate-50 rounded-[20px] sm:rounded-[24px] border border-slate-100 font-['Outfit']">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-[12px] sm:gap-[14px] md:gap-[16px] mb-[12px] sm:mb-[14px] md:mb-[16px]">
                             <div>
-                                <label className="block text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[6px] sm:mb-[8px] ml-[6px] sm:ml-[8px]">
-                                    <FaUser className="inline mr-1 text-[8px] sm:text-[10px]" /> Name *
+                                <label className="block text-[8px] sm:text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[4px] sm:mb-[6px] md:mb-[8px] ml-[4px] sm:ml-[6px] md:ml-[8px]">
+                                    <FaUser className="inline mr-1 text-[7px] sm:text-[8px] md:text-[10px]" /> Name *
                                 </label>
                                 <input
                                     required
@@ -140,53 +140,53 @@ const MemberManager = ({ onClose, onUpdate }) => {
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                     placeholder="Full name"
-                                    className="w-full bg-white border border-slate-200 rounded-[12px] sm:rounded-[14px] md:rounded-[16px] px-[16px] sm:px-[20px] md:px-[24px] h-[40px] sm:h-[44px] md:h-[48px] text-[13px] sm:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                    className="w-full bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] md:rounded-[14px] lg:rounded-[16px] px-[12px] sm:px-[16px] md:px-[20px] lg:px-[24px] h-[32px] sm:h-[36px] md:h-[40px] lg:h-[44px] text-[11px] sm:text-[12px] md:text-[13px] lg:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-4 focus:ring-blue-500/10 transition-all"
                                 />
                             </div>
                             <div>
-                                <label className="block text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[6px] sm:mb-[8px] ml-[6px] sm:ml-[8px]">
-                                    <FaBriefcase className="inline mr-1 text-[8px] sm:text-[10px]" /> Role/Group
+                                <label className="block text-[8px] sm:text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[4px] sm:mb-[6px] md:mb-[8px] ml-[4px] sm:ml-[6px] md:ml-[8px]">
+                                    <FaBriefcase className="inline mr-1 text-[7px] sm:text-[8px] md:text-[10px]" /> Role/Group
                                 </label>
                                 <input
                                     type="text"
                                     value={formData.role}
                                     onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                                     placeholder="e.g. Student, Staff, Regular"
-                                    className="w-full bg-white border border-slate-200 rounded-[12px] sm:rounded-[14px] md:rounded-[16px] px-[16px] sm:px-[20px] md:px-[24px] h-[40px] sm:h-[44px] md:h-[48px] text-[13px] sm:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                    className="w-full bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] md:rounded-[14px] lg:rounded-[16px] px-[12px] sm:px-[16px] md:px-[20px] lg:px-[24px] h-[32px] sm:h-[36px] md:h-[40px] lg:h-[44px] text-[11px] sm:text-[12px] md:text-[13px] lg:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-4 focus:ring-blue-500/10 transition-all"
                                 />
                             </div>
                             <div>
-                                <label className="block text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[6px] sm:mb-[8px] ml-[6px] sm:ml-[8px]">
-                                    <FaPhone className="inline mr-1 text-[8px] sm:text-[10px]" /> Phone
+                                <label className="block text-[8px] sm:text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[4px] sm:mb-[6px] md:mb-[8px] ml-[4px] sm:ml-[6px] md:ml-[8px]">
+                                    <FaPhone className="inline mr-1 text-[7px] sm:text-[8px] md:text-[10px]" /> Phone
                                 </label>
                                 <input
                                     type="tel"
                                     value={formData.phone}
                                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                     placeholder="Contact number"
-                                    className="w-full bg-white border border-slate-200 rounded-[12px] sm:rounded-[14px] md:rounded-[16px] px-[16px] sm:px-[20px] md:px-[24px] h-[40px] sm:h-[44px] md:h-[48px] text-[13px] sm:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                    className="w-full bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] md:rounded-[14px] lg:rounded-[16px] px-[12px] sm:px-[16px] md:px-[20px] lg:px-[24px] h-[32px] sm:h-[36px] md:h-[40px] lg:h-[44px] text-[11px] sm:text-[12px] md:text-[13px] lg:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-4 focus:ring-blue-500/10 transition-all"
                                 />
                             </div>
                             <div>
-                                <label className="block text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[6px] sm:mb-[8px] ml-[6px] sm:ml-[8px]">
-                                    <FaEnvelope className="inline mr-1 text-[8px] sm:text-[10px]" /> Email
+                                <label className="block text-[8px] sm:text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[4px] sm:mb-[6px] md:mb-[8px] ml-[4px] sm:ml-[6px] md:ml-[8px]">
+                                    <FaEnvelope className="inline mr-1 text-[7px] sm:text-[8px] md:text-[10px]" /> Email
                                 </label>
                                 <input
                                     type="email"
                                     value={formData.email}
                                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                     placeholder="Email address"
-                                    className="w-full bg-white border border-slate-200 rounded-[12px] sm:rounded-[14px] md:rounded-[16px] px-[16px] sm:px-[20px] md:px-[24px] h-[40px] sm:h-[44px] md:h-[48px] text-[13px] sm:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                    className="w-full bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] md:rounded-[14px] lg:rounded-[16px] px-[12px] sm:px-[16px] md:px-[20px] lg:px-[24px] h-[32px] sm:h-[36px] md:h-[40px] lg:h-[44px] text-[11px] sm:text-[12px] md:text-[13px] lg:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-4 focus:ring-blue-500/10 transition-all"
                                 />
                             </div>
                             <div>
-                                <label className="block text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[6px] sm:mb-[8px] ml-[6px] sm:ml-[8px]">
+                                <label className="block text-[8px] sm:text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[4px] sm:mb-[6px] md:mb-[8px] ml-[4px] sm:ml-[6px] md:ml-[8px]">
                                     Salary Type
                                 </label>
                                 <select
                                     value={formData.wage_type}
                                     onChange={(e) => setFormData({ ...formData, wage_type: e.target.value })}
-                                    className="w-full bg-white border border-slate-200 rounded-[12px] sm:rounded-[14px] md:rounded-[16px] px-[16px] sm:px-[20px] md:px-[24px] h-[40px] sm:h-[44px] md:h-[48px] text-[13px] sm:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 transition-all cursor-pointer"
+                                    className="w-full bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] md:rounded-[14px] lg:rounded-[16px] px-[12px] sm:px-[16px] md:px-[20px] lg:px-[24px] h-[32px] sm:h-[36px] md:h-[40px] lg:h-[44px] text-[11px] sm:text-[12px] md:text-[13px] lg:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 transition-all cursor-pointer"
                                 >
                                     <option value="daily">Daily Wage</option>
                                     <option value="monthly">Monthly Salary</option>
@@ -194,7 +194,7 @@ const MemberManager = ({ onClose, onUpdate }) => {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[6px] sm:mb-[8px] ml-[6px] sm:ml-[8px]">
+                                <label className="block text-[8px] sm:text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[4px] sm:mb-[6px] md:mb-[8px] ml-[4px] sm:ml-[6px] md:ml-[8px]">
                                     {formData.wage_type === 'piece_rate' ? 'Rate per Unit' : formData.wage_type === 'monthly' ? 'Monthly Salary' : 'Daily Wage'}
                                 </label>
                                 <input
@@ -202,17 +202,17 @@ const MemberManager = ({ onClose, onUpdate }) => {
                                     value={formData.daily_wage}
                                     onChange={(e) => setFormData({ ...formData, daily_wage: e.target.value })}
                                     placeholder="0.00"
-                                    className="w-full bg-white border border-slate-200 rounded-[12px] sm:rounded-[14px] md:rounded-[16px] px-[16px] sm:px-[20px] md:px-[24px] h-[40px] sm:h-[44px] md:h-[48px] text-[13px] sm:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-4 focus:ring-blue-500/10 transition-all"
+                                    className="w-full bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] md:rounded-[14px] lg:rounded-[16px] px-[12px] sm:px-[16px] md:px-[20px] lg:px-[24px] h-[32px] sm:h-[36px] md:h-[40px] lg:h-[44px] text-[11px] sm:text-[12px] md:text-[13px] lg:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-4 focus:ring-blue-500/10 transition-all"
                                 />
                             </div>
                             <div className="md:col-span-2">
-                                <label className="block text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[6px] sm:mb-[8px] ml-[6px] sm:ml-[8px]">
+                                <label className="block text-[8px] sm:text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[4px] sm:mb-[6px] md:mb-[8px] ml-[4px] sm:ml-[6px] md:ml-[8px]">
                                     Status
                                 </label>
                                 <select
                                     value={formData.status}
                                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                    className="w-full bg-white border border-slate-200 rounded-[12px] sm:rounded-[14px] md:rounded-[16px] px-[16px] sm:px-[20px] md:px-[24px] h-[40px] sm:h-[44px] md:h-[48px] text-[13px] sm:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 transition-all cursor-pointer"
+                                    className="w-full bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] md:rounded-[14px] lg:rounded-[16px] px-[12px] sm:px-[16px] md:px-[20px] lg:px-[24px] h-[32px] sm:h-[36px] md:h-[40px] lg:h-[44px] text-[11px] sm:text-[12px] md:text-[13px] lg:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 transition-all cursor-pointer"
                                 >
                                     <option value="active">Active</option>
                                     <option value="inactive">Inactive</option>
@@ -222,16 +222,16 @@ const MemberManager = ({ onClose, onUpdate }) => {
                         <div className="flex gap-2 sm:gap-3">
                             <button
                                 type="submit"
-                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-[40px] sm:h-[44px] md:h-[48px] rounded-[12px] sm:rounded-[14px] md:rounded-[16px] text-[12px] sm:text-[13px] md:text-[14px] font-black uppercase tracking-widest shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-[36px] sm:h-[40px] md:h-[44px] lg:h-[48px] rounded-[10px] sm:rounded-[12px] md:rounded-[14px] lg:rounded-[16px] text-[10px] sm:text-[11px] md:text-[12px] lg:text-[13px] font-black uppercase tracking-widest shadow-lg transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2"
                             >
-                                <FaPlus className="text-[10px] sm:text-[12px]" />
+                                <FaPlus className="text-[8px] sm:text-[10px] md:text-[12px]" />
                                 {editingId ? 'Update Member' : 'Add Member'}
                             </button>
                             {editingId && (
                                 <button
                                     type="button"
                                     onClick={resetForm}
-                                    className="px-[16px] sm:px-[20px] md:px-[24px] bg-slate-200 hover:bg-slate-300 text-slate-700 h-[40px] sm:h-[44px] md:h-[48px] rounded-[12px] sm:rounded-[14px] md:rounded-[16px] text-[12px] sm:text-[13px] md:text-[14px] font-black uppercase tracking-widest transition-all"
+                                    className="px-[12px] sm:px-[16px] md:px-[20px] lg:px-[24px] bg-slate-200 hover:bg-slate-300 text-slate-700 h-[36px] sm:h-[40px] md:h-[44px] lg:h-[48px] rounded-[10px] sm:rounded-[12px] md:rounded-[14px] lg:rounded-[16px] text-[10px] sm:text-[11px] md:text-[12px] lg:text-[13px] font-black uppercase tracking-widest transition-all"
                                 >
                                     Cancel
                                 </button>

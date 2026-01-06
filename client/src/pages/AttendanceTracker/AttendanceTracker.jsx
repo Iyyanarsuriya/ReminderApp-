@@ -883,27 +883,72 @@ const AttendanceTracker = () => {
             </main>
 
             {showAddModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-                    <div className="bg-white rounded-[40px] p-8 sm:p-10 w-full max-w-lg shadow-2xl relative animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto custom-scrollbar">
-                        <button onClick={() => { setShowAddModal(false); resetForm(); }} className="absolute top-8 right-8 text-slate-400 hover:text-slate-800 transition-colors"><FaTimes /></button>
-                        <div className="mb-8"><h2 className="text-2xl font-black text-slate-900 flex items-center gap-3 font-['Outfit']"><div className="w-2 h-8 bg-blue-600 rounded-full"></div>{editingId ? 'Edit Record' : 'Mark Attendance'}</h2></div>
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                {statusOptions.map(opt => (
-                                    <button key={opt.id} type="button" onClick={() => setFormData({ ...formData, status: opt.id })} className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${formData.status === opt.id ? 'border-blue-500 bg-blue-50 scale-105' : 'border-slate-100 bg-slate-50/50 hover:bg-slate-50'}`}><opt.icon className={`text-xl ${formData.status === opt.id ? 'text-blue-500' : 'text-slate-400'}`} /><span className={`text-[10px] font-black uppercase tracking-widest ${formData.status === opt.id ? 'text-blue-700' : 'text-slate-500'}`}>{opt.label}</span></button>
-                                ))}
+                <div className="fixed inset-0 z-50 flex items-start justify-center pt-[12vh] sm:pt-[10vh] px-3 sm:px-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[24px] sm:rounded-[32px] md:rounded-[40px] w-full max-w-lg shadow-2xl relative animate-in zoom-in-95 duration-300 max-h-[84vh] sm:max-h-[80vh] overflow-y-auto custom-scrollbar mb-[4vh] sm:mb-0">
+                        <button onClick={() => { setShowAddModal(false); resetForm(); }} className="absolute top-[16px] sm:top-[24px] right-[16px] sm:right-[24px] text-slate-400 hover:text-slate-800 transition-colors p-1.5 sm:p-2 hover:bg-slate-100 rounded-xl z-10"><FaTimes className="text-[18px] sm:text-[20px]" /></button>
+
+                        <div className="p-[16px] sm:p-[24px] md:p-[32px]">
+                            <div className="mb-6 sm:mb-8">
+                                <h2 className="text-[18px] sm:text-[20px] md:text-[24px] font-black text-slate-900 flex items-center gap-2 sm:gap-3 font-['Outfit']">
+                                    <div className="w-1.5 sm:w-2 h-6 sm:h-8 bg-blue-600 rounded-full"></div>
+                                    {editingId ? 'Edit Record' : 'Mark Attendance'}
+                                </h2>
+                                <p className="text-slate-500 text-[11px] sm:text-[12px] md:text-[14px] mt-1 sm:mt-2 ml-3 sm:ml-5">Track attendance for the day</p>
                             </div>
-                            <div className="space-y-4">
-                                <div><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Subject / Label</label><input required type="text" value={formData.subject} onChange={(e) => setFormData({ ...formData, subject: e.target.value })} placeholder="E.g. Office, College, Gym..." className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-['Outfit']" /></div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Date</label><div className="relative"><FaCalendarAlt className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" /><input required type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-14 pr-6 py-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all font-['Outfit'] cursor-pointer" /></div></div>
-                                    <div><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Project (Optional)</label><select value={formData.project_id} onChange={(e) => setFormData({ ...formData, project_id: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all cursor-pointer font-['Outfit']"><option value="">No Project</option>{projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
-                                    <div className="sm:col-span-2"><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Member (Optional)</label><select value={formData.member_id} onChange={(e) => setFormData({ ...formData, member_id: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all cursor-pointer font-['Outfit']"><option value="">No Member</option>{members.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}</select></div>
+
+                            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                                    {statusOptions.map(opt => (
+                                        <button key={opt.id} type="button" onClick={() => setFormData({ ...formData, status: opt.id })} className={`flex flex-col items-center gap-1.5 sm:gap-2 p-3 sm:p-4 rounded-[12px] sm:rounded-[16px] md:rounded-2xl border-2 transition-all ${formData.status === opt.id ? 'border-blue-500 bg-blue-50 scale-105' : 'border-slate-100 bg-slate-50/50 hover:bg-slate-50'}`}>
+                                            <opt.icon className={`text-[16px] sm:text-[18px] md:text-xl ${formData.status === opt.id ? 'text-blue-500' : 'text-slate-400'}`} />
+                                            <span className={`text-[8px] sm:text-[9px] md:text-[10px] font-black uppercase tracking-widest ${formData.status === opt.id ? 'text-blue-700' : 'text-slate-500'}`}>{opt.label}</span>
+                                        </button>
+                                    ))}
                                 </div>
-                                <div><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-2">Note (Optional)</label><textarea value={formData.note} onChange={(e) => setFormData({ ...formData, note: e.target.value })} placeholder="Add more details..." rows="3" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-6 py-4 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all resize-none font-['Outfit']"></textarea></div>
-                            </div>
-                            <button type="submit" className="w-full bg-slate-900 hover:bg-slate-800 text-white py-5 rounded-2xl text-sm font-black uppercase tracking-widest shadow-2xl transition-all hover:scale-[1.02] active:scale-95 mt-4 font-['Outfit']">{editingId ? 'Update Record' : 'Mark Attendance'}</button>
-                        </form>
+
+                                <div className="space-y-3 sm:space-y-4">
+                                    <div>
+                                        <label className="block text-[8px] sm:text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[4px] sm:mb-[6px] md:mb-[8px] ml-[4px] sm:ml-[6px] md:ml-[8px]">Subject / Label</label>
+                                        <input required type="text" value={formData.subject} onChange={(e) => setFormData({ ...formData, subject: e.target.value })} placeholder="E.g. Office, College, Gym..." className="w-full bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] md:rounded-[14px] lg:rounded-[16px] px-[12px] sm:px-[16px] md:px-[20px] lg:px-[24px] h-[32px] sm:h-[36px] md:h-[40px] lg:h-[44px] text-[11px] sm:text-[12px] md:text-[13px] lg:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-4 focus:ring-blue-500/10 transition-all font-['Outfit']" />
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                        <div>
+                                            <label className="block text-[8px] sm:text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[4px] sm:mb-[6px] md:mb-[8px] ml-[4px] sm:ml-[6px] md:ml-[8px]">Date</label>
+                                            <div className="relative">
+                                                <FaCalendarAlt className="absolute left-[12px] sm:left-[16px] md:left-[20px] top-1/2 -translate-y-1/2 text-slate-400 text-[10px] sm:text-[12px]" />
+                                                <input required type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] md:rounded-[14px] lg:rounded-[16px] pl-[32px] sm:pl-[40px] md:pl-[48px] pr-[12px] sm:pr-[16px] md:pr-[20px] h-[32px] sm:h-[36px] md:h-[40px] lg:h-[44px] text-[11px] sm:text-[12px] md:text-[13px] lg:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-4 focus:ring-blue-500/10 transition-all font-['Outfit'] cursor-pointer" />
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-[8px] sm:text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[4px] sm:mb-[6px] md:mb-[8px] ml-[4px] sm:ml-[6px] md:ml-[8px]">Project (Optional)</label>
+                                            <select value={formData.project_id} onChange={(e) => setFormData({ ...formData, project_id: e.target.value })} className="w-full bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] md:rounded-[14px] lg:rounded-[16px] px-[12px] sm:px-[16px] md:px-[20px] lg:px-[24px] h-[32px] sm:h-[36px] md:h-[40px] lg:h-[44px] text-[11px] sm:text-[12px] md:text-[13px] lg:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-4 focus:ring-blue-500/10 transition-all cursor-pointer font-['Outfit']">
+                                                <option value="">No Project</option>
+                                                {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                            </select>
+                                        </div>
+
+                                        <div className="sm:col-span-2">
+                                            <label className="block text-[8px] sm:text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[4px] sm:mb-[6px] md:mb-[8px] ml-[4px] sm:ml-[6px] md:ml-[8px]">Member (Optional)</label>
+                                            <select value={formData.member_id} onChange={(e) => setFormData({ ...formData, member_id: e.target.value })} className="w-full bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] md:rounded-[14px] lg:rounded-[16px] px-[12px] sm:px-[16px] md:px-[20px] lg:px-[24px] h-[32px] sm:h-[36px] md:h-[40px] lg:h-[44px] text-[11px] sm:text-[12px] md:text-[13px] lg:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-4 focus:ring-blue-500/10 transition-all cursor-pointer font-['Outfit']">
+                                                <option value="">No Member</option>
+                                                {members.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[8px] sm:text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[4px] sm:mb-[6px] md:mb-[8px] ml-[4px] sm:ml-[6px] md:ml-[8px]">Note (Optional)</label>
+                                        <textarea value={formData.note} onChange={(e) => setFormData({ ...formData, note: e.target.value })} placeholder="Add more details..." rows="3" className="w-full bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] md:rounded-[14px] lg:rounded-[16px] px-[12px] sm:px-[16px] md:px-[20px] lg:px-[24px] py-[8px] sm:py-[10px] md:py-[12px] text-[11px] sm:text-[12px] md:text-[13px] lg:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-4 focus:ring-blue-500/10 transition-all resize-none font-['Outfit']"></textarea>
+                                    </div>
+                                </div>
+
+                                <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white h-[36px] sm:h-[40px] md:h-[44px] lg:h-[48px] rounded-[10px] sm:rounded-[12px] md:rounded-[14px] lg:rounded-[16px] text-[10px] sm:text-[11px] md:text-[12px] lg:text-[13px] font-black uppercase tracking-widest shadow-lg transition-all hover:scale-[1.02] active:scale-95 mt-2 sm:mt-4 font-['Outfit']">
+                                    {editingId ? 'Update Record' : 'Mark Attendance'}
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
             )}
