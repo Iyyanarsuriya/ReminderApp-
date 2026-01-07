@@ -205,3 +205,23 @@ CREATE TABLE IF NOT EXISTS daily_work_logs (
 --   3. Auto-calculates total_amount (units × rate)
 --   4. Supports monthly salary calculations
 -- ============================================================================
+
+-- ============================================================================
+-- MEMBER ROLES TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS member_roles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_role_per_user (user_id, name),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Migration: add_member_roles.sql
+-- Date: 2026-01-07
+-- Changes:
+--   1. Created table: member_roles
+--   2. Stores distinct categories/roles for members
+--   3. Allows user-defined roles instead of just free text
+-- ============================================================================

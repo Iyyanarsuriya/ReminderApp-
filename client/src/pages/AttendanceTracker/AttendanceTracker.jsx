@@ -24,9 +24,11 @@ import {
 } from 'recharts';
 import { exportToCSV, exportToTXT, exportToPDF } from '../../utils/exportUtils';
 import ExportButtons from '../../components/ExportButtons';
-import { FaFileAlt } from 'react-icons/fa';
+import { FaFileAlt, FaTag } from 'react-icons/fa';
 import ProjectManager from '../../components/ProjectManager';
 import MemberManager from '../../components/MemberManager';
+import RoleManager from '../../components/RoleManager';
+import { getMemberRoles, createMemberRole, deleteMemberRole } from '../../api/memberRoleApi';
 
 const AttendanceTracker = () => {
     const navigate = useNavigate();
@@ -57,7 +59,12 @@ const AttendanceTracker = () => {
         status: 'all'
     });
 
+    // Role Management
+    const [roles, setRoles] = useState([]);
+    const [showRoleManager, setShowRoleManager] = useState(false);
+
     const [confirmModal, setConfirmModal] = useState({ show: false, type: null, label: '', id: null });
+    const [filterRole, setFilterRole] = useState('');
     const [formData, setFormData] = useState({
         subject: '',
         status: 'present',
@@ -66,6 +73,19 @@ const AttendanceTracker = () => {
         project_id: '',
         member_id: ''
     });
+
+    // Helper for mapping member IDs to their roles
+    const memberIdToRoleMap = useMemo(() => {
+        const map = {};
+        members.forEach(m => {
+            map[m.id] = m.role;
+        });
+        return map;
+    }, [members]);
+
+    const uniqueRoles = useMemo(() => {
+        return [...new Set(members.map(m => m.role).filter(Boolean))];
+    }, [members]);
 
     const statusOptions = [
         { id: 'present', label: 'Present', icon: FaCheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-100' },
@@ -82,7 +102,7 @@ const AttendanceTracker = () => {
 
             if (isRange && (!rangeStart || !rangeEnd)) return;
 
-            const [attRes, statsRes, summaryRes, projRes, membersRes] = await Promise.all([
+            const [attRes, statsRes, summaryRes, projRes, membersRes, roleRes] = await Promise.all([
                 getAttendances({
                     projectId: filterProject,
                     memberId: filterMember,
@@ -104,13 +124,15 @@ const AttendanceTracker = () => {
                     endDate: rangeEnd
                 }),
                 getProjects(),
-                getActiveMembers()
+                getActiveMembers(),
+                getMemberRoles()
             ]);
             setAttendances(attRes.data.data);
             setStats(attRes.data.data.length > 0 ? statsRes.data.data : []);
             setMemberSummary(summaryRes.data.data);
             setProjects(projRes.data);
             setMembers(membersRes.data.data);
+            setRoles(roleRes.data.data);
             setLoading(false);
         } catch (error) {
             toast.error("Failed to fetch attendance data");
@@ -359,10 +381,13 @@ const AttendanceTracker = () => {
     };
 
     const filteredAttendances = useMemo(() => {
-        return attendances.filter(a =>
-            a.subject.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-    }, [attendances, searchQuery]);
+        return attendances.filter(a => {
+            const matchesSearch = (a.subject || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (a.member_name || '').toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesRole = !filterRole || memberIdToRoleMap[a.member_id] === filterRole;
+            return matchesSearch && matchesRole;
+        });
+    }, [attendances, searchQuery, filterRole, memberIdToRoleMap]);
 
     const activeMembersAttendanceMat = useMemo(() => {
         if (periodType !== 'day') return {};
@@ -511,6 +536,40 @@ const AttendanceTracker = () => {
                                 </button>
                             </div>
 
+                            {/* Role Filter & Manager */}
+                            <div className="col-span-1 flex items-center gap-1.5 h-[40px]">
+                                <select
+                                    value={filterRole}
+                                    onChange={(e) => setFilterRole(e.target.value)}
+                                    className="flex-1 bg-white border border-slate-200 rounded-xl px-2 sm:px-4 h-full text-[11px] sm:text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all cursor-pointer shadow-sm"
+                                >
+                                    <option value="">All Categories</option>
+                                    {/* Merge DB roles and existing unique roles from members to avoid missing data */}
+                                    {[...new Set([...roles.map(r => r.name), ...uniqueRoles])].sort().map(role => (
+                                        <option key={role} value={role}>{role}</option>
+                                    ))}
+                                </select>
+                                <button
+                                    onClick={() => setShowRoleManager(true)}
+                                    className="w-[40px] h-[40px] bg-slate-100 text-slate-500 rounded-xl flex items-center justify-center hover:bg-purple-50 hover:text-purple-600 transition-all shadow-sm border border-slate-200 shrink-0"
+                                    title="Manage Categories"
+                                >
+                                    <FaTag />
+                                </button>
+                            </div>
+
+                            {/* Global Search */}
+                            <div className="col-span-2 md:col-span-1 relative h-[40px]">
+                                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs" />
+                                <input
+                                    type="text"
+                                    placeholder="Find person..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full h-full pl-9 pr-4 bg-white border border-slate-200 rounded-xl text-[11px] sm:text-sm font-bold text-slate-700 outline-none focus:border-blue-500 transition-all shadow-sm font-['Outfit']"
+                                />
+                            </div>
+
                             <ExportButtons
                                 onExportCSV={() => setConfirmModal({ show: true, type: 'CSV', label: 'CSV Report' })}
                                 onExportPDF={() => setConfirmModal({ show: true, type: 'PDF', label: 'PDF Report' })}
@@ -597,16 +656,7 @@ const AttendanceTracker = () => {
                             <div className="bg-white rounded-3xl p-8 shadow-xl border border-slate-100 min-h-[500px]">
                                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                                     <h3 className="text-lg font-black text-slate-900 font-['Outfit']">Recent Records</h3>
-                                    <div className="relative flex-1 max-w-xs">
-                                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                                        <input
-                                            type="text"
-                                            placeholder="Search subject..."
-                                            value={searchQuery}
-                                            onChange={(e) => setSearchQuery(e.target.value)}
-                                            className="w-full pl-11 pr-4 py-2 bg-slate-50 border border-slate-100 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-['Outfit']"
-                                        />
-                                    </div>
+                                    {/* Global search applies here */}
                                 </div>
                                 <div className="space-y-4">
                                     {filteredAttendances.length > 0 ? filteredAttendances.map((item, idx) => {
@@ -714,48 +764,54 @@ const AttendanceTracker = () => {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
-                                    {memberSummary.map((w) => {
-                                        const rate = w.total > 0 ? ((w.present + w.half_day * 0.5) / w.total * 100) : 0;
-                                        return (
-                                            <tr key={w.id} className="hover:bg-slate-50/80 transition-colors group">
-                                                <td className="px-8 py-5">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 font-black text-xs group-hover:bg-blue-600 group-hover:text-white transition-colors font-['Outfit']">
-                                                            {w.name.charAt(0)}
+                                    {memberSummary
+                                        .filter(w => {
+                                            const matchesRole = !filterRole || memberIdToRoleMap[w.id] === filterRole;
+                                            const matchesSearch = !searchQuery || w.name.toLowerCase().includes(searchQuery.toLowerCase());
+                                            return matchesRole && matchesSearch;
+                                        })
+                                        .map((w) => {
+                                            const rate = w.total > 0 ? ((w.present + w.half_day * 0.5) / w.total * 100) : 0;
+                                            return (
+                                                <tr key={w.id} className="hover:bg-slate-50/80 transition-colors group">
+                                                    <td className="px-8 py-5">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-9 h-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 font-black text-xs group-hover:bg-blue-600 group-hover:text-white transition-colors font-['Outfit']">
+                                                                {w.name.charAt(0)}
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-black text-slate-900 leading-none font-['Outfit']">{w.name}</p>
+                                                                <p className="text-[9px] font-black text-slate-400 uppercase mt-1 font-['Outfit']">ID: #{w.id}</p>
+                                                            </div>
                                                         </div>
-                                                        <div>
-                                                            <p className="font-black text-slate-900 leading-none font-['Outfit']">{w.name}</p>
-                                                            <p className="text-[9px] font-black text-slate-400 uppercase mt-1 font-['Outfit']">ID: #{w.id}</p>
+                                                    </td>
+                                                    <td className="px-6 py-5 text-center">
+                                                        <span className="inline-flex w-7 h-7 items-center justify-center bg-emerald-50 text-emerald-600 rounded-lg font-black text-[11px] border border-emerald-100 font-['Outfit']">{w.present}</span>
+                                                    </td>
+                                                    <td className="px-6 py-5 text-center">
+                                                        <span className="inline-flex w-7 h-7 items-center justify-center bg-red-50 text-red-600 rounded-lg font-black text-[11px] border border-red-100 font-['Outfit']">{w.absent}</span>
+                                                    </td>
+                                                    <td className="px-6 py-5 text-center">
+                                                        <span className="inline-flex w-7 h-7 items-center justify-center bg-amber-50 text-amber-600 rounded-lg font-black text-[11px] border border-amber-100 font-['Outfit']">{w.late}</span>
+                                                    </td>
+                                                    <td className="px-6 py-5 text-center">
+                                                        <span className="inline-flex w-7 h-7 items-center justify-center bg-blue-50 text-blue-600 rounded-lg font-black text-[11px] border border-blue-100 font-['Outfit']">{w.half_day}</span>
+                                                    </td>
+                                                    <td className="px-6 py-5 text-center font-black text-slate-900 text-[11px] font-['Outfit']">{w.total}</td>
+                                                    <td className="px-8 py-5 text-right">
+                                                        <div className="flex items-center justify-end gap-3">
+                                                            <div className="w-20 sm:w-28 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                                                <div
+                                                                    className={`h-full rounded-full transition-all duration-1000 ${rate >= 90 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]' : rate >= 75 ? 'bg-blue-500' : 'bg-amber-500'}`}
+                                                                    style={{ width: `${rate}%` }}
+                                                                ></div>
+                                                            </div>
+                                                            <span className={`text-[11px] font-black min-w-[32px] font-['Outfit'] ${rate >= 90 ? 'text-emerald-600' : rate >= 75 ? 'text-blue-600' : 'text-amber-600'}`}>{rate.toFixed(0)}%</span>
                                                         </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-5 text-center">
-                                                    <span className="inline-flex w-7 h-7 items-center justify-center bg-emerald-50 text-emerald-600 rounded-lg font-black text-[11px] border border-emerald-100 font-['Outfit']">{w.present}</span>
-                                                </td>
-                                                <td className="px-6 py-5 text-center">
-                                                    <span className="inline-flex w-7 h-7 items-center justify-center bg-red-50 text-red-600 rounded-lg font-black text-[11px] border border-red-100 font-['Outfit']">{w.absent}</span>
-                                                </td>
-                                                <td className="px-6 py-5 text-center">
-                                                    <span className="inline-flex w-7 h-7 items-center justify-center bg-amber-50 text-amber-600 rounded-lg font-black text-[11px] border border-amber-100 font-['Outfit']">{w.late}</span>
-                                                </td>
-                                                <td className="px-6 py-5 text-center">
-                                                    <span className="inline-flex w-7 h-7 items-center justify-center bg-blue-50 text-blue-600 rounded-lg font-black text-[11px] border border-blue-100 font-['Outfit']">{w.half_day}</span>
-                                                </td>
-                                                <td className="px-6 py-5 text-center font-black text-slate-900 text-[11px] font-['Outfit']">{w.total}</td>
-                                                <td className="px-8 py-5 text-right">
-                                                    <div className="flex items-center justify-end gap-3">
-                                                        <div className="w-20 sm:w-28 h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                            <div
-                                                                className={`h-full rounded-full transition-all duration-1000 ${rate >= 90 ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]' : rate >= 75 ? 'bg-blue-500' : 'bg-amber-500'}`}
-                                                                style={{ width: `${rate}%` }}
-                                                            ></div>
-                                                        </div>
-                                                        <span className={`text-[11px] font-black min-w-[32px] font-['Outfit'] ${rate >= 90 ? 'text-emerald-600' : rate >= 75 ? 'text-blue-600' : 'text-amber-600'}`}>{rate.toFixed(0)}%</span>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     {memberSummary.length === 0 && (
                                         <tr>
                                             <td colSpan="7" className="px-8 py-20 text-center">
@@ -803,53 +859,60 @@ const AttendanceTracker = () => {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-slate-100">
-                                            {members.map(w => {
-                                                const currentStatus = activeMembersAttendanceMat[w.id];
-                                                const option = statusOptions.find(o => o.id === currentStatus);
-                                                return (
-                                                    <tr key={w.id} className="hover:bg-slate-50/50 transition-colors group">
-                                                        <td className="px-4 sm:px-8 py-4 sm:py-6">
-                                                            <div className="flex items-center gap-3 sm:gap-4">
-                                                                <div className="hidden sm:flex w-10 h-10 bg-white rounded-xl border border-slate-100 items-center justify-center text-slate-400 group-hover:text-blue-500 shadow-sm transition-all shrink-0">
-                                                                    <FaUserCheck />
-                                                                </div>
-                                                                <div className="min-w-0">
-                                                                    <h4 className="font-black text-slate-900 leading-tight truncate text-sm sm:text-base font-['Outfit']">{w.name}</h4>
-                                                                    <p className="text-[8px] sm:text-[9px] font-black uppercase tracking-tighter text-slate-400 mt-0.5 font-['Outfit']">#{w.id}</p>
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-4 sm:px-8 py-4 sm:py-6">
-                                                            <div className="flex items-center justify-center gap-2 sm:gap-4">
-                                                                <button
-                                                                    onClick={() => handleQuickMark(w.id, 'present')}
-                                                                    className={`flex-1 sm:flex-none px-3 sm:px-8 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer font-['Outfit'] ${currentStatus === 'present' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-105' : 'bg-slate-100/50 text-slate-400 border border-slate-100 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-500/30'}`}
-                                                                >
-                                                                    P<span className="hidden sm:inline">resent</span>
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => handleQuickMark(w.id, 'absent')}
-                                                                    className={`flex-1 sm:flex-none px-3 sm:px-8 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer font-['Outfit'] ${currentStatus === 'absent' ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 scale-105' : 'bg-slate-100/50 text-slate-400 border border-slate-100 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-lg hover:shadow-red-500/30'}`}
-                                                                >
-                                                                    A<span className="hidden sm:inline">bsent</span>
-                                                                </button>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-4 sm:px-8 py-4 sm:py-6 text-right">
-                                                            <div className="flex justify-end">
-                                                                {option ? (
-                                                                    <div className={`inline-flex items-center gap-1.5 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest font-['Outfit'] ${option.bg} ${option.color} border ${option.border}`}>
-                                                                        <option.icon className="text-[10px] sm:text-xs" />
-                                                                        <span className="truncate max-w-[40px] sm:max-w-none">{option.label}</span>
+                                            {members
+                                                .filter(m => {
+                                                    const matchesRole = !filterRole || m.role === filterRole;
+                                                    const matchesSearch = !searchQuery || m.name.toLowerCase().includes(searchQuery.toLowerCase());
+                                                    const matchesMemberFilter = !filterMember || m.id == filterMember; // Optional: respect member dropdown too if set
+                                                    return matchesRole && matchesSearch && matchesMemberFilter;
+                                                })
+                                                .map(w => {
+                                                    const currentStatus = activeMembersAttendanceMat[w.id];
+                                                    const option = statusOptions.find(o => o.id === currentStatus);
+                                                    return (
+                                                        <tr key={w.id} className="hover:bg-slate-50/50 transition-colors group">
+                                                            <td className="px-4 sm:px-8 py-4 sm:py-6">
+                                                                <div className="flex items-center gap-3 sm:gap-4">
+                                                                    <div className="hidden sm:flex w-10 h-10 bg-white rounded-xl border border-slate-100 items-center justify-center text-slate-400 group-hover:text-blue-500 shadow-sm transition-all shrink-0">
+                                                                        <FaUserCheck />
                                                                     </div>
-                                                                ) : (
-                                                                    <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-slate-300 font-['Outfit']">Wait</span>
-                                                                )}
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
+                                                                    <div className="min-w-0">
+                                                                        <h4 className="font-black text-slate-900 leading-tight truncate text-sm sm:text-base font-['Outfit']">{w.name}</h4>
+                                                                        <p className="text-[8px] sm:text-[9px] font-black uppercase tracking-tighter text-slate-400 mt-0.5 font-['Outfit']">#{w.id}</p>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 sm:px-8 py-4 sm:py-6">
+                                                                <div className="flex items-center justify-center gap-2 sm:gap-4">
+                                                                    <button
+                                                                        onClick={() => handleQuickMark(w.id, 'present')}
+                                                                        className={`flex-1 sm:flex-none px-3 sm:px-8 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer font-['Outfit'] ${currentStatus === 'present' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-105' : 'bg-slate-100/50 text-slate-400 border border-slate-100 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-500/30'}`}
+                                                                    >
+                                                                        P<span className="hidden sm:inline">resent</span>
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => handleQuickMark(w.id, 'absent')}
+                                                                        className={`flex-1 sm:flex-none px-3 sm:px-8 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer font-['Outfit'] ${currentStatus === 'absent' ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 scale-105' : 'bg-slate-100/50 text-slate-400 border border-slate-100 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-lg hover:shadow-red-500/30'}`}
+                                                                    >
+                                                                        A<span className="hidden sm:inline">bsent</span>
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 sm:px-8 py-4 sm:py-6 text-right">
+                                                                <div className="flex justify-end">
+                                                                    {option ? (
+                                                                        <div className={`inline-flex items-center gap-1.5 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[8px] sm:text-[10px] font-black uppercase tracking-widest font-['Outfit'] ${option.bg} ${option.color} border ${option.border}`}>
+                                                                            <option.icon className="text-[10px] sm:text-xs" />
+                                                                            <span className="truncate max-w-[40px] sm:max-w-none">{option.label}</span>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-slate-300 font-['Outfit']">Wait</span>
+                                                                    )}
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
                                             {members.length === 0 && (
                                                 <tr>
                                                     <td colSpan="3" className="px-8 py-20 text-center">
@@ -965,6 +1028,17 @@ const AttendanceTracker = () => {
                 )
             }
             {showMemberManager && <MemberManager onClose={() => { setShowMemberManager(false); fetchData(); }} onUpdate={fetchData} />}
+            {
+                showRoleManager && (
+                    <RoleManager
+                        roles={roles}
+                        onCreate={createMemberRole}
+                        onDelete={deleteMemberRole}
+                        onClose={() => { setShowRoleManager(false); fetchData(); }}
+                        onRefresh={() => getMemberRoles().then(res => setRoles(res.data.data))}
+                    />
+                )
+            }
 
             {/* Generic Confirmation Modal */}
             <ConfirmModal

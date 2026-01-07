@@ -1,12 +1,16 @@
-import { useState, useEffect } from 'react';
 import { getMembers, createMember, updateMember, deleteMember } from '../api/memberApi';
+import { getMemberRoles, createMemberRole, deleteMemberRole } from '../api/memberRoleApi'; // IMPORTS
 import { getTransactions } from '../api/transactionApi';
 import toast from 'react-hot-toast';
 import { FaTimes, FaPlus, FaEdit, FaTrash, FaUser, FaBriefcase, FaPhone, FaEnvelope, FaHistory, FaMoneyBillWave, FaUniversity } from 'react-icons/fa';
 import ConfirmModal from './modals/ConfirmModal';
+import RoleManager from './RoleManager'; // IMPORTS
+import { useState, useEffect } from 'react';
 
 const MemberManager = ({ onClose, onUpdate }) => {
     const [members, setMembers] = useState([]);
+    const [roles, setRoles] = useState([]); // ROLES STATE
+    const [showRoleManager, setShowRoleManager] = useState(false); // MANAGER STATE
     const [loading, setLoading] = useState(true);
     const [formData, setFormData] = useState({
         name: '',
@@ -25,11 +29,12 @@ const MemberManager = ({ onClose, onUpdate }) => {
 
     const fetchMembers = async () => {
         try {
-            const res = await getMembers();
-            setMembers(res.data.data);
+            const [memRes, roleRes] = await Promise.all([getMembers(), getMemberRoles()]);
+            setMembers(memRes.data.data);
+            setRoles(roleRes.data.data);
             setLoading(false);
         } catch (error) {
-            toast.error("Failed to fetch members");
+            toast.error("Failed to fetch data");
             setLoading(false);
         }
     };
@@ -145,15 +150,28 @@ const MemberManager = ({ onClose, onUpdate }) => {
                             </div>
                             <div>
                                 <label className="block text-[8px] sm:text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[4px] sm:mb-[6px] md:mb-[8px] ml-[4px] sm:ml-[6px] md:ml-[8px]">
-                                    <FaBriefcase className="inline mr-1 text-[7px] sm:text-[8px] md:text-[10px]" /> Role/Group
+                                    <FaBriefcase className="inline mr-1 text-[7px] sm:text-[8px] md:text-[10px]" /> Category / Role
                                 </label>
-                                <input
-                                    type="text"
-                                    value={formData.role}
-                                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                                    placeholder="e.g. Student, Staff, Regular"
-                                    className="w-full bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] md:rounded-[13px] lg:rounded-[16px] px-[12px] sm:px-[16px] md:px-[18px] lg:px-[24px] h-[32px] sm:h-[36px] md:h-[38px] lg:h-[44px] text-[11px] sm:text-[12px] md:text-[13px] lg:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 sm:focus:ring-4 focus:ring-blue-500/10 transition-all"
-                                />
+                                <div className="flex gap-2">
+                                    <select
+                                        value={formData.role}
+                                        onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                                        className="w-full bg-white border border-slate-200 rounded-[10px] sm:rounded-[12px] md:rounded-[13px] lg:rounded-[16px] px-[12px] sm:px-[16px] md:px-[18px] lg:px-[24px] h-[32px] sm:h-[36px] md:h-[38px] lg:h-[44px] text-[11px] sm:text-[12px] md:text-[13px] lg:text-[14px] font-bold text-slate-700 outline-none focus:border-blue-500 transition-all cursor-pointer"
+                                    >
+                                        <option value="">Select Category</option>
+                                        {[...new Set([...roles.map(r => r.name), ...members.map(m => m.role).filter(Boolean)])].sort().map(role => (
+                                            <option key={role} value={role}>{role}</option>
+                                        ))}
+                                    </select>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowRoleManager(true)}
+                                        className="w-[32px] sm:w-[36px] md:w-[38px] lg:w-[44px] bg-slate-100 text-slate-500 rounded-[10px] sm:rounded-[12px] md:rounded-[13px] lg:rounded-[16px] flex items-center justify-center hover:bg-purple-50 hover:text-purple-600 transition-all border border-slate-200"
+                                        title="Manage Categories"
+                                    >
+                                        <FaPlus size={10} />
+                                    </button>
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-[8px] sm:text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[4px] sm:mb-[6px] md:mb-[8px] ml-[4px] sm:ml-[6px] md:ml-[8px]">
@@ -328,6 +346,17 @@ const MemberManager = ({ onClose, onUpdate }) => {
                 </div>
             </div>
 
+            {/* Role Manager Modal */}
+            {showRoleManager && (
+                <RoleManager
+                    roles={roles}
+                    onCreate={createMemberRole}
+                    onDelete={deleteMemberRole}
+                    onClose={() => { setShowRoleManager(false); fetchMembers(); }}
+                    onRefresh={() => getMemberRoles().then(res => setRoles(res.data.data))}
+                />
+            )}
+
             {/* Custom Delete Confirmation Modal */}
             <ConfirmModal
                 isOpen={deleteModal.show}
@@ -342,7 +371,7 @@ const MemberManager = ({ onClose, onUpdate }) => {
 
             {/* history Modal */}
             {viewingPayments && (
-                <div className="fixed inset-0 z-[120] flex items-center justify-center p-[16px] bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+                <div className="fixed inset-0 z-120 flex items-center justify-center p-[16px] bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
                     <div className="bg-white rounded-[40px] p-[32px] sm:p-[40px] w-full max-w-2xl shadow-2xl relative animate-in zoom-in-95 duration-300 max-h-[85vh] flex flex-col font-['Outfit']">
                         <button
                             onClick={() => setViewingPayments(null)}
