@@ -6,11 +6,12 @@ import toast from 'react-hot-toast';
 import {
     FaWallet, FaPlus, FaTrash, FaChartBar, FaExchangeAlt, FaFileAlt, FaEdit, FaTimes,
     FaPlusCircle, FaFolderPlus, FaUserEdit, FaBoxes,
-    FaCheck, FaQuestionCircle, FaCalculator
+    FaCheck, FaQuestionCircle, FaCalculator, FaTag
 } from 'react-icons/fa';
 import { getExpenseCategories, createExpenseCategory, deleteExpenseCategory } from '../../api/expenseCategoryApi';
 import { getProjects, createProject, deleteProject } from '../../api/projectApi';
 import { getActiveMembers } from '../../api/memberApi';
+import { getMemberRoles, createMemberRole, deleteMemberRole } from '../../api/memberRoleApi'; // IMPORTS
 import { getAttendanceStats } from '../../api/attendanceApi';
 import { exportToCSV, exportToTXT, exportToPDF } from '../../utils/exportUtils';
 import { formatAmount } from '../../utils/formatUtils';
@@ -20,6 +21,7 @@ import { Settings } from 'lucide-react';
 import CategoryManager from '../../components/CategoryManager';
 import ProjectManager from '../../components/ProjectManager';
 import MemberManager from '../../components/MemberManager';
+import RoleManager from '../../components/RoleManager'; // IMPORTS
 import DailyWorkLogManager from '../../components/DailyWorkLogManager';
 import ExportButtons from '../../components/ExportButtons';
 
@@ -42,21 +44,24 @@ const ExpenseTrackerMain = () => {
     const [currentPeriod, setCurrentPeriod] = useState(new Date().toISOString().split('T')[0]);
     const [customRange, setCustomRange] = useState({ start: '', end: '' });
 
+    // Active Filters
+    const [filterProject, setFilterProject] = useState('');
+    const [filterMember, setFilterMember] = useState('');
+    const [filterRole, setFilterRole] = useState(''); // New Role Filter
+    const [deleteModalOuter, setDeleteModalOuter] = useState({ show: false, id: null });
+
     // Modals
     const [showCategoryManager, setShowCategoryManager] = useState(false);
     const [showProjectManager, setShowProjectManager] = useState(false);
     const [showMemberManager, setShowMemberManager] = useState(false);
+    const [showRoleManager, setShowRoleManager] = useState(false); // New Role Manager Modal
     const [showDailyWorkLogManager, setShowDailyWorkLogManager] = useState(false);
 
     // Data Lists
     const [categories, setCategories] = useState([]);
     const [projects, setProjects] = useState([]);
     const [members, setMembers] = useState([]);
-
-    // Active Filters
-    const [filterProject, setFilterProject] = useState('');
-    const [filterMember, setFilterMember] = useState('');
-    const [deleteModalOuter, setDeleteModalOuter] = useState({ show: false, id: null });
+    const [roles, setRoles] = useState([]); // New Roles Data
 
     // Form Data
     const [formData, setFormData] = useState({
@@ -124,18 +129,20 @@ const ExpenseTrackerMain = () => {
 
             console.log('Fetching with params:', params); // Debug log
 
-            const [transRes, statsRes, catRes, projRes, membersRes] = await Promise.all([
+            const [transRes, statsRes, catRes, projRes, membersRes, roleRes] = await Promise.all([
                 getTransactions(params),
                 getTransactionStats(params),
                 getExpenseCategories(),
                 getProjects(),
-                getActiveMembers()
+                getActiveMembers(),
+                getMemberRoles()
             ]);
             setTransactions(transRes.data);
             setStats(statsRes.data);
             setCategories(catRes.data);
             setProjects(projRes.data);
             setMembers(membersRes.data.data);
+            setRoles(roleRes.data.data);
 
             if (filterMember) {
                 setSalaryLoading(true);
@@ -285,6 +292,15 @@ const ExpenseTrackerMain = () => {
         setShowModal(type);
     };
 
+    // Helper for mapping member IDs to their roles
+    const memberIdToRoleMap = useMemo(() => {
+        const map = {};
+        members.forEach(m => {
+            map[m.id] = m.role;
+        });
+        return map;
+    }, [members]);
+
     const filteredTransactions = useMemo(() => {
         return transactions
             .filter(t => {
@@ -293,7 +309,8 @@ const ExpenseTrackerMain = () => {
                 const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase());
                 const matchesProject = !filterProject || (t.project_id == filterProject);
                 const matchesMember = !filterMember || (t.member_id == filterMember);
-                return matchesType && matchesCat && matchesSearch && matchesProject && matchesMember;
+                const matchesRole = !filterRole || (t.member_id && memberIdToRoleMap[t.member_id] === filterRole);
+                return matchesType && matchesCat && matchesSearch && matchesProject && matchesMember && matchesRole;
             })
             .sort((a, b) => {
                 if (sortBy === 'date_desc') return new Date(b.date) - new Date(a.date);
@@ -302,7 +319,7 @@ const ExpenseTrackerMain = () => {
                 if (sortBy === 'amount_asc') return a.amount - b.amount;
                 return 0;
             });
-    }, [transactions, filterType, filterCat, sortBy, searchQuery, filterProject, filterMember]);
+    }, [transactions, filterType, filterCat, sortBy, searchQuery, filterProject, filterMember, filterRole, memberIdToRoleMap]);
 
     const formatCurrency = (val) => {
         const absVal = Math.abs(val || 0);
@@ -444,7 +461,16 @@ const ExpenseTrackerMain = () => {
                             <select value={filterProject} onChange={(e) => setFilterProject(e.target.value)} className="w-full text-[12px] font-bold text-slate-700 outline-none bg-transparent"><option value="">Projects</option>{projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
                         </div>
                         <div className="col-span-1 h-[40px] flex items-center gap-[8px] bg-white border border-slate-200 px-[12px] rounded-[12px] shadow-sm">
-                            <select value={filterMember} onChange={(e) => setFilterMember(e.target.value)} className="w-full text-[12px] font-bold text-slate-700 outline-none bg-transparent"><option value="">Everyone</option>{members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select>
+                            <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)} className="w-full text-[12px] font-bold text-slate-700 outline-none bg-transparent">
+                                <option value="">All Categories</option>
+                                {[...new Set([...roles.map(r => r.name), ...members.map(m => m.role).filter(Boolean)])].sort().map(role => (
+                                    <option key={role} value={role}>{role}</option>
+                                ))}
+                            </select>
+                            <button onClick={() => setShowRoleManager(true)} className="text-slate-400 hover:text-purple-600 transition-colors" title="Manage Categories"><FaTag /></button>
+                        </div>
+                        <div className="col-span-1 h-[40px] flex items-center gap-[8px] bg-white border border-slate-200 px-[12px] rounded-[12px] shadow-sm">
+                            <select value={filterMember} onChange={(e) => setFilterMember(e.target.value)} className="w-full text-[12px] font-bold text-slate-700 outline-none bg-transparent"><option value="">Everyone</option>{members.filter(m => !filterRole || m.role === filterRole).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}</select>
                         </div>
                         <div className="col-span-2 flex items-center gap-[8px] xl:w-auto">
                             <ExportButtons onExportCSV={() => setConfirmModal({ show: true, type: 'CSV', label: 'CSV Report' })} onExportPDF={() => setConfirmModal({ show: true, type: 'PDF', label: 'PDF Report' })} onExportTXT={() => setConfirmModal({ show: true, type: 'TXT', label: 'Plain Text Report' })} />
@@ -569,6 +595,7 @@ const ExpenseTrackerMain = () => {
 
             {showCategoryManager && <CategoryManager categories={categories} onUpdate={() => getExpenseCategories().then(res => setCategories(res.data))} onCreate={createExpenseCategory} onDelete={deleteExpenseCategory} onClose={() => setShowCategoryManager(false)} />}
             {showProjectManager && <ProjectManager projects={projects} onCreate={createProject} onDelete={deleteProject} onRefresh={fetchData} onClose={() => setShowProjectManager(false)} />}
+            {showRoleManager && <RoleManager roles={roles} onCreate={createMemberRole} onDelete={deleteMemberRole} onClose={() => setShowRoleManager(false)} onRefresh={() => getMemberRoles().then(res => setRoles(res.data.data))} />}
             {showMemberManager && <MemberManager onUpdate={fetchData} onClose={() => setShowMemberManager(false)} />}
             {showDailyWorkLogManager && <DailyWorkLogManager onClose={() => setShowDailyWorkLogManager(false)} />}
 
@@ -588,7 +615,7 @@ const ExpenseTrackerMain = () => {
                             </div>
                             <div className="grid grid-cols-2 gap-[16px]">
                                 <div><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Type</label><select value={customReportForm.type} onChange={(e) => setCustomReportForm({ ...customReportForm, type: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all cursor-pointer"><option value="all">All Transactions</option><option value="income">Income Only</option><option value="expense">Expenses Only</option></select></div>
-                                <div><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Category</label><select value={customReportForm.category} onChange={(e) => setCustomReportForm({ ...customReportForm, category: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all cursor-pointer"><option value="all">All Categories</option>{[...new Set([...expenseCategories, ...incomeCategories, ...categories.map(c => c.name)])].map(cat => (<option key={cat} value={cat}>{cat}</option>))}</select></div>
+                                <div><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Category</label><select value={customReportForm.category} onChange={(e) => setCustomReportForm({ ...customReportForm, category: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all cursor-pointer"><option value="all">All Categories</option>{[...new Set(categories.map(c => c.name))].map(cat => (<option key={cat} value={cat}>{cat}</option>))}</select></div>
                             </div>
                             <div className="flex flex-col gap-[12px]">
                                 <button onClick={() => handleGenerateCustomReport('PDF')} disabled={!!customReportLoading} className="w-full bg-[#2d5bff] hover:bg-blue-600 text-white font-black py-[18px] rounded-[20px] transition-all active:scale-95 shadow-xl flex items-center justify-center gap-[12px] text-[14px] disabled:opacity-50 disabled:cursor-not-allowed">{customReportLoading === 'PDF' ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <FaFileAlt />} {customReportLoading === 'PDF' ? 'Generating...' : 'Download PDF Report'}</button>

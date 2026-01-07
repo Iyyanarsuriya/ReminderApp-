@@ -17,14 +17,14 @@ import {
     FaCheckCircle, FaTimesCircle, FaClock, FaExclamationCircle,
     FaPlus, FaTrash, FaEdit, FaCalendarAlt, FaSearch,
     FaFilter, FaChartBar, FaUserCheck, FaChevronLeft, FaChevronRight,
-    FaFolderPlus, FaTimes, FaInbox, FaUserEdit, FaCheck, FaQuestionCircle
+    FaFolderPlus, FaTimes, FaInbox, FaUserEdit, FaCheck, FaQuestionCircle,
+    FaFileAlt, FaTag, FaBusinessTime
 } from 'react-icons/fa';
 import {
     PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend
 } from 'recharts';
 import { exportToCSV, exportToTXT, exportToPDF } from '../../utils/exportUtils';
 import ExportButtons from '../../components/ExportButtons';
-import { FaFileAlt, FaTag } from 'react-icons/fa';
 import ProjectManager from '../../components/ProjectManager';
 import MemberManager from '../../components/MemberManager';
 import RoleManager from '../../components/RoleManager';
@@ -59,6 +59,21 @@ const AttendanceTracker = () => {
         status: 'all'
     });
 
+    const [showPermModal, setShowPermModal] = useState(false);
+    const [permModalData, setPermModalData] = useState({
+        member_id: null,
+        member_name: '',
+        status: 'present',
+        start_hour: '09',
+        start_minute: '00',
+        start_period: 'AM',
+        end_hour: '10',
+        end_minute: '00',
+        end_period: 'AM',
+        note: '',
+        attendance_id: null
+    });
+
     // Role Management
     const [roles, setRoles] = useState([]);
     const [showRoleManager, setShowRoleManager] = useState(false);
@@ -91,8 +106,20 @@ const AttendanceTracker = () => {
         { id: 'present', label: 'Present', icon: FaCheckCircle, color: 'text-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-100' },
         { id: 'absent', label: 'Absent', icon: FaTimesCircle, color: 'text-red-500', bg: 'bg-red-50', border: 'border-red-100' },
         { id: 'late', label: 'Late', icon: FaClock, color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-100' },
-        { id: 'half-day', label: 'Half Day', icon: FaExclamationCircle, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-100' }
+        { id: 'half-day', label: 'Half Day', icon: FaExclamationCircle, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-100' },
+        { id: 'permission', label: 'Permission', icon: FaBusinessTime, color: 'text-purple-500', bg: 'bg-purple-50', border: 'border-purple-100' }
     ];
+
+    function getHexColor(status) {
+        switch (status) {
+            case 'present': return '#10b981';
+            case 'absent': return '#ef4444';
+            case 'late': return '#f59e0b';
+            case 'half-day': return '#3b82f6';
+            case 'permission': return '#a855f7'; // Purple
+            default: return '#94a3b8';
+        }
+    }
 
     const fetchData = async () => {
         try {
@@ -180,7 +207,7 @@ const AttendanceTracker = () => {
         }
     };
 
-    const handleQuickMark = async (memberId, status) => {
+    const handleQuickMark = async (memberId, status, permission_duration = null, note = null, permission_start_time = null, permission_end_time = null) => {
         try {
             const date = periodType === 'day' ? currentPeriod : new Date().toISOString().split('T')[0];
             await quickMarkAttendance({
@@ -188,12 +215,15 @@ const AttendanceTracker = () => {
                 status,
                 date,
                 project_id: filterProject || null,
-                subject: `Daily Attendance`
+                subject: `Daily Attendance`,
+                permission_duration,
+                note,
+                permission_start_time,
+                permission_end_time
             });
-            toast.success("Marked successfully");
             fetchData();
         } catch (error) {
-            toast.error("Failed to mark attendance");
+            toast.error("Failed to update");
         }
     };
 
@@ -389,16 +419,24 @@ const AttendanceTracker = () => {
         });
     }, [attendances, searchQuery, filterRole, memberIdToRoleMap]);
 
-    const activeMembersAttendanceMat = useMemo(() => {
+    const activeMembersAttendanceRecords = useMemo(() => {
         if (periodType !== 'day') return {};
         const map = {};
         attendances.forEach(a => {
             if (a.member_id) {
-                map[a.member_id] = a.status;
+                map[a.member_id] = a;
             }
         });
         return map;
     }, [attendances, periodType]);
+
+    const activeMembersAttendanceMat = useMemo(() => {
+        const map = {};
+        Object.keys(activeMembersAttendanceRecords).forEach(id => {
+            map[id] = activeMembersAttendanceRecords[id].status;
+        });
+        return map;
+    }, [activeMembersAttendanceRecords]);
 
     const pieData = stats.map(s => {
         const option = statusOptions.find(o => o.id === s.status);
@@ -415,9 +453,21 @@ const AttendanceTracker = () => {
             case 'absent': return '#ef4444';
             case 'late': return '#f59e0b';
             case 'half-day': return '#3b82f6';
+            case 'permission': return '#a855f7';
             default: return '#94a3b8';
         }
     }
+
+    const formatTimeToAMPM = (timeStr) => {
+        if (!timeStr) return '';
+        const [hours, minutes] = timeStr.split(':');
+        let h = parseInt(hours);
+        const m = minutes;
+        const ampm = h >= 12 ? 'PM' : 'AM';
+        h = h % 12;
+        h = h ? h : 12;
+        return `${h}:${m} ${ampm}`;
+    };
 
     if (loading) return (
         <div className="h-screen flex items-center justify-center bg-slate-50">
@@ -743,7 +793,7 @@ const AttendanceTracker = () => {
                                         <div className="px-4 py-2 text-center">
                                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest font-['Outfit']">Avg Rate</p>
                                             <p className="text-sm font-black text-blue-600 font-['Outfit']">
-                                                {memberSummary.length > 0 ? (memberSummary.reduce((acc, w) => acc + (w.total > 0 ? (w.present + w.half_day * 0.5) / w.total : 0), 0) / memberSummary.length * 100).toFixed(0) + '%' : '0%'}
+                                                {memberSummary.length > 0 ? (memberSummary.reduce((acc, w) => acc + (w.total > 0 ? (w.present + w.permission + w.half_day * 0.5) / w.total : 0), 0) / memberSummary.length * 100).toFixed(0) + '%' : '0%'}
                                             </p>
                                         </div>
                                     </div>
@@ -759,6 +809,7 @@ const AttendanceTracker = () => {
                                         <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-red-500 text-center font-['Outfit']">A</th>
                                         <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-amber-500 text-center font-['Outfit']">L</th>
                                         <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-blue-500 text-center font-['Outfit']">H</th>
+                                        <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-purple-500 text-center font-['Outfit']">Per</th>
                                         <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-slate-900 text-center font-['Outfit']">Total</th>
                                         <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right font-['Outfit']">Performance</th>
                                     </tr>
@@ -771,7 +822,7 @@ const AttendanceTracker = () => {
                                             return matchesRole && matchesSearch;
                                         })
                                         .map((w) => {
-                                            const rate = w.total > 0 ? ((w.present + w.half_day * 0.5) / w.total * 100) : 0;
+                                            const rate = w.total > 0 ? ((w.present + w.permission + w.half_day * 0.5) / w.total * 100) : 0;
                                             return (
                                                 <tr key={w.id} className="hover:bg-slate-50/80 transition-colors group">
                                                     <td className="px-8 py-5">
@@ -797,6 +848,9 @@ const AttendanceTracker = () => {
                                                     <td className="px-6 py-5 text-center">
                                                         <span className="inline-flex w-7 h-7 items-center justify-center bg-blue-50 text-blue-600 rounded-lg font-black text-[11px] border border-blue-100 font-['Outfit']">{w.half_day}</span>
                                                     </td>
+                                                    <td className="px-6 py-5 text-center">
+                                                        <span className="inline-flex w-7 h-7 items-center justify-center bg-purple-50 text-purple-600 rounded-lg font-black text-[11px] border border-purple-100 font-['Outfit']">{w.permission || 0}</span>
+                                                    </td>
                                                     <td className="px-6 py-5 text-center font-black text-slate-900 text-[11px] font-['Outfit']">{w.total}</td>
                                                     <td className="px-8 py-5 text-right">
                                                         <div className="flex items-center justify-end gap-3">
@@ -814,7 +868,7 @@ const AttendanceTracker = () => {
                                         })}
                                     {memberSummary.length === 0 && (
                                         <tr>
-                                            <td colSpan="7" className="px-8 py-20 text-center">
+                                            <td colSpan="8" className="px-8 py-20 text-center">
                                                 <FaInbox className="text-5xl mx-auto mb-4 text-slate-200" />
                                                 <p className="text-sm font-black text-slate-400 uppercase tracking-widest font-['Outfit']">No statistics available</p>
                                             </td>
@@ -825,7 +879,7 @@ const AttendanceTracker = () => {
                         </div>
                     </div>
                 ) : (
-                    /* Daily Quick Mark View */
+                    /* Daily Sheet View */
                     <div className="bg-white rounded-[40px] shadow-xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="p-8 sm:p-12 border-b border-slate-100 bg-linear-to-br from-slate-900 to-slate-800 text-white">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
@@ -854,7 +908,8 @@ const AttendanceTracker = () => {
                                         <thead>
                                             <tr className="bg-slate-50/50">
                                                 <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 font-['Outfit']">Name</th>
-                                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center font-['Outfit']">Attendance Status</th>
+                                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center font-['Outfit']">Status</th>
+                                                <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-center font-['Outfit']">Permission & Work</th>
                                                 <th className="px-8 py-5 text-[10px] font-black uppercase tracking-widest text-slate-400 text-right font-['Outfit']">Current</th>
                                             </tr>
                                         </thead>
@@ -863,12 +918,15 @@ const AttendanceTracker = () => {
                                                 .filter(m => {
                                                     const matchesRole = !filterRole || m.role === filterRole;
                                                     const matchesSearch = !searchQuery || m.name.toLowerCase().includes(searchQuery.toLowerCase());
-                                                    const matchesMemberFilter = !filterMember || m.id == filterMember; // Optional: respect member dropdown too if set
+                                                    const matchesMemberFilter = !filterMember || m.id == filterMember;
                                                     return matchesRole && matchesSearch && matchesMemberFilter;
                                                 })
                                                 .map(w => {
-                                                    const currentStatus = activeMembersAttendanceMat[w.id];
+                                                    const attendance = activeMembersAttendanceRecords[w.id];
+                                                    const currentStatus = attendance?.status;
                                                     const option = statusOptions.find(o => o.id === currentStatus);
+                                                    const isPresentOrPerm = currentStatus === 'present' || currentStatus === 'late' || currentStatus === 'half-day' || currentStatus === 'permission';
+
                                                     return (
                                                         <tr key={w.id} className="hover:bg-slate-50/50 transition-colors group">
                                                             <td className="px-4 sm:px-8 py-4 sm:py-6">
@@ -882,20 +940,114 @@ const AttendanceTracker = () => {
                                                                     </div>
                                                                 </div>
                                                             </td>
-                                                            <td className="px-4 sm:px-8 py-4 sm:py-6">
+                                                            <td className="px-4 sm:px-8 py-4 sm:py-6 text-center">
                                                                 <div className="flex items-center justify-center gap-2 sm:gap-4">
                                                                     <button
                                                                         onClick={() => handleQuickMark(w.id, 'present')}
-                                                                        className={`flex-1 sm:flex-none px-3 sm:px-8 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer font-['Outfit'] ${currentStatus === 'present' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-105' : 'bg-slate-100/50 text-slate-400 border border-slate-100 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-lg hover:shadow-emerald-500/30'}`}
+                                                                        className={`flex-1 sm:flex-none px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer font-['Outfit'] ${currentStatus === 'present' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-105' : (isPresentOrPerm && currentStatus !== 'absent' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100/50 text-slate-400 border border-slate-100 hover:bg-emerald-500 hover:text-white hover:border-emerald-500')}`}
                                                                     >
                                                                         P<span className="hidden sm:inline">resent</span>
                                                                     </button>
                                                                     <button
                                                                         onClick={() => handleQuickMark(w.id, 'absent')}
-                                                                        className={`flex-1 sm:flex-none px-3 sm:px-8 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer font-['Outfit'] ${currentStatus === 'absent' ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 scale-105' : 'bg-slate-100/50 text-slate-400 border border-slate-100 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-lg hover:shadow-red-500/30'}`}
+                                                                        className={`flex-1 sm:flex-none px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer font-['Outfit'] ${currentStatus === 'absent' ? 'bg-red-500 text-white shadow-lg shadow-red-500/30 scale-105' : 'bg-slate-100/50 text-slate-400 border border-slate-100 hover:bg-red-500 hover:text-white hover:border-red-500 hover:shadow-lg hover:shadow-red-500/30'}`}
                                                                     >
                                                                         A<span className="hidden sm:inline">bsent</span>
                                                                     </button>
+                                                                </div>
+                                                            </td>
+                                                            <td className="px-4 sm:px-8 py-4 sm:py-6">
+                                                                <div className={`flex flex-col gap-2 transition-all duration-300 ${isPresentOrPerm ? 'opacity-100' : 'opacity-30 pointer-events-none'}`}>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <button
+                                                                            disabled={!isPresentOrPerm}
+                                                                            onClick={() => {
+                                                                                const currentNote = attendance?.note || '';
+                                                                                // Parse existing duration or use defaults
+                                                                                const [startStr, endStr] = (attendance?.permission_duration || '09:00 AM - 10:00 AM').split(' - ');
+                                                                                const parseTime = (str) => {
+                                                                                    const [time, period] = str.split(' ');
+                                                                                    const [h, m] = time.split(':');
+                                                                                    return { h, m, p: period };
+                                                                                };
+                                                                                const start = parseTime(startStr || '09:00 AM');
+                                                                                const end = parseTime(endStr || '10:00 AM');
+
+                                                                                setPermModalData({
+                                                                                    member_id: w.id,
+                                                                                    member_name: w.name,
+                                                                                    status: 'permission',
+                                                                                    start_hour: start.h,
+                                                                                    start_minute: start.m,
+                                                                                    start_period: start.p,
+                                                                                    end_hour: end.h,
+                                                                                    end_minute: end.m,
+                                                                                    end_period: end.p,
+                                                                                    note: currentNote,
+                                                                                    attendance_id: attendance?.id
+                                                                                });
+                                                                                setShowPermModal(true);
+                                                                            }}
+                                                                            className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${currentStatus === 'permission' ? 'bg-purple-500 text-white shadow-xs' : 'bg-slate-50 text-slate-400 border border-slate-200 hover:bg-purple-50 hover:text-purple-600'}`}
+                                                                        >
+                                                                            <FaClock className="text-[10px]" /> Perm.
+                                                                        </button>
+                                                                        {currentStatus === 'permission' && (
+                                                                            <div
+                                                                                onClick={() => {
+                                                                                    setPermModalData({
+                                                                                        member_id: w.id,
+                                                                                        member_name: w.name,
+                                                                                        status: 'permission',
+                                                                                        start_time: attendance?.permission_start_time || '09:00',
+                                                                                        end_time: attendance?.permission_end_time || '10:00',
+                                                                                        note: attendance?.note || '',
+                                                                                        attendance_id: attendance?.id
+                                                                                    });
+                                                                                    setShowPermModal(true);
+                                                                                }}
+                                                                                className="flex-1 min-w-[80px] bg-white border border-slate-100 rounded-lg px-2 py-1.5 text-[10px] font-bold text-slate-600 cursor-pointer hover:border-purple-300 transition-all font-['Outfit']"
+                                                                            >
+                                                                                {attendance?.permission_duration || 'Set Time'}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <div
+                                                                        onClick={() => {
+                                                                            if (!isPresentOrPerm) return;
+                                                                            const [startStr, endStr] = (attendance?.permission_duration || '09:00 AM - 10:00 AM').split(' - ');
+                                                                            const parseTime = (str) => {
+                                                                                const parts = (str || '').split(' ');
+                                                                                const time = parts[0] || '09:00';
+                                                                                const period = parts[1] || 'AM';
+                                                                                const [h, m] = time.split(':');
+                                                                                return { h: h || '09', m: m || '00', p: period };
+                                                                            };
+                                                                            const start = parseTime(startStr);
+                                                                            const end = parseTime(endStr);
+
+                                                                            setPermModalData({
+                                                                                member_id: w.id,
+                                                                                member_name: w.name,
+                                                                                status: currentStatus || 'present',
+                                                                                start_hour: start.h,
+                                                                                start_minute: start.m,
+                                                                                start_period: start.p,
+                                                                                end_hour: end.h,
+                                                                                end_minute: end.m,
+                                                                                end_period: end.p,
+                                                                                note: attendance?.note || '',
+                                                                                attendance_id: attendance?.id
+                                                                            });
+                                                                            setShowPermModal(true);
+                                                                        }}
+                                                                        className="relative group/note cursor-pointer"
+                                                                    >
+                                                                        <div className="w-full bg-slate-50 border border-slate-100 rounded-lg px-3 py-1.5 text-[10px] font-bold text-slate-500 min-h-[32px] flex items-center font-['Outfit'] group-hover:bg-white group-hover:border-blue-400 transition-all">
+                                                                            {attendance?.note || "Work completed details..."}
+                                                                        </div>
+                                                                        <FaEdit className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-300 pointer-events-none group-hover:text-blue-500" />
+                                                                    </div>
                                                                 </div>
                                                             </td>
                                                             <td className="px-4 sm:px-8 py-4 sm:py-6 text-right">
@@ -915,7 +1067,7 @@ const AttendanceTracker = () => {
                                                 })}
                                             {members.length === 0 && (
                                                 <tr>
-                                                    <td colSpan="3" className="px-8 py-20 text-center">
+                                                    <td colSpan="4" className="px-8 py-20 text-center">
                                                         <FaInbox className="text-6xl mx-auto mb-6 opacity-10" />
                                                         <h4 className="text-lg font-black text-slate-900 mb-2 font-['Outfit']">No Members Found</h4>
                                                         <p className="text-slate-500 text-sm font-medium font-['Outfit']">Add some people first to start using the Daily Sheet</p>
@@ -1172,7 +1324,117 @@ const AttendanceTracker = () => {
                     </div>
                 )
             }
-        </div >
+
+            {showPermModal && (
+                <div className="fixed inset-0 z-160 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-white rounded-[40px] w-full max-w-md shadow-2xl relative animate-in zoom-in-95 duration-300 overflow-hidden">
+                        <div className="p-8 border-b border-slate-100 bg-linear-to-br from-slate-900 to-slate-800 text-white">
+                            <button onClick={() => setShowPermModal(false)} className="absolute top-6 right-6 text-slate-400 hover:text-white transition-colors">
+                                <FaTimes />
+                            </button>
+                            <h3 className="text-xl font-black font-['Outfit']">Permission & Work Details</h3>
+                            <p className="text-blue-400 text-[10px] font-black uppercase tracking-widest mt-1 font-['Outfit']">{permModalData.member_name}</p>
+                        </div>
+
+                        <div className="p-8 space-y-6">
+                            <div className="flex items-center justify-between p-4 bg-purple-50 rounded-2xl border border-purple-100">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 bg-purple-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-purple-500/20">
+                                        <FaClock />
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest font-['Outfit']">Attendance Status</p>
+                                        <p className="text-sm font-black text-purple-700 font-['Outfit']">{permModalData.status === 'permission' ? 'On Permission' : 'Present'}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 font-['Outfit']">Permission Time</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 font-['Outfit']">From</p>
+                                        <div className="flex gap-2">
+                                            <select value={permModalData.start_hour} onChange={(e) => setPermModalData({ ...permModalData, start_hour: e.target.value })} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-xs font-black text-slate-700 outline-none focus:border-purple-500 font-['Outfit']">
+                                                {Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0')).map(h => <option key={h} value={h}>{h}</option>)}
+                                            </select>
+                                            <select value={permModalData.start_minute} onChange={(e) => setPermModalData({ ...permModalData, start_minute: e.target.value })} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-xs font-black text-slate-700 outline-none focus:border-purple-500 font-['Outfit']">
+                                                {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map(m => <option key={m} value={m}>{m}</option>)}
+                                            </select>
+                                            <select value={permModalData.start_period} onChange={(e) => setPermModalData({ ...permModalData, start_period: e.target.value })} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-xs font-black text-slate-700 outline-none focus:border-purple-500 font-['Outfit']">
+                                                <option value="AM">AM</option>
+                                                <option value="PM">PM</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 font-['Outfit']">To</p>
+                                        <div className="flex gap-2">
+                                            <select value={permModalData.end_hour} onChange={(e) => setPermModalData({ ...permModalData, end_hour: e.target.value })} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-xs font-black text-slate-700 outline-none focus:border-purple-500 font-['Outfit']">
+                                                {Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0')).map(h => <option key={h} value={h}>{h}</option>)}
+                                            </select>
+                                            <select value={permModalData.end_minute} onChange={(e) => setPermModalData({ ...permModalData, end_minute: e.target.value })} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-xs font-black text-slate-700 outline-none focus:border-purple-500 font-['Outfit']">
+                                                {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map(m => <option key={m} value={m}>{m}</option>)}
+                                            </select>
+                                            <select value={permModalData.end_period} onChange={(e) => setPermModalData({ ...permModalData, end_period: e.target.value })} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-xs font-black text-slate-700 outline-none focus:border-purple-500 font-['Outfit']">
+                                                <option value="AM">AM</option>
+                                                <option value="PM">PM</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 font-['Outfit']">Work Done / Notes</label>
+                                <textarea
+                                    value={permModalData.note}
+                                    onChange={(e) => setPermModalData({ ...permModalData, note: e.target.value })}
+                                    placeholder="What work was completed?"
+                                    rows="4"
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold text-slate-600 outline-none focus:bg-white focus:border-blue-500 focus:shadow-sm transition-all resize-none font-['Outfit']"
+                                ></textarea>
+                            </div>
+                        </div>
+
+                        <div className="p-6 bg-slate-50 flex gap-3">
+                            <button
+                                onClick={() => setShowPermModal(false)}
+                                className="flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 bg-white border border-slate-200 hover:bg-slate-100 transition-all font-['Outfit']"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={async () => {
+                                    const duration = `${permModalData.start_hour}:${permModalData.start_minute} ${permModalData.start_period} - ${permModalData.end_hour}:${permModalData.end_minute} ${permModalData.end_period}`;
+                                    // Also format for technical fields if we ever use them separately
+                                    const to24h = (h, m, p) => {
+                                        let hours = parseInt(h);
+                                        if (p === 'PM' && hours < 12) hours += 12;
+                                        if (p === 'AM' && hours === 12) hours = 0;
+                                        return `${hours.toString().padStart(2, '0')}:${m}`;
+                                    };
+
+                                    await handleQuickMark(
+                                        permModalData.member_id,
+                                        permModalData.status,
+                                        duration,
+                                        permModalData.note,
+                                        to24h(permModalData.start_hour, permModalData.start_minute, permModalData.start_period),
+                                        to24h(permModalData.end_hour, permModalData.end_minute, permModalData.end_period)
+                                    );
+                                    setShowPermModal(false);
+                                    toast.success("Details updated successfully!");
+                                }}
+                                className="flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white bg-blue-600 shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all font-['Outfit']"
+                            >
+                                Save Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
     );
 };
 

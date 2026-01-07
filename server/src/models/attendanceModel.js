@@ -2,10 +2,10 @@ const db = require('../config/db');
 
 class Attendance {
     static async create(data) {
-        const { user_id, subject, status, date, note, project_id, member_id } = data;
+        const { user_id, subject, status, date, note, project_id, member_id, permission_duration, permission_start_time, permission_end_time } = data;
         const [result] = await db.query(
-            'INSERT INTO attendance (user_id, subject, status, date, note, project_id, member_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [user_id, subject, status, date, note, project_id || null, member_id || null]
+            'INSERT INTO attendance (user_id, subject, status, date, note, project_id, member_id, permission_duration, permission_start_time, permission_end_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [user_id, subject, status, date, note, project_id || null, member_id || null, permission_duration || null, permission_start_time || null, permission_end_time || null]
         );
         return { id: result.insertId, ...data };
     }
@@ -56,10 +56,10 @@ class Attendance {
     }
 
     static async update(id, userId, data) {
-        const { subject, status, date, note, project_id, member_id } = data;
+        const { subject, status, date, note, project_id, member_id, permission_duration, permission_start_time, permission_end_time } = data;
         const [result] = await db.query(
-            'UPDATE attendance SET subject = ?, status = ?, date = ?, note = ?, project_id = ?, member_id = ? WHERE id = ? AND user_id = ?',
-            [subject, status, date, note, project_id || null, member_id || null, id, userId]
+            'UPDATE attendance SET subject = ?, status = ?, date = ?, note = ?, project_id = ?, member_id = ?, permission_duration = ?, permission_start_time = ?, permission_end_time = ? WHERE id = ? AND user_id = ?',
+            [subject, status, date, note, project_id || null, member_id || null, permission_duration || null, permission_start_time || null, permission_end_time || null, id, userId]
         );
         return result.affectedRows > 0;
     }
@@ -123,6 +123,7 @@ class Attendance {
                 COUNT(CASE WHEN a.status = 'absent' THEN 1 END) as absent,
                 COUNT(CASE WHEN a.status = 'late' THEN 1 END) as late,
                 COUNT(CASE WHEN a.status = 'half-day' THEN 1 END) as half_day,
+                COUNT(CASE WHEN a.status = 'permission' THEN 1 END) as permission,
                 COUNT(a.id) as total
             FROM members w
             LEFT JOIN attendance a ON w.id = a.member_id
@@ -170,7 +171,7 @@ class Attendance {
     }
 
     static async quickMark(data) {
-        const { user_id, member_id, date, status, project_id, subject } = data;
+        const { user_id, member_id, date, status, project_id, subject, note, permission_duration, permission_start_time, permission_end_time } = data;
 
         // Find existing record for this member on this date and project
         let checkQuery = 'SELECT id FROM attendance WHERE user_id = ? AND member_id = ? AND DATE(date) = ?';
@@ -188,15 +189,15 @@ class Attendance {
         if (existing.length > 0) {
             // Update existing record
             await db.query(
-                'UPDATE attendance SET status = ? WHERE id = ?',
-                [status, existing[0].id]
+                'UPDATE attendance SET status = ?, note = COALESCE(?, note), permission_duration = COALESCE(?, permission_duration), permission_start_time = COALESCE(?, permission_start_time), permission_end_time = COALESCE(?, permission_end_time) WHERE id = ?',
+                [status, note || null, permission_duration || null, permission_start_time || null, permission_end_time || null, existing[0].id]
             );
             return { id: existing[0].id, ...data, updated: true };
         } else {
             // Create new record
             const [result] = await db.query(
-                'INSERT INTO attendance (user_id, member_id, date, status, project_id, subject) VALUES (?, ?, ?, ?, ?, ?)',
-                [user_id, member_id, date, status, project_id || null, subject || 'Daily Attendance']
+                'INSERT INTO attendance (user_id, member_id, date, status, project_id, subject, note, permission_duration, permission_start_time, permission_end_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                [user_id, member_id, date, status, project_id || null, subject || 'Daily Attendance', note || null, permission_duration || null, permission_start_time || null, permission_end_time || null]
             );
             return { id: result.insertId, ...data, created: true };
         }

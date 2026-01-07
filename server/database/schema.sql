@@ -58,9 +58,12 @@ CREATE TABLE IF NOT EXISTS attendance (
     member_id INT DEFAULT NULL,
     project_id INT DEFAULT NULL,
     subject VARCHAR(255) NOT NULL,
-    status ENUM('present', 'absent', 'late', 'half-day') NOT NULL,
+    status ENUM('present', 'absent', 'late', 'half-day', 'permission') NOT NULL,
     date DATE NOT NULL,
     note TEXT,
+    permission_duration VARCHAR(100) DEFAULT NULL,
+    permission_start_time VARCHAR(20) DEFAULT NULL,
+    permission_end_time VARCHAR(20) DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -71,6 +74,7 @@ CREATE TABLE IF NOT EXISTS attendance (
     INDEX idx_project (project_id),
     INDEX idx_status (status)
 );
+
 
 -- ============================================================================
 -- TRANSACTIONS TABLE
@@ -225,3 +229,14 @@ CREATE TABLE IF NOT EXISTS member_roles (
 --   2. Stores distinct categories/roles for members
 --   3. Allows user-defined roles instead of just free text
 -- ============================================================================
+
+-- Migration: add_permission_tracking.sql
+-- Date: 2026-01-07
+-- Changes:
+--   1. Updated attendance.status to include 'permission'
+--   2. Added column: attendance.permission_duration (Readable string)
+--   3. Added column: attendance.permission_start_time (24h format)
+--   4. Added column: attendance.permission_end_time (24h format)
+--   5. Enhances tracking of partial-day permissions with work notes
+-- ============================================================================
+
