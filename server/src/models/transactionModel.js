@@ -81,7 +81,7 @@ class Transaction {
         return result.affectedRows > 0;
     }
 
-    static async getStats(userId, period, projectId, startDate, endDate, memberId) {
+    static async getStats(userId, period, projectId, startDate, endDate, memberId, filters = {}) {
         let query = `SELECT 
             SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as total_income,
             SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as total_expense
@@ -166,7 +166,7 @@ class Transaction {
         return rows;
     }
 
-    static async getCategoryStats(userId, period, projectId, startDate, endDate, memberId) {
+    static async getCategoryStats(userId, period, projectId, startDate, endDate, memberId, filters = {}) {
         let query = `SELECT category, type, SUM(amount) as total 
              FROM transactions WHERE user_id = ?`;
         const params = [userId];

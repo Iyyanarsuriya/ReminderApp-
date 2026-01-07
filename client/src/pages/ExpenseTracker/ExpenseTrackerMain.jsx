@@ -10,7 +10,7 @@ import {
 } from 'react-icons/fa';
 import { getExpenseCategories, createExpenseCategory, deleteExpenseCategory } from '../../api/expenseCategoryApi';
 import { getProjects, createProject, deleteProject } from '../../api/projectApi';
-import { getActiveMembers } from '../../api/memberApi';
+import { getMembers, getActiveMembers } from '../../api/memberApi';
 import { getMemberRoles, createMemberRole, deleteMemberRole } from '../../api/memberRoleApi'; // IMPORTS
 import { getAttendanceStats } from '../../api/attendanceApi';
 import { exportExpenseToCSV, exportExpenseToTXT, exportExpenseToPDF } from '../../utils/exportUtils';
@@ -48,6 +48,7 @@ const ExpenseTrackerMain = () => {
     const [filterProject, setFilterProject] = useState('');
     const [filterMember, setFilterMember] = useState('');
     const [filterRole, setFilterRole] = useState(''); // New Role Filter
+    const [filterMemberType, setFilterMemberType] = useState('all'); // New Member Type Filter
     const [deleteModalOuter, setDeleteModalOuter] = useState({ show: false, id: null });
 
     // Modals
@@ -135,7 +136,7 @@ const ExpenseTrackerMain = () => {
                 getTransactionStats(params),
                 getExpenseCategories(),
                 getProjects(),
-                getMembers({ memberType: filterMemberType }), // Pass memberType to getMembers
+                getMembers(), // Fetch all members to ensure they are available for modals/forms
                 getMemberRoles()
             ]);
             setTransactions(transRes.data);
@@ -190,7 +191,7 @@ const ExpenseTrackerMain = () => {
 
     useEffect(() => {
         fetchData();
-    }, [currentPeriod, filterProject, filterMember, customRange.start, customRange.end, periodType]);
+    }, [currentPeriod, filterProject, filterMember, filterMemberType, customRange.start, customRange.end, periodType]);
 
     // Auto-fill Salary Calculator from Member Data
     useEffect(() => {
@@ -601,6 +602,7 @@ const ExpenseTrackerMain = () => {
                 ) : (
                     <SalaryCalculator
                         periodType={periodType} filterMember={filterMember} setFilterMember={setFilterMember}
+                        filterMemberType={filterMemberType}
                         members={members} filteredTransactions={filteredTransactions} handleExportPDF={handleExportPDF}
                         salaryLoading={salaryLoading} attendanceStats={attendanceStats} salaryMode={salaryMode} setSalaryMode={setSalaryMode}
                         dailyWage={dailyWage} setDailyWage={setDailyWage} monthlySalary={monthlySalary} setMonthlySalary={setMonthlySalary}

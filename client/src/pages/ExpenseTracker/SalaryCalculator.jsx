@@ -6,6 +6,7 @@ const SalaryCalculator = ({
     periodType,
     filterMember,
     setFilterMember,
+    filterMemberType,
     members,
     filteredTransactions,
     handleExportPDF,
@@ -103,7 +104,9 @@ const SalaryCalculator = ({
                             className="w-full px-8 h-12 bg-slate-50 border-2 border-slate-100 rounded-2xl font-black text-[11px] uppercase tracking-widest outline-none cursor-pointer hover:border-slate-300 transition-all appearance-none text-center"
                         >
                             <option value="">Select Member...</option>
-                            {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                            {members
+                                .filter(m => filterMemberType === 'all' || m.member_type === filterMemberType)
+                                .map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                         </select>
                     </div>
                 </div>
