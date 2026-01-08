@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import {
     FaWallet, FaPlus, FaTrash, FaChartBar, FaExchangeAlt, FaFileAlt, FaEdit, FaTimes,
     FaPlusCircle, FaFolderPlus, FaUserEdit, FaBoxes, FaTruck,
-    FaCheck, FaQuestionCircle, FaCalculator, FaTag
+    FaCheck, FaQuestionCircle, FaCalculator, FaTag, FaUsers
 } from 'react-icons/fa';
 import { getExpenseCategories, createExpenseCategory, deleteExpenseCategory } from '../../api/expenseCategoryApi';
 import { getProjects, createProject, deleteProject } from '../../api/projectApi';
@@ -55,7 +55,6 @@ const ExpenseTrackerMain = () => {
     // Modals
     const [showCategoryManager, setShowCategoryManager] = useState(false);
     const [showProjectManager, setShowProjectManager] = useState(false);
-    const [showMemberManager, setShowMemberManager] = useState(false);
     const [showRoleManager, setShowRoleManager] = useState(false); // New Role Manager Modal
 
 
@@ -470,6 +469,7 @@ const ExpenseTrackerMain = () => {
                 </div>
                 <nav className="flex-1 space-y-2">
                     <SidebarItem icon={FaChartBar} label="Dashboard" />
+                    <SidebarItem icon={FaUsers} label="Members" onClick={() => setActiveTab('Members')} />
                     <SidebarItem icon={FaExchangeAlt} label="Transactions" />
                     <SidebarItem icon={FaFileAlt} label="Reports" />
                     <SidebarItem icon={FaCalculator} label="Salary" />
@@ -501,7 +501,7 @@ const ExpenseTrackerMain = () => {
                         </div>
                         <div className="flex items-center gap-2">
                             <button onClick={() => setShowRoleManager(true)} className="w-10 h-10 bg-white border border-slate-200 text-purple-500 rounded-xl flex items-center justify-center hover:bg-purple-50 transition-all shadow-sm" title="Manage Roles"><FaTag /></button>
-                            <button onClick={() => setShowMemberManager(true)} className="w-10 h-10 bg-white border border-slate-200 text-orange-500 rounded-xl flex items-center justify-center hover:bg-orange-50 transition-all shadow-sm" title="Members"><FaUserEdit /></button>
+                            <button onClick={() => setActiveTab('Members')} className="w-10 h-10 bg-white border border-slate-200 text-orange-500 rounded-xl flex items-center justify-center hover:bg-orange-50 transition-all shadow-sm" title="Members"><FaUserEdit /></button>
                         </div>
                     </div>
 
@@ -592,7 +592,7 @@ const ExpenseTrackerMain = () => {
 
                 {/* Mobile Tabs */}
                 <div className="lg:hidden flex overflow-x-auto gap-3 mb-8 pb-2 custom-scrollbar">
-                    {['Dashboard', 'Transactions', 'Reports', 'Salary', 'Work Log', 'Vehicle Log'].map(tab => (
+                    {['Dashboard', 'Members', 'Transactions', 'Reports', 'Salary', 'Work Log', 'Vehicle Log'].map(tab => (
                         <button key={tab} onClick={() => setActiveTab(tab)} className={`whitespace-nowrap px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-[#2d5bff] text-white' : 'bg-white text-slate-500 border'}`}>{tab}</button>
                     ))}
                 </div>
@@ -605,6 +605,8 @@ const ExpenseTrackerMain = () => {
                         handleShowTransactions={handleShowTransactions} handleAddNewTransaction={handleAddNewTransaction}
                         setActiveTab={setActiveTab} formatCurrency={formatCurrency}
                     />
+                ) : activeTab === 'Members' ? (
+                    <MemberManager onUpdate={fetchData} />
                 ) : activeTab === 'Transactions' ? (
                     <Transactions
                         filteredTransactions={filteredTransactions} searchQuery={searchQuery} setSearchQuery={setSearchQuery}
@@ -755,7 +757,6 @@ const ExpenseTrackerMain = () => {
             {showCategoryManager && <CategoryManager categories={categories} onUpdate={() => getExpenseCategories().then(res => setCategories(res.data))} onCreate={createExpenseCategory} onDelete={deleteExpenseCategory} onClose={() => setShowCategoryManager(false)} />}
             {showProjectManager && <ProjectManager projects={projects} onCreate={createProject} onDelete={deleteProject} onRefresh={fetchData} onClose={() => setShowProjectManager(false)} />}
             {showRoleManager && <RoleManager roles={roles} onCreate={createMemberRole} onDelete={deleteMemberRole} onClose={() => setShowRoleManager(false)} onRefresh={() => getMemberRoles().then(res => setRoles(res.data.data))} />}
-            {showMemberManager && <MemberManager onUpdate={fetchData} onClose={() => setShowMemberManager(false)} />}
 
             {showCustomReportModal && (
                 <div className="fixed inset-0 z-150 flex items-center justify-center p-[16px] bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">

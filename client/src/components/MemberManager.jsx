@@ -2,7 +2,7 @@ import { getMembers, createMember, updateMember, deleteMember } from '../api/mem
 import { getMemberRoles, createMemberRole, deleteMemberRole } from '../api/memberRoleApi'; // IMPORTS
 import { getTransactions } from '../api/transactionApi';
 import toast from 'react-hot-toast';
-import { FaTimes, FaPlus, FaEdit, FaTrash, FaUser, FaBriefcase, FaPhone, FaEnvelope, FaHistory, FaMoneyBillWave, FaUniversity } from 'react-icons/fa';
+import { FaTimes, FaPlus, FaEdit, FaTrash, FaUser, FaUsers, FaBriefcase, FaPhone, FaEnvelope, FaHistory, FaMoneyBillWave, FaUniversity } from 'react-icons/fa';
 import ConfirmModal from './modals/ConfirmModal';
 import RoleManager from './RoleManager'; // IMPORTS
 import { useState, useEffect } from 'react';
@@ -111,24 +111,19 @@ const MemberManager = ({ onClose, onUpdate }) => {
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-[12px] pt-[80px] sm:px-4 sm:py-6 sm:pt-6 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-            <div className="bg-white rounded-[20px] sm:rounded-[28px] w-full max-w-[896px] shadow-2xl relative animate-in zoom-in-95 duration-300 max-h-[calc(100vh-92px)] sm:max-h-full flex flex-col font-['Outfit'] overflow-hidden">
-                {/* Fixed Header */}
-                <div className="flex items-center justify-between px-[16px] sm:px-6 pt-[16px] sm:pt-6 pb-[12px] sm:pb-4 shrink-0 border-b border-slate-100">
-                    <div>
-                        <h2 className="text-lg sm:text-xl font-black text-slate-900 flex items-center gap-2">
-                            <div className="w-1 h-5 bg-blue-600 rounded-full"></div>
-                            Manage Members
-                        </h2>
-                        <p className="text-slate-500 text-[10px] sm:text-xs mt-1 ml-3">Add and manage people in your list</p>
-                    </div>
-                    <button
-                        onClick={onClose}
-                        className="text-slate-400 hover:text-slate-800 transition-colors p-1.5 hover:bg-slate-100 rounded-lg"
-                    >
-                        <FaTimes className="text-lg" />
-                    </button>
+        <div className="animate-in slide-in-from-right-10 duration-500 pb-20 w-full font-['Outfit']">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                <div>
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+                        <FaUsers className="text-blue-600" /> Manage Members
+                    </h2>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Add and manage people in your list</p>
                 </div>
+            </div>
+
+            {/* Content Content */}
+            <div className="flex-1">
 
 
                 {/* Scrollable Content */}
@@ -379,16 +374,19 @@ const MemberManager = ({ onClose, onUpdate }) => {
                     </div>
                 </div>
             </div>
+
             {/* Role Manager Modal */}
-            {showRoleManager && (
-                <RoleManager
-                    roles={roles}
-                    onCreate={createMemberRole}
-                    onDelete={deleteMemberRole}
-                    onClose={() => { setShowRoleManager(false); fetchMembers(); }}
-                    onRefresh={() => getMemberRoles().then(res => setRoles(res.data.data))}
-                />
-            )}
+            {
+                showRoleManager && (
+                    <RoleManager
+                        roles={roles}
+                        onCreate={createMemberRole}
+                        onDelete={deleteMemberRole}
+                        onClose={() => { setShowRoleManager(false); fetchMembers(); }}
+                        onRefresh={() => getMemberRoles().then(res => setRoles(res.data.data))}
+                    />
+                )
+            }
 
             {/* Custom Delete Confirmation Modal */}
             <ConfirmModal
@@ -406,6 +404,13 @@ const MemberManager = ({ onClose, onUpdate }) => {
             {
                 viewingPayments && (
                     <div className="fixed inset-0 z-120 flex items-center justify-center p-[16px] bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
+                        {/* ... modal content ... */}
+                        {/* I will assume the modal content is fine but need to ensure the closing tags for the main component are correct. */}
+                        {/* The logic suggests I have 2 div tags open: the main wrapper, and the flex-1 content wrapper. */}
+                        {/* The original code had 2 main div tags corresponding to the modal structure. */}
+                        {/* So the closing tags should be fine if I didn't change the number of open tags. */}
+                        {/* Checking the middle... */}
+
                         <div className="bg-white rounded-[40px] p-[32px] sm:p-[40px] w-full max-w-2xl shadow-2xl relative animate-in zoom-in-95 duration-300 max-h-[85vh] flex flex-col font-['Outfit']">
                             <button
                                 onClick={() => setViewingPayments(null)}
@@ -487,7 +492,7 @@ const MemberManager = ({ onClose, onUpdate }) => {
                     </div>
                 )
             }
-        </div>
+        </div >
     );
 };
 
