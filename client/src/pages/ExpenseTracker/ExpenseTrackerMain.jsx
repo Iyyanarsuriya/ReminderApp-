@@ -608,6 +608,17 @@ const ExpenseTrackerMain = () => {
                         filteredTransactions={filteredTransactions} searchQuery={searchQuery} setSearchQuery={setSearchQuery}
                         filterType={filterType} setFilterType={setFilterType} sortBy={sortBy} setSortBy={setSortBy}
                         handleAddNewTransaction={handleAddNewTransaction} handleEdit={handleEdit} confirmDelete={confirmDelete}
+                        // New Filter Props
+                        projects={projects} members={members} roles={roles}
+                        filterProject={filterProject} setFilterProject={setFilterProject}
+                        filterMember={filterMember} setFilterMember={setFilterMember}
+                        filterRole={filterRole} setFilterRole={setFilterRole}
+                        periodType={periodType} setPeriodType={setPeriodType}
+                        currentPeriod={currentPeriod} setCurrentPeriod={setCurrentPeriod}
+                        customRange={customRange} setCustomRange={setCustomRange}
+                        onExportCSV={() => setConfirmModal({ show: true, type: 'CSV', label: 'CSV Report' })}
+                        onExportPDF={() => setConfirmModal({ show: true, type: 'PDF', label: 'PDF Report' })}
+                        onExportTXT={() => setConfirmModal({ show: true, type: 'TXT', label: 'Plain Text Report' })}
                     />
                 ) : activeTab === 'Reports' ? (
                     <Reports
