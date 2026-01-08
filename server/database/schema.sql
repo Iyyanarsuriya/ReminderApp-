@@ -277,6 +277,7 @@ CREATE TABLE IF NOT EXISTS member_roles (
 CREATE TABLE IF NOT EXISTS vehicle_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
+    vehicle_name VARCHAR(100),
     vehicle_number VARCHAR(50) NOT NULL,
     driver_name VARCHAR(100),
     in_time DATETIME,
@@ -298,4 +299,9 @@ CREATE TABLE IF NOT EXISTS vehicle_logs (
 -- Changes:
 --   1. Created table: vehicle_logs
 --   2. Tracks vehicle fleet movement, mileage, and financials
+
+-- Migration: addVehicleNameCol.js
+-- Date: 2026-01-08
+-- Changes:
+--   1. Added column: vehicle_name (VARCHAR 100) to vehicle_logs
 -- ============================================================================

@@ -1,13 +1,35 @@
 import React, { useState, useEffect } from 'react';
-import { FaTruck, FaClock, FaMoneyBillWave, FaGasPump, FaPlus, FaTrash, FaEdit, FaRoad, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaTruck, FaClock, FaMoneyBillWave, FaGasPump, FaPlus, FaTrash, FaEdit, FaRoad, FaCheck, FaTimes, FaFilter, FaSearch, FaCalendarAlt } from 'react-icons/fa';
 import { getVehicleLogs, createVehicleLog, updateVehicleLog, deleteVehicleLog } from '../api/vehicleLogApi';
 import toast from 'react-hot-toast';
 import ConfirmModal from './modals/ConfirmModal';
+import ExportButtons from './ExportButtons';
+import { exportVehicleLogToCSV, exportVehicleLogToTXT, exportVehicleLogToPDF } from '../utils/exportUtils';
 
 const VehicleTrackerManager = () => {
     const [logs, setLogs] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [dateRange, setDateRange] = useState({ start: '', end: '' });
+    const [searchVehicle, setSearchVehicle] = useState('');
+
+    // Derived state for filtering
+    const filteredLogs = logs.filter(log => {
+        const logDateV = new Date(log.out_time || log.created_at || Date.now());
+        const logDate = logDateV.toISOString().split('T')[0];
+
+        const matchDate = (!dateRange.start || logDate >= dateRange.start) && (!dateRange.end || logDate <= dateRange.end);
+
+        const term = searchVehicle.toLowerCase();
+        const matchSearch = !term ||
+            (log.vehicle_name && log.vehicle_name.toLowerCase().includes(term)) ||
+            (log.vehicle_number && log.vehicle_number.toLowerCase().includes(term)) ||
+            (log.driver_name && log.driver_name.toLowerCase().includes(term));
+
+        return matchDate && matchSearch;
+    });
+
     const [formData, setFormData] = useState({
+        vehicle_name: '',
         vehicle_number: '',
         driver_name: '',
         in_time: '',
@@ -47,6 +69,7 @@ const VehicleTrackerManager = () => {
                 toast.success('Log created');
             }
             setFormData({
+                vehicle_name: '',
                 vehicle_number: '',
                 driver_name: '',
                 in_time: '',
@@ -67,6 +90,7 @@ const VehicleTrackerManager = () => {
 
     const handleEdit = (log) => {
         setFormData({
+            vehicle_name: log.vehicle_name || '',
             vehicle_number: log.vehicle_number,
             driver_name: log.driver_name || '',
             in_time: log.in_time ? new Date(log.in_time).toISOString().slice(0, 16) : '',
@@ -122,22 +146,31 @@ const VehicleTrackerManager = () => {
                         <form onSubmit={handleSubmit} className="space-y-5">
                             <div>
                                 <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Vehicle Details</label>
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-3">
                                     <input
                                         type="text"
-                                        placeholder="Vehicle No."
-                                        value={formData.vehicle_number}
-                                        onChange={e => setFormData({ ...formData, vehicle_number: e.target.value })}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:border-blue-500 transition-all uppercase"
-                                        required
-                                    />
-                                    <input
-                                        type="text"
-                                        placeholder="Driver Name"
-                                        value={formData.driver_name}
-                                        onChange={e => setFormData({ ...formData, driver_name: e.target.value })}
+                                        placeholder="Vehicle Name (e.g., Truck A)"
+                                        value={formData.vehicle_name}
+                                        onChange={e => setFormData({ ...formData, vehicle_name: e.target.value })}
                                         className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:border-blue-500 transition-all"
                                     />
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <input
+                                            type="text"
+                                            placeholder="Vehicle No."
+                                            value={formData.vehicle_number}
+                                            onChange={e => setFormData({ ...formData, vehicle_number: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:border-blue-500 transition-all uppercase"
+                                            required
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Driver Name"
+                                            value={formData.driver_name}
+                                            onChange={e => setFormData({ ...formData, driver_name: e.target.value })}
+                                            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:border-blue-500 transition-all"
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
@@ -222,7 +255,7 @@ const VehicleTrackerManager = () => {
                                 {editingId && (
                                     <button
                                         type="button"
-                                        onClick={() => { setEditingId(null); setFormData({ vehicle_number: '', driver_name: '', in_time: '', out_time: '', start_km: '', end_km: '', expense_amount: '', income_amount: '', notes: '' }); }}
+                                        onClick={() => { setEditingId(null); setFormData({ vehicle_name: '', vehicle_number: '', driver_name: '', in_time: '', out_time: '', start_km: '', end_km: '', expense_amount: '', income_amount: '', notes: '' }); }}
                                         className="flex-1 py-3 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all"
                                     >
                                         Cancel
@@ -241,19 +274,62 @@ const VehicleTrackerManager = () => {
 
                 {/* List Section */}
                 <div className="lg:col-span-2 space-y-6">
+
+                    {/* Filters & Actions */}
+                    <div className="bg-white p-5 rounded-[24px] border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
+                        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                            <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 w-full sm:w-auto">
+                                <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">From</span>
+                                <input
+                                    type="date"
+                                    value={dateRange.start}
+                                    onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
+                                    className="bg-transparent text-xs font-bold text-slate-700 outline-none w-full sm:w-[110px]"
+                                />
+                            </div>
+                            <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 w-full sm:w-auto">
+                                <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">To</span>
+                                <input
+                                    type="date"
+                                    value={dateRange.end}
+                                    onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
+                                    className="bg-transparent text-xs font-bold text-slate-700 outline-none w-full sm:w-[110px]"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 w-full md:w-auto bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
+                            <input
+                                type="text"
+                                placeholder="Search Vehicle / Driver..."
+                                value={searchVehicle}
+                                onChange={(e) => setSearchVehicle(e.target.value)}
+                                className="bg-transparent text-xs font-bold text-slate-700 outline-none w-full md:w-[200px]"
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <ExportButtons
+                                onExportCSV={() => exportVehicleLogToCSV(filteredLogs, 'Vehicle_Log_Report')}
+                                onExportPDF={() => exportVehicleLogToPDF({ data: filteredLogs, period: 'Custom Range', filename: 'Vehicle_Log_Report' })}
+                                onExportTXT={() => exportVehicleLogToTXT({ data: filteredLogs, period: 'Custom Range', filename: 'Vehicle_Log_Report' })}
+                            />
+                        </div>
+                    </div>
+
                     {/* Stats Cards */}
                     <div className="grid grid-cols-3 gap-4">
                         <div className="bg-emerald-50 p-6 rounded-[24px] border border-emerald-100">
                             <p className="text-[8px] font-black text-emerald-400 uppercase tracking-widest mb-1">Total Income</p>
-                            <p className="text-xl font-black text-emerald-600">₹{logs.reduce((acc, log) => acc + (parseFloat(log.income_amount) || 0), 0).toLocaleString()}</p>
+                            <p className="text-xl font-black text-emerald-600">₹{filteredLogs.reduce((acc, log) => acc + (parseFloat(log.income_amount) || 0), 0).toLocaleString()}</p>
                         </div>
                         <div className="bg-rose-50 p-6 rounded-[24px] border border-rose-100">
                             <p className="text-[8px] font-black text-rose-400 uppercase tracking-widest mb-1">Total Expenses</p>
-                            <p className="text-xl font-black text-rose-600">₹{logs.reduce((acc, log) => acc + (parseFloat(log.expense_amount) || 0), 0).toLocaleString()}</p>
+                            <p className="text-xl font-black text-rose-600">₹{filteredLogs.reduce((acc, log) => acc + (parseFloat(log.expense_amount) || 0), 0).toLocaleString()}</p>
                         </div>
                         <div className="bg-blue-50 p-6 rounded-[24px] border border-blue-100">
                             <p className="text-[8px] font-black text-blue-400 uppercase tracking-widest mb-1">Net Profit</p>
-                            <p className="text-xl font-black text-blue-600">₹{(logs.reduce((acc, log) => acc + (parseFloat(log.income_amount) || 0), 0) - logs.reduce((acc, log) => acc + (parseFloat(log.expense_amount) || 0), 0)).toLocaleString()}</p>
+                            <p className="text-xl font-black text-blue-600">₹{(filteredLogs.reduce((acc, log) => acc + (parseFloat(log.income_amount) || 0), 0) - filteredLogs.reduce((acc, log) => acc + (parseFloat(log.expense_amount) || 0), 0)).toLocaleString()}</p>
                         </div>
                     </div>
 
@@ -261,27 +337,24 @@ const VehicleTrackerManager = () => {
                     <div className="space-y-4">
                         {loading ? (
                             <div className="p-8 text-center text-slate-400 text-xs font-bold uppercase tracking-widest">Loading records...</div>
-                        ) : logs.length === 0 ? (
+                        ) : filteredLogs.length === 0 ? (
                             <div className="p-12 text-center bg-white rounded-[32px] border border-slate-100">
                                 <FaTruck className="mx-auto text-4xl text-slate-200 mb-4" />
                                 <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">No vehicle logs found</p>
                             </div>
                         ) : (
-                            logs.map(log => (
+                            filteredLogs.map(log => (
                                 <div key={log.id} className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm hover:shadow-md transition-all group relative">
-                                    <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button onClick={() => handleEdit(log)} className="p-2 bg-blue-50 text-blue-500 rounded-lg hover:bg-blue-100"><FaEdit size={12} /></button>
-                                        <button onClick={() => setConfirmModal({ show: true, id: log.id })} className="p-2 bg-rose-50 text-rose-500 rounded-lg hover:bg-rose-100"><FaTrash size={12} /></button>
-                                    </div>
 
-                                    <div className="flex flex-col sm:flex-row gap-6">
+
+                                    <div className="flex flex-col sm:flex-row items-center gap-6">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3 mb-3">
                                                 <div className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center font-black text-xs">
                                                     {log.vehicle_number.slice(-4)}
                                                 </div>
                                                 <div>
-                                                    <h4 className="font-black text-slate-900 uppercase tracking-tight">{log.vehicle_number}</h4>
+                                                    <h4 className="font-black text-slate-900 uppercase tracking-tight">{log.vehicle_name ? `${log.vehicle_name} - ` : ''}{log.vehicle_number}</h4>
                                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{log.driver_name || 'No Driver'}</p>
                                                 </div>
                                             </div>
@@ -299,6 +372,11 @@ const VehicleTrackerManager = () => {
                                             </div>
 
                                             {log.notes && <p className="text-xs font-medium text-slate-600 italic bg-blue-50/50 p-3 rounded-xl">{log.notes}</p>}
+                                        </div>
+
+                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 w-0 group-hover:w-auto overflow-hidden">
+                                            <button onClick={() => handleEdit(log)} className="p-2 text-blue-500 hover:bg-blue-50 rounded-xl transition-colors shrink-0"><FaEdit size={16} /></button>
+                                            <button onClick={() => setConfirmModal({ show: true, id: log.id })} className="p-2 text-rose-500 hover:bg-rose-50 rounded-xl transition-colors shrink-0"><FaTrash size={16} /></button>
                                         </div>
 
                                         <div className="flex flex-row sm:flex-col gap-3 sm:text-right border-t sm:border-t-0 sm:border-l border-slate-50 pt-4 sm:pt-0 sm:pl-6 min-w-[140px]">
@@ -327,12 +405,12 @@ const VehicleTrackerManager = () => {
 
             <ConfirmModal
                 isOpen={confirmModal.show}
-                onClose={() => setConfirmModal({ show: false, id: null })}
+                onCancel={() => setConfirmModal({ show: false, id: null })}
                 onConfirm={handleDelete}
                 title="Delete Vehicle Log?"
                 message="This action cannot be undone."
             />
-        </div>
+        </div >
     );
 };
 
