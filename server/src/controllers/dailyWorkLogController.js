@@ -2,6 +2,9 @@ const DailyWorkLog = require('../models/dailyWorkLogModel');
 
 const createWorkLog = async (req, res) => {
     try {
+        if (!req.body.member_id && !req.body.guest_name) {
+            return res.status(400).json({ success: false, message: 'Member or Guest Name is required' });
+        }
         const workLog = await DailyWorkLog.create({ ...req.body, user_id: req.user.id });
         res.status(201).json({ success: true, data: workLog });
     } catch (error) {

@@ -2,17 +2,22 @@ const db = require('../config/db');
 
 class DailyWorkLog {
     static async create(data) {
-        const { user_id, member_id, date, units_produced, rate_per_unit, work_type, notes } = data;
+        const { user_id, member_id, guest_name, date, units_produced, rate_per_unit, work_type, notes } = data;
         const [result] = await db.query(
-            'INSERT INTO daily_work_logs (user_id, member_id, date, units_produced, rate_per_unit, work_type, notes) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [user_id, member_id, date, units_produced || 0, rate_per_unit || 0, work_type || 'production', notes || null]
+            'INSERT INTO daily_work_logs (user_id, member_id, guest_name, date, units_produced, rate_per_unit, work_type, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [user_id, member_id || null, guest_name || null, date, units_produced || 0, rate_per_unit || 0, work_type || 'production', notes || null]
         );
         return { id: result.insertId, ...data };
     }
 
     static async getByUserIdAndDateRange(userId, startDate, endDate, memberId = null) {
         let query = `
-            SELECT dwl.*, m.name as member_name, m.wage_type 
+            SELECT dwl.*, 
+            CASE 
+                WHEN dwl.member_id IS NOT NULL THEN m.name 
+                ELSE dwl.guest_name 
+            END as member_name,
+            m.wage_type 
             FROM daily_work_logs dwl
             LEFT JOIN members m ON dwl.member_id = m.id
             WHERE dwl.user_id = ?
@@ -29,7 +34,7 @@ class DailyWorkLog {
             params.push(memberId);
         }
 
-        query += ' ORDER BY dwl.date DESC, m.name ASC';
+        query += ' ORDER BY dwl.date DESC, member_name ASC';
 
         const [rows] = await db.query(query, params);
         return rows;
@@ -39,7 +44,11 @@ class DailyWorkLog {
         let query = `
             SELECT 
                 dwl.member_id,
-                m.name as member_name,
+                dwl.guest_name,
+                CASE 
+                    WHEN dwl.member_id IS NOT NULL THEN m.name 
+                    ELSE dwl.guest_name 
+                END as member_name,
                 SUM(dwl.units_produced) as total_units,
                 SUM(dwl.total_amount) as total_earnings,
                 COUNT(*) as days_worked
@@ -56,7 +65,7 @@ class DailyWorkLog {
             params.push(memberId);
         }
 
-        query += ' GROUP BY dwl.member_id, m.name';
+        query += ' GROUP BY dwl.member_id, dwl.guest_name, m.name';
 
         const [rows] = await db.query(query, params);
         return rows;

@@ -40,6 +40,7 @@ app.use("/api/attendance", require("./routes/attendanceRoutes"));
 app.use("/api/members", require("./routes/memberRoutes"));
 app.use("/api/work-logs", require("./routes/dailyWorkLogRoutes"));
 app.use("/api/member-roles", require("./routes/memberRoleRoutes"));
+app.use("/api/work-types", require("./routes/workTypeRoutes"));
 
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);

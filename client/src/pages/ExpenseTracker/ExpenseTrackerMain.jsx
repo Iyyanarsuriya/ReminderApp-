@@ -56,7 +56,7 @@ const ExpenseTrackerMain = () => {
     const [showProjectManager, setShowProjectManager] = useState(false);
     const [showMemberManager, setShowMemberManager] = useState(false);
     const [showRoleManager, setShowRoleManager] = useState(false); // New Role Manager Modal
-    const [showDailyWorkLogManager, setShowDailyWorkLogManager] = useState(false);
+
 
     // Data Lists
     const [categories, setCategories] = useState([]);
@@ -435,9 +435,13 @@ const ExpenseTrackerMain = () => {
     const pieData = stats.categories.filter(c => c.type === 'expense').map(c => ({ name: c.category, value: parseFloat(c.total) }));
     const barData = [{ name: 'This Period', Income: parseFloat(stats.summary?.total_income || 0), Expenses: parseFloat(stats.summary?.total_expense || 0) }];
 
-    const SidebarItem = ({ icon: Icon, label }) => (
+    const SidebarItem = ({ icon: Icon, label, onClick }) => (
         <button
             onClick={() => {
+                if (onClick) {
+                    onClick();
+                    return;
+                }
                 if (label === 'Attendance') navigate('/attendance');
                 else setActiveTab(label);
             }}
@@ -468,6 +472,7 @@ const ExpenseTrackerMain = () => {
                     <SidebarItem icon={FaExchangeAlt} label="Transactions" />
                     <SidebarItem icon={FaFileAlt} label="Reports" />
                     <SidebarItem icon={FaCalculator} label="Salary" />
+                    <SidebarItem icon={FaBoxes} label="Work Log" />
                 </nav>
             </aside>
 
@@ -578,7 +583,7 @@ const ExpenseTrackerMain = () => {
                                 <FaFolderPlus />
                                 <span className="text-[9px] font-black uppercase tracking-widest hidden lg:inline">Project</span>
                             </button>
-                            <button onClick={() => setShowDailyWorkLogManager(true)} className="w-10 h-10 bg-slate-800 text-white rounded-xl flex items-center justify-center hover:bg-slate-900 transition-all shadow-sm" title="Daily Work Logs"><FaBoxes /></button>
+                            <button onClick={() => setActiveTab('Work Log')} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shadow-sm lg:hidden ${activeTab === 'Work Log' ? 'bg-[#2d5bff] text-white' : 'bg-slate-800 text-white hover:bg-slate-900'}`} title="Daily Work Logs"><FaBoxes /></button>
                         </div>
                     </div>
                 </div>
@@ -613,7 +618,7 @@ const ExpenseTrackerMain = () => {
                         memberStats={memberStats} stats={stats} setShowCustomReportModal={setShowCustomReportModal}
                         setCustomReportForm={setCustomReportForm} customReportForm={customReportForm}
                     />
-                ) : (
+                ) : activeTab === 'Salary' ? (
                     <SalaryCalculator
                         periodType={periodType} filterMember={filterMember} setFilterMember={setFilterMember}
                         filterMemberType={filterMemberType}
@@ -624,6 +629,8 @@ const ExpenseTrackerMain = () => {
                         bonus={bonus} setBonus={setBonus} stats={stats} setFormData={setFormData} formData={formData}
                         setShowAddModal={setShowAddModal} transactions={transactions}
                     />
+                ) : (
+                    <DailyWorkLogManager />
                 )}
             </main>
 
@@ -745,7 +752,6 @@ const ExpenseTrackerMain = () => {
             {showProjectManager && <ProjectManager projects={projects} onCreate={createProject} onDelete={deleteProject} onRefresh={fetchData} onClose={() => setShowProjectManager(false)} />}
             {showRoleManager && <RoleManager roles={roles} onCreate={createMemberRole} onDelete={deleteMemberRole} onClose={() => setShowRoleManager(false)} onRefresh={() => getMemberRoles().then(res => setRoles(res.data.data))} />}
             {showMemberManager && <MemberManager onUpdate={fetchData} onClose={() => setShowMemberManager(false)} />}
-            {showDailyWorkLogManager && <DailyWorkLogManager onClose={() => setShowDailyWorkLogManager(false)} />}
 
             {showCustomReportModal && (
                 <div className="fixed inset-0 z-150 flex items-center justify-center p-[16px] bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">

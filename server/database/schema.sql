@@ -166,7 +166,8 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
 CREATE TABLE IF NOT EXISTS daily_work_logs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    member_id INT NOT NULL,
+    member_id INT DEFAULT NULL,
+    guest_name VARCHAR(255) DEFAULT NULL,
     date DATE NOT NULL,
     units_produced DECIMAL(10, 2) DEFAULT 0.00,
     rate_per_unit DECIMAL(10, 2) DEFAULT 0.00,
@@ -180,6 +181,18 @@ CREATE TABLE IF NOT EXISTS daily_work_logs (
     UNIQUE KEY unique_member_date (member_id, date),
     INDEX idx_user_date (user_id, date),
     INDEX idx_member (member_id)
+);
+
+-- ============================================================================
+-- WORK TYPES TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS work_types (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_user_work_type (user_id, name)
 );
 
 -- ============================================================================
@@ -240,5 +253,20 @@ CREATE TABLE IF NOT EXISTS member_roles (
 --   4. Added column: attendance.permission_end_time (24h format)
 --   5. Added column: attendance.permission_reason (Reason for leaving)
 --   6. Enhances tracking of partial-day permissions with work notes
+-- ============================================================================
+
+-- Migration: add_guest_name_migration.js
+-- Date: 2026-01-08
+-- Changes:
+--   1. Added column: daily_work_logs.guest_name
+--   2. Modified column: daily_work_logs.member_id (Made Nullable)
+--   3. Allows logging work for guests (non-members)
+-- ============================================================================
+
+-- Migration: create_work_types_table.js
+-- Date: 2026-01-08
+-- Changes:
+--   1. Created table: work_types
+--   2. Stores user-defined work types (e.g., Piece Rate, Hourly)
 -- ============================================================================
 
