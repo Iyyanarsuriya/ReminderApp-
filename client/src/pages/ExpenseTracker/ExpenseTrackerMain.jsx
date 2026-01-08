@@ -14,7 +14,7 @@ import { getProjects, createProject, deleteProject } from '../../api/projectApi'
 import { getMembers, getActiveMembers, getGuests } from '../../api/memberApi';
 import { getMemberRoles } from '../../api/memberRoleApi';
 import { getAttendanceStats } from '../../api/attendanceApi';
-import { exportExpenseToCSV, exportExpenseToTXT, exportExpenseToPDF } from '../../utils/exportUtils/index.js';
+import { exportExpenseToCSV, exportExpenseToTXT, exportExpenseToPDF, exportMemberPayslipToPDF } from '../../utils/exportUtils/index.js';
 import { formatAmount } from '../../utils/formatUtils';
 
 import { Settings } from 'lucide-react';
@@ -420,17 +420,78 @@ const ExpenseTrackerMain = () => {
         if (!customReportForm.startDate || !customReportForm.endDate) { toast.error("Please select both start and end dates"); return; }
         setCustomReportLoading(format);
         try {
+            const isGuestSelection = customReportForm.memberId && String(customReportForm.memberId).startsWith('guest_');
+            const guestName = isGuestSelection ? customReportForm.memberId.replace('guest_', '') : null;
+            const filterMemberId = isGuestSelection ? null : (customReportForm.memberId === 'guest' ? 'guest' : customReportForm.memberId);
+
             const params = {
-                projectId: customReportForm.projectId, memberId: customReportForm.memberId,
-                startDate: customReportForm.startDate, endDate: customReportForm.endDate,
-                category: customReportForm.category === 'all' ? null : customReportForm.category, type: customReportForm.type === 'all' ? null : customReportForm.type
+                projectId: customReportForm.projectId,
+                memberId: filterMemberId,
+                guestName: guestName,
+                startDate: customReportForm.startDate,
+                endDate: customReportForm.endDate,
+                category: customReportForm.category === 'all' ? null : customReportForm.category,
+                type: customReportForm.type === 'all' ? null : customReportForm.type
             };
-            const [transRes, statsRes] = await Promise.all([getTransactions(params), getTransactionStats(params)]);
-            if (format === 'PDF') handleExportPDF(transRes.data, statsRes.data, customReportForm);
-            else if (format === 'CSV') handleExportCSV(transRes.data, customReportForm);
-            else if (format === 'TXT') handleExportTXT(transRes.data, statsRes.data, customReportForm);
-            setShowCustomReportModal(false); toast.success("Report generated!");
-        } catch (error) { toast.error("Failed to generate report"); } finally { setCustomReportLoading(false); }
+
+            const fetchPromises = [getTransactions(params), getTransactionStats(params)];
+
+            // If a specific real member is selected, fetch their attendance too
+            const isRealMember = filterMemberId && filterMemberId !== 'guest';
+            if (isRealMember) {
+                fetchPromises.push(getAttendanceStats({
+                    memberId: filterMemberId,
+                    startDate: customReportForm.startDate,
+                    endDate: customReportForm.endDate
+                }));
+            }
+
+            const results = await Promise.all(fetchPromises);
+            const transRes = results[0];
+            const statsRes = results[1];
+
+            if (format === 'PDF') {
+                // Generate Payslip if it's a specific member or a specific guest
+                if (isRealMember || isGuestSelection) {
+                    const memberObj = members.find(m => m.id == customReportForm.memberId);
+                    let summary = null;
+
+                    if (isRealMember) {
+                        const attRes = results[2];
+                        const statsArray = attRes.data?.data || [];
+                        summary = {
+                            present: statsArray.find(s => s.status === 'present')?.count || 0,
+                            absent: statsArray.find(s => s.status === 'absent')?.count || 0,
+                            late: statsArray.find(s => s.status === 'late')?.count || 0,
+                            half_day: statsArray.find(s => s.status === 'half-day')?.count || 0,
+                            permission: statsArray.find(s => s.status === 'permission')?.count || 0
+                        };
+                    }
+
+                    exportMemberPayslipToPDF({
+                        member: memberObj || { name: guestName, id: 'GUEST', member_type: 'guest' },
+                        transactions: transRes.data,
+                        attendanceStats: summary ? { summary } : null,
+                        period: `${customReportForm.startDate} to ${customReportForm.endDate}`,
+                        filename: `payslip_${guestName || memberObj?.name}_${customReportForm.startDate}`
+                    });
+                } else {
+                    handleExportPDF(transRes.data, statsRes.data, customReportForm);
+                }
+            } else if (format === 'CSV') {
+                handleExportCSV(transRes.data, customReportForm);
+            } else if (format === 'TXT') {
+                handleExportTXT(transRes.data, statsRes.data, customReportForm);
+            }
+
+            setShowCustomReportModal(false);
+            toast.success((isRealMember || isGuestSelection) ? "Payslip generated!" : "Report generated!");
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to generate report");
+        } finally {
+            setCustomReportLoading(false);
+        }
     };
 
     // Chart Data
@@ -568,12 +629,17 @@ const ExpenseTrackerMain = () => {
                             </div>
 
                             {/* Member Filter */}
-                            <div style={{ width: '140px' }}>
-                                <label className="block text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Member</label>
+                            <div style={{ width: '180px' }}>
+                                <label className="block text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Member / Guest</label>
                                 <select value={filterMember} onChange={(e) => setFilterMember(e.target.value)} className="h-10 w-full bg-slate-50 border border-slate-100 rounded-xl px-3 text-xs font-bold text-slate-700 outline-none cursor-pointer">
                                     <option value="">Everyone</option>
-                                    <option value="guest">Guests (Non-Members)</option>
-                                    {members.filter(m => (!filterRole || m.role === filterRole) && (filterMemberType === 'all' || m.member_type === filterMemberType)).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                                    <option value="guest">All Guests (Non-Members)</option>
+                                    <optgroup label="Registered Members">
+                                        {members.filter(m => !m.isGuest && (!filterRole || m.role === filterRole) && (filterMemberType === 'all' || m.member_type === filterMemberType)).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                                    </optgroup>
+                                    <optgroup label="Frequent Guests">
+                                        {members.filter(m => m.isGuest).map(m => <option key={m.id} value={m.id}>[GUEST] {m.name}</option>)}
+                                    </optgroup>
                                 </select>
                             </div>
 
@@ -807,7 +873,23 @@ const ExpenseTrackerMain = () => {
                             </div>
                             <div className="grid grid-cols-2 gap-[16px]">
                                 <div><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Project</label><select value={customReportForm.projectId} onChange={(e) => setCustomReportForm({ ...customReportForm, projectId: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all cursor-pointer"><option value="">All Projects</option>{projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
-                                <div><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Member</label><select value={customReportForm.memberId} onChange={(e) => setCustomReportForm({ ...customReportForm, memberId: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all cursor-pointer"><option value="">Everyone</option>{members.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}</select></div>
+                                <div>
+                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Member / Guest</label>
+                                    <select
+                                        value={customReportForm.memberId}
+                                        onChange={(e) => setCustomReportForm({ ...customReportForm, memberId: e.target.value })}
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all cursor-pointer"
+                                    >
+                                        <option value="">Everyone (Summary)</option>
+                                        <option value="guest">All Guests (Grouped)</option>
+                                        <optgroup label="Registered Members">
+                                            {members.filter(m => !m.isGuest).map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                        </optgroup>
+                                        <optgroup label="Frequent Guests">
+                                            {members.filter(m => m.isGuest).map(w => <option key={w.id} value={w.id}>[GUEST] {w.name}</option>)}
+                                        </optgroup>
+                                    </select>
+                                </div>
                             </div>
                             <div className="grid grid-cols-2 gap-[16px]">
                                 <div><label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Type</label><select value={customReportForm.type} onChange={(e) => setCustomReportForm({ ...customReportForm, type: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all cursor-pointer"><option value="all">All Transactions</option><option value="income">Income Only</option><option value="expense">Expenses Only</option></select></div>

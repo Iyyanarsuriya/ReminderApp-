@@ -1,3 +1,5 @@
+import { jsPDF } from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { generateCSV, generateTXT, generatePDF } from '../exportUtils/base.js';
 import { formatAmount } from '../formatUtils.js';
 
@@ -87,4 +89,162 @@ export const exportExpenseToPDF = ({ data, period, subHeader, filename }) => {
     ]);
 
     generatePDF({ title: 'Financial Report', period, subHeader, stats, tableHeaders, tableRows, filename, themeColor: [45, 91, 255] });
+};
+
+export const exportMemberPayslipToPDF = ({
+    member,
+    transactions,
+    attendanceStats,
+    period,
+    filename
+}) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+
+    // Color Palette
+    const primaryColor = [45, 91, 255]; // Blue
+    const secondaryColor = [241, 245, 249]; // Slate 50
+    const accentColor = [16, 185, 129]; // Emerald 500
+
+    // Header - Business Identity
+    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.rect(0, 0, pageWidth, 50, 'F');
+
+    doc.setFontSize(24);
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PAYSLIP', 20, 30);
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(255, 255, 255, 0.8);
+    doc.text(`Period: ${period}`, 20, 40);
+
+    const now = new Date().toLocaleDateString('en-GB');
+    doc.text(`Generated on: ${now}`, pageWidth - 20, 40, { align: 'right' });
+
+    // Section 1: Employee Details
+    doc.setTextColor(40, 40, 40);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('EMPLOYEE DETAILS', 20, 65);
+    doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.setLineWidth(1);
+    doc.line(20, 68, 40, 68);
+
+    autoTable(doc, {
+        startY: 75,
+        body: [
+            ['Name', member.name, 'Employee ID', `#${member.id}`],
+            ['Role', member.role || 'N/A', 'Member Type', member.member_type?.toUpperCase() || 'N/A'],
+            ['Phone', member.phone || '-', 'Email', member.email || '-'],
+            ['Wage Type', member.wage_type?.toUpperCase() || 'Daily', 'Base Rate', `Rs. ${formatAmount(member.daily_wage || 0)}`]
+        ],
+        theme: 'plain',
+        styles: { fontSize: 9, cellPadding: 3 },
+        columnStyles: {
+            0: { fontStyle: 'bold', textColor: [100, 100, 100], cellWidth: 30 },
+            1: { cellWidth: 60 },
+            2: { fontStyle: 'bold', textColor: [100, 100, 100], cellWidth: 30 },
+            3: { cellWidth: 60 }
+        }
+    });
+
+    let currentY = doc.lastAutoTable.finalY + 15;
+
+    // Section 2: Attendance Summary (If available)
+    if (attendanceStats && attendanceStats.summary) {
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.text('ATTENDANCE SUMMARY', 20, currentY);
+        doc.line(20, currentY + 3, 40, currentY + 3);
+
+        const s = attendanceStats.summary;
+        autoTable(doc, {
+            startY: currentY + 8,
+            head: [['Present', 'Absent', 'Half Day', 'Late', 'Permission']],
+            body: [[s.present, s.absent, s.half_day, s.late, s.permission || 0]],
+            theme: 'grid',
+            headStyles: { fillColor: secondaryColor, textColor: [100, 100, 100], halign: 'center' },
+            bodyStyles: { halign: 'center', fontSize: 11, fontStyle: 'bold' }
+        });
+        currentY = doc.lastAutoTable.finalY + 15;
+    }
+
+    // Section 3: Earnings & Deductions Breakdown
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('FINANCIAL BREAKDOWN', 20, currentY);
+    doc.line(20, currentY + 3, 40, currentY + 3);
+
+    const earned = transactions.filter(t => t.category === 'Salary Pot').reduce((acc, t) => acc + parseFloat(t.amount || 0), 0);
+    const advance = transactions.filter(t => t.category === 'Advance').reduce((acc, t) => acc + parseFloat(t.amount || 0), 0);
+    const paid = transactions.filter(t => t.category === 'Salary').reduce((acc, t) => acc + parseFloat(t.amount || 0), 0);
+
+    autoTable(doc, {
+        startY: currentY + 8,
+        head: [['Earnings (Salary Pot)', 'Advances', 'Salary Paid']],
+        body: [[
+            `Rs. ${formatAmount(earned)}`,
+            `Rs. ${formatAmount(advance)}`,
+            `Rs. ${formatAmount(paid)}`
+        ]],
+        theme: 'grid',
+        headStyles: { fillColor: secondaryColor, textColor: [100, 100, 100], halign: 'center' },
+        bodyStyles: { halign: 'center', fontSize: 11 },
+        columnStyles: {
+            0: { textColor: accentColor },
+            1: { textColor: [239, 68, 68] }, // Rose 500
+            2: { textColor: primaryColor }
+        }
+    });
+
+    currentY = doc.lastAutoTable.finalY + 10;
+
+    // Net Settlement Box
+    const net = earned - (advance + paid);
+    doc.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
+    doc.roundedRect(120, currentY, 70, 25, 3, 3, 'F');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text('NET SETTLEMENT DUE', 125, currentY + 8);
+    doc.setFontSize(16);
+    doc.setTextColor(net >= 0 ? primaryColor[0] : 239, net >= 0 ? primaryColor[1] : 68, net >= 0 ? primaryColor[2] : 68);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Rs. ${formatAmount(net)}`, 125, currentY + 20);
+
+    currentY += 35;
+
+    // Section 4: Transaction Logs
+    doc.setFontSize(12);
+    doc.setTextColor(40, 40, 40);
+    doc.text('DETAILED TRANSACTION LOGS', 20, currentY);
+    doc.line(20, currentY + 3, 40, currentY + 3);
+
+    const tableHeaders = ['Date', 'Description', 'Category', 'Status', 'Amount'];
+    const tableRows = transactions.map(t => [
+        new Date(t.date).toLocaleDateString('en-GB'),
+        t.title,
+        t.category,
+        t.payment_status?.toUpperCase() || 'COMPLETED',
+        `Rs. ${formatAmount(t.amount)}`
+    ]);
+
+    autoTable(doc, {
+        startY: currentY + 8,
+        head: [tableHeaders],
+        body: tableRows,
+        theme: 'striped',
+        headStyles: { fillColor: primaryColor, fontSize: 9 },
+        bodyStyles: { fontSize: 8 }
+    });
+
+    // Footer
+    const footerY = doc.internal.pageSize.getHeight() - 20;
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text('This is a computer generated document. No signature required.', pageWidth / 2, footerY, { align: 'center' });
+    doc.text('ORGANIZER PRO - Financial Management System', pageWidth / 2, footerY + 5, { align: 'center' });
+
+    doc.save(`${filename}.pdf`);
 };
