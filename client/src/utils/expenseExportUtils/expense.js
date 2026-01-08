@@ -1,5 +1,5 @@
-import { generateCSV, generateTXT, generatePDF } from '../exportUtils/base';
-import { formatAmount } from '../formatUtils';
+import { generateCSV, generateTXT, generatePDF } from '../exportUtils/base.js';
+import { formatAmount } from '../formatUtils.js';
 
 export const exportExpenseToCSV = (data, filename) => {
     // Add Summary at the top of CSV for better readability in Excel

@@ -20,7 +20,9 @@ export const generateCSV = (headers, rows, filename) => {
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
     link.setAttribute("download", `${filename}.csv`);
+    document.body.appendChild(link); // Required for Firefox
     link.click();
+    document.body.removeChild(link);
     URL.revokeObjectURL(url);
 };
 
@@ -76,7 +78,9 @@ export const generateTXT = ({ title, period, stats, additionalContent, logHeader
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
     link.setAttribute("download", `${filename}.txt`);
+    document.body.appendChild(link); // Required for Firefox
     link.click();
+    document.body.removeChild(link);
     URL.revokeObjectURL(url);
 };
 

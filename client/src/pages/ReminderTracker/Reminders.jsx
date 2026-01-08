@@ -12,7 +12,7 @@ import { getCategories, createCategory, deleteCategory } from '../../api/categor
 
 import CategoryManager from '../../components/CategoryManager';
 import ExportButtons from '../../components/ExportButtons';
-import { exportReminderToCSV, exportReminderToTXT, exportReminderToPDF } from '../../utils/exportUtils';
+import { exportReminderToCSV, exportReminderToTXT, exportReminderToPDF } from '../../utils/exportUtils/index.js';
 
 const Reminders = () => {
     const [reminders, setReminders] = useState([]);

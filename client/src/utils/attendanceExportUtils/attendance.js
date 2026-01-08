@@ -1,6 +1,6 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { generateCSV, generateTXT } from '../exportUtils/base';
+import { generateCSV, generateTXT } from '../exportUtils/base.js';
 
 const calculateAttendanceSummary = (data) => {
     const memberSummary = {};

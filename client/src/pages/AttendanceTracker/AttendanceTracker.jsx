@@ -23,7 +23,7 @@ import {
 import {
     PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend
 } from 'recharts';
-import { exportAttendanceToCSV, exportAttendanceToTXT, exportAttendanceToPDF } from '../../utils/exportUtils';
+import { exportAttendanceToCSV, exportAttendanceToTXT, exportAttendanceToPDF } from '../../utils/exportUtils/index.js';
 import ExportButtons from '../../components/ExportButtons';
 import ProjectManager from '../../components/ProjectManager';
 import MemberManager from '../../components/MemberManager';

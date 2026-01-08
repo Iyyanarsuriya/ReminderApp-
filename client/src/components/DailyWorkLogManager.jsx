@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { FaTimes, FaPlus, FaEdit, FaTrash, FaCalendarAlt, FaMoneyBillWave, FaBoxes, FaStickyNote, FaUser, FaTags, FaSearch, FaFilter } from 'react-icons/fa';
 import ConfirmModal from './modals/ConfirmModal';
 import ExportButtons from './ExportButtons';
-import { exportWorkLogToCSV, exportWorkLogToTXT, exportWorkLogToPDF } from '../utils/exportUtils';
+import { exportWorkLogToCSV, exportWorkLogToTXT, exportWorkLogToPDF } from '../utils/exportUtils/index.js';
 
 const DailyWorkLogManager = ({ onClose, selectedDate = new Date().toISOString().split('T')[0] }) => {
     const [workLogs, setWorkLogs] = useState([]);

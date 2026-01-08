@@ -1,4 +1,4 @@
-import { generateCSV, generateTXT, generatePDF } from '../exportUtils/base';
+import { generateCSV, generateTXT, generatePDF } from '../exportUtils/base.js';
 
 export const exportReminderToCSV = (data, filename) => {
     // Add Summary

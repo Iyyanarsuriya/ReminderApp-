@@ -4,7 +4,7 @@ import { getVehicleLogs, createVehicleLog, updateVehicleLog, deleteVehicleLog } 
 import toast from 'react-hot-toast';
 import ConfirmModal from './modals/ConfirmModal';
 import ExportButtons from './ExportButtons';
-import { exportVehicleLogToCSV, exportVehicleLogToTXT, exportVehicleLogToPDF } from '../utils/exportUtils';
+import { exportVehicleLogToCSV, exportVehicleLogToTXT, exportVehicleLogToPDF } from '../utils/exportUtils/index.js';
 
 const VehicleTrackerManager = () => {
     const [logs, setLogs] = useState([]);
