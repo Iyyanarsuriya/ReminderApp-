@@ -2,7 +2,7 @@ import { getMembers, createMember, updateMember, deleteMember } from '../api/mem
 import { getMemberRoles, createMemberRole, deleteMemberRole } from '../api/memberRoleApi'; // IMPORTS
 import { getTransactions } from '../api/transactionApi';
 import toast from 'react-hot-toast';
-import { FaTimes, FaPlus, FaEdit, FaTrash, FaUser, FaUsers, FaBriefcase, FaPhone, FaEnvelope, FaHistory, FaMoneyBillWave, FaUniversity } from 'react-icons/fa';
+import { FaTimes, FaPlus, FaEdit, FaTrash, FaUser, FaUsers, FaBriefcase, FaPhone, FaEnvelope, FaHistory, FaMoneyBillWave, FaUniversity, FaTag } from 'react-icons/fa';
 import ConfirmModal from './modals/ConfirmModal';
 import RoleManager from './RoleManager'; // IMPORTS
 import { useState, useEffect } from 'react';
@@ -120,6 +120,15 @@ const MemberManager = ({ onClose, onUpdate }) => {
                     </h2>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Add and manage people in your list</p>
                 </div>
+                <button
+                    onClick={() => setShowRoleManager(true)}
+                    className="group flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:border-purple-300 hover:text-purple-600 transition-all shadow-sm hover:shadow-md"
+                >
+                    <div className="w-6 h-6 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <FaTag size={10} />
+                    </div>
+                    <span>Manage Categories</span>
+                </button>
             </div>
 
             {/* Content Content */}

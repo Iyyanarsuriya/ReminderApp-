@@ -11,7 +11,7 @@ import {
 import { getExpenseCategories, createExpenseCategory, deleteExpenseCategory } from '../../api/expenseCategoryApi';
 import { getProjects, createProject, deleteProject } from '../../api/projectApi';
 import { getMembers, getActiveMembers } from '../../api/memberApi';
-import { getMemberRoles, createMemberRole, deleteMemberRole } from '../../api/memberRoleApi';
+import { getMemberRoles } from '../../api/memberRoleApi';
 import { getAttendanceStats } from '../../api/attendanceApi';
 import { exportExpenseToCSV, exportExpenseToTXT, exportExpenseToPDF } from '../../utils/exportUtils';
 import { formatAmount } from '../../utils/formatUtils';
@@ -21,7 +21,6 @@ import { Settings } from 'lucide-react';
 import CategoryManager from '../../components/CategoryManager';
 import ProjectManager from '../../components/ProjectManager';
 import MemberManager from '../../components/MemberManager';
-import RoleManager from '../../components/RoleManager';
 import DailyWorkLogManager from '../../components/DailyWorkLogManager';
 import VehicleTrackerManager from '../../components/VehicleTrackerManager';
 import ExportButtons from '../../components/ExportButtons';
@@ -55,7 +54,6 @@ const ExpenseTrackerMain = () => {
     // Modals
     const [showCategoryManager, setShowCategoryManager] = useState(false);
     const [showProjectManager, setShowProjectManager] = useState(false);
-    const [showRoleManager, setShowRoleManager] = useState(false); // New Role Manager Modal
 
 
     // Data Lists
@@ -499,10 +497,6 @@ const ExpenseTrackerMain = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => setShowRoleManager(true)} className="w-10 h-10 bg-white border border-slate-200 text-purple-500 rounded-xl flex items-center justify-center hover:bg-purple-50 transition-all shadow-sm" title="Manage Roles"><FaTag /></button>
-                            <button onClick={() => setActiveTab('Members')} className="w-10 h-10 bg-white border border-slate-200 text-orange-500 rounded-xl flex items-center justify-center hover:bg-orange-50 transition-all shadow-sm" title="Members"><FaUserEdit /></button>
-                        </div>
                     </div>
 
                     {/* Filter Grid */}
@@ -756,7 +750,6 @@ const ExpenseTrackerMain = () => {
 
             {showCategoryManager && <CategoryManager categories={categories} onUpdate={() => getExpenseCategories().then(res => setCategories(res.data))} onCreate={createExpenseCategory} onDelete={deleteExpenseCategory} onClose={() => setShowCategoryManager(false)} />}
             {showProjectManager && <ProjectManager projects={projects} onCreate={createProject} onDelete={deleteProject} onRefresh={fetchData} onClose={() => setShowProjectManager(false)} />}
-            {showRoleManager && <RoleManager roles={roles} onCreate={createMemberRole} onDelete={deleteMemberRole} onClose={() => setShowRoleManager(false)} onRefresh={() => getMemberRoles().then(res => setRoles(res.data.data))} />}
 
             {showCustomReportModal && (
                 <div className="fixed inset-0 z-150 flex items-center justify-center p-[16px] bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
