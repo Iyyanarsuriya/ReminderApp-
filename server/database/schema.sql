@@ -270,3 +270,32 @@ CREATE TABLE IF NOT EXISTS member_roles (
 --   2. Stores user-defined work types (e.g., Piece Rate, Hourly)
 -- ============================================================================
 
+
+-- ============================================================================
+-- VEHICLE LOGS TABLE
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS vehicle_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    vehicle_number VARCHAR(50) NOT NULL,
+    driver_name VARCHAR(100),
+    in_time DATETIME,
+    out_time DATETIME,
+    start_km DECIMAL(10, 2),
+    end_km DECIMAL(10, 2),
+    expense_amount DECIMAL(10, 2) DEFAULT 0,
+    income_amount DECIMAL(10, 2) DEFAULT 0,
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_vehicle_user (user_id, vehicle_number),
+    INDEX idx_dates (in_time, out_time)
+);
+
+-- Migration: initVehicleDB.js (Consolidated)
+-- Date: 2026-01-08
+-- Changes:
+--   1. Created table: vehicle_logs
+--   2. Tracks vehicle fleet movement, mileage, and financials
+-- ============================================================================

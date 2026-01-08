@@ -5,13 +5,13 @@ import { getTransactions, createTransaction, updateTransaction, deleteTransactio
 import toast from 'react-hot-toast';
 import {
     FaWallet, FaPlus, FaTrash, FaChartBar, FaExchangeAlt, FaFileAlt, FaEdit, FaTimes,
-    FaPlusCircle, FaFolderPlus, FaUserEdit, FaBoxes,
+    FaPlusCircle, FaFolderPlus, FaUserEdit, FaBoxes, FaTruck,
     FaCheck, FaQuestionCircle, FaCalculator, FaTag
 } from 'react-icons/fa';
 import { getExpenseCategories, createExpenseCategory, deleteExpenseCategory } from '../../api/expenseCategoryApi';
 import { getProjects, createProject, deleteProject } from '../../api/projectApi';
 import { getMembers, getActiveMembers } from '../../api/memberApi';
-import { getMemberRoles, createMemberRole, deleteMemberRole } from '../../api/memberRoleApi'; // IMPORTS
+import { getMemberRoles, createMemberRole, deleteMemberRole } from '../../api/memberRoleApi';
 import { getAttendanceStats } from '../../api/attendanceApi';
 import { exportExpenseToCSV, exportExpenseToTXT, exportExpenseToPDF } from '../../utils/exportUtils';
 import { formatAmount } from '../../utils/formatUtils';
@@ -21,8 +21,9 @@ import { Settings } from 'lucide-react';
 import CategoryManager from '../../components/CategoryManager';
 import ProjectManager from '../../components/ProjectManager';
 import MemberManager from '../../components/MemberManager';
-import RoleManager from '../../components/RoleManager'; // IMPORTS
+import RoleManager from '../../components/RoleManager';
 import DailyWorkLogManager from '../../components/DailyWorkLogManager';
+import VehicleTrackerManager from '../../components/VehicleTrackerManager';
 import ExportButtons from '../../components/ExportButtons';
 
 // Sub-components
@@ -473,6 +474,7 @@ const ExpenseTrackerMain = () => {
                     <SidebarItem icon={FaFileAlt} label="Reports" />
                     <SidebarItem icon={FaCalculator} label="Salary" />
                     <SidebarItem icon={FaBoxes} label="Work Log" />
+                    <SidebarItem icon={FaTruck} label="Vehicle Log" />
                 </nav>
             </aside>
 
@@ -590,7 +592,7 @@ const ExpenseTrackerMain = () => {
 
                 {/* Mobile Tabs */}
                 <div className="lg:hidden flex overflow-x-auto gap-3 mb-8 pb-2 custom-scrollbar">
-                    {['Dashboard', 'Transactions', 'Reports', 'Salary'].map(tab => (
+                    {['Dashboard', 'Transactions', 'Reports', 'Salary', 'Work Log', 'Vehicle Log'].map(tab => (
                         <button key={tab} onClick={() => setActiveTab(tab)} className={`whitespace-nowrap px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-[#2d5bff] text-white' : 'bg-white text-slate-500 border'}`}>{tab}</button>
                     ))}
                 </div>
@@ -629,6 +631,8 @@ const ExpenseTrackerMain = () => {
                         bonus={bonus} setBonus={setBonus} stats={stats} setFormData={setFormData} formData={formData}
                         setShowAddModal={setShowAddModal} transactions={transactions}
                     />
+                ) : activeTab === 'Vehicle Log' ? (
+                    <VehicleTrackerManager />
                 ) : (
                     <DailyWorkLogManager />
                 )}
