@@ -67,8 +67,8 @@ const Transactions = ({
                             ))}
                         </div>
                         {/* Date Input */}
-                        <div className="px-3 flex items-center min-w-[140px] border-l border-slate-200 pl-4 ml-2">
-                            <FaCalendarAlt className="text-slate-300 mr-2" size={12} />
+                        <div className="px-3 flex items-center w-full sm:w-auto sm:min-w-[140px] border-t sm:border-t-0 sm:border-l border-slate-200 mt-1 sm:mt-0 pt-2 sm:pt-0 sm:pl-4 sm:ml-2">
+                            <FaCalendarAlt className="text-slate-300 mr-2 shrink-0" size={12} />
                             {periodType === 'day' ? <input type="date" value={currentPeriod.length === 10 ? currentPeriod : ''} onChange={(e) => setCurrentPeriod(e.target.value)} className="w-full text-xs font-bold text-slate-700 outline-none bg-transparent font-mono" /> :
                                 periodType === 'week' ? <input type="week" value={currentPeriod.includes('W') ? currentPeriod : ''} onChange={(e) => setCurrentPeriod(e.target.value)} className="w-full text-xs font-bold text-slate-700 outline-none bg-transparent font-mono" /> :
                                     periodType === 'month' ? <input type="month" value={currentPeriod.length === 7 ? currentPeriod : ''} onChange={(e) => setCurrentPeriod(e.target.value)} className="w-full text-xs font-bold text-slate-700 outline-none bg-transparent font-mono" /> :
@@ -80,45 +80,45 @@ const Transactions = ({
                     <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-3">
                         {/* Project - Indigo Theme */}
                         <div className="relative group">
-                            <FaProjectDiagram className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-400 group-hover:text-indigo-500 transition-colors" size={14} />
-                            <select value={filterProject} onChange={(e) => setFilterProject(e.target.value)} className="w-full bg-indigo-50 hover:bg-indigo-100 border border-transparent rounded-2xl py-3 pl-10 pr-10 text-xs font-black text-indigo-600 text-center outline-none focus:ring-2 focus:ring-indigo-200 transition-all cursor-pointer appearance-none uppercase tracking-wide">
+                            <FaProjectDiagram className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-indigo-400 group-hover:text-indigo-500 transition-colors" size={12} />
+                            <select value={filterProject} onChange={(e) => setFilterProject(e.target.value)} className="w-full bg-indigo-50 hover:bg-indigo-100 border border-transparent rounded-2xl py-2 md:py-3 pl-8 md:pl-10 pr-6 md:pr-10 text-[10px] md:text-xs font-black text-indigo-600 text-center outline-none focus:ring-2 focus:ring-indigo-200 transition-all cursor-pointer appearance-none uppercase tracking-wide">
                                 <option value="">All Projects</option>
                                 {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                             </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-400 text-[10px]">▼</div>
+                            <div className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-400 text-[10px]">▼</div>
                         </div>
 
                         {/* Member - Emerald Theme */}
                         <div className="relative group">
-                            <FaUser className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-400 group-hover:text-emerald-500 transition-colors" size={12} />
-                            <select value={filterMember} onChange={(e) => setFilterMember(e.target.value)} className="w-full bg-emerald-50 hover:bg-emerald-100 border border-transparent rounded-2xl py-3 pl-10 pr-10 text-xs font-black text-emerald-600 text-center outline-none focus:ring-2 focus:ring-emerald-200 transition-all cursor-pointer appearance-none uppercase tracking-wide">
+                            <FaUser className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-emerald-400 group-hover:text-emerald-500 transition-colors" size={12} />
+                            <select value={filterMember} onChange={(e) => setFilterMember(e.target.value)} className="w-full bg-emerald-50 hover:bg-emerald-100 border border-transparent rounded-2xl py-2 md:py-3 pl-8 md:pl-10 pr-6 md:pr-10 text-[10px] md:text-xs font-black text-emerald-600 text-center outline-none focus:ring-2 focus:ring-emerald-200 transition-all cursor-pointer appearance-none uppercase tracking-wide">
                                 <option value="">All Members</option>
                                 <option value="guest">Guests / Non-Members</option>
                                 {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                             </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-emerald-400 text-[10px]">▼</div>
+                            <div className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 pointer-events-none text-emerald-400 text-[10px]">▼</div>
                         </div>
 
                         {/* Type - Purple Theme */}
                         <div className="relative group">
-                            <FaFilter className="absolute left-4 top-1/2 -translate-y-1/2 text-purple-400 group-hover:text-purple-500 transition-colors" size={12} />
-                            <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="w-full bg-purple-50 hover:bg-purple-100 border border-transparent rounded-2xl py-3 pl-10 pr-10 text-xs font-black text-purple-600 text-center outline-none focus:ring-2 focus:ring-purple-200 transition-all cursor-pointer appearance-none uppercase tracking-wide">
+                            <FaFilter className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-purple-400 group-hover:text-purple-500 transition-colors" size={12} />
+                            <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="w-full bg-purple-50 hover:bg-purple-100 border border-transparent rounded-2xl py-2 md:py-3 pl-8 md:pl-10 pr-6 md:pr-10 text-[10px] md:text-xs font-black text-purple-600 text-center outline-none focus:ring-2 focus:ring-purple-200 transition-all cursor-pointer appearance-none uppercase tracking-wide">
                                 <option value="all">All Types</option>
                                 <option value="income">Income</option>
                                 <option value="expense">Expense</option>
                             </select>
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-purple-400 text-[10px]">▼</div>
+                            <div className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 pointer-events-none text-purple-400 text-[10px]">▼</div>
                         </div>
 
                         {/* Search - Blue Theme */}
                         <div className="relative col-span-2 md:col-span-1 group">
-                            <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400 group-hover:text-blue-500 transition-colors" size={12} />
+                            <FaSearch className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-blue-400 group-hover:text-blue-500 transition-colors" size={12} />
                             <input
                                 type="text"
                                 placeholder="SEARCH..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full bg-blue-50 hover:bg-blue-100 border border-transparent rounded-2xl py-3 pl-10 pr-4 text-xs font-black text-blue-600 text-center placeholder:text-blue-300 outline-none focus:ring-2 focus:ring-blue-200 transition-all uppercase tracking-wide"
+                                className="w-full bg-blue-50 hover:bg-blue-100 border border-transparent rounded-2xl py-2 md:py-3 pl-8 md:pl-10 pr-4 text-[10px] md:text-xs font-black text-blue-600 text-center placeholder:text-blue-300 outline-none focus:ring-2 focus:ring-blue-200 transition-all uppercase tracking-wide"
                             />
                         </div>
                     </div>

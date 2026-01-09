@@ -135,38 +135,38 @@ const SalaryCalculator = ({
                 <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-4 gap-3">
                     {/* Search - Blue */}
                     <div className="relative group">
-                        <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-blue-400 group-hover:text-blue-500 transition-colors" size={12} />
+                        <FaSearch className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-blue-400 group-hover:text-blue-500 transition-colors" size={12} />
                         <input
                             type="text"
                             placeholder="SEARCH MEMBER..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-blue-50 hover:bg-blue-100 border border-transparent rounded-2xl py-2.5 pl-10 pr-4 text-xs font-black text-blue-600 text-center placeholder:text-blue-300 outline-none focus:ring-2 focus:ring-blue-200 transition-all uppercase tracking-wide"
+                            className="w-full bg-blue-50 hover:bg-blue-100 border border-transparent rounded-2xl py-2 md:py-3 pl-8 md:pl-10 pr-4 text-[10px] md:text-xs font-black text-blue-600 text-center placeholder:text-blue-300 outline-none focus:ring-2 focus:ring-blue-200 transition-all uppercase tracking-wide"
                         />
                     </div>
 
                     {/* Role Filter - Indigo */}
                     <div className="relative group">
-                        <FaTag className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-400 group-hover:text-indigo-500 transition-colors" size={12} />
-                        <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)} className="w-full bg-indigo-50 hover:bg-indigo-100 border border-transparent rounded-2xl py-2.5 pl-10 pr-10 text-xs font-black text-indigo-600 text-center outline-none focus:ring-2 focus:ring-indigo-200 transition-all cursor-pointer appearance-none uppercase tracking-wide">
+                        <FaTag className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-indigo-400 group-hover:text-indigo-500 transition-colors" size={12} />
+                        <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)} className="w-full bg-indigo-50 hover:bg-indigo-100 border border-transparent rounded-2xl py-2 md:py-3 pl-8 md:pl-10 pr-6 md:pr-10 text-[10px] md:text-xs font-black text-indigo-600 text-center outline-none focus:ring-2 focus:ring-indigo-200 transition-all cursor-pointer appearance-none uppercase tracking-wide">
                             <option value="">All Roles</option>
                             {[...new Set((roles || []).map(r => r.name).concat(members.map(m => m.role).filter(Boolean)))].sort().map(role => (
                                 <option key={role} value={role}>{role}</option>
                             ))}
                         </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-400 text-[10px]">▼</div>
+                        <div className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 pointer-events-none text-indigo-400 text-[10px]">▼</div>
                     </div>
 
                     {/* Type Filter - Emerald */}
                     <div className="relative group">
-                        <FaFilter className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-400 group-hover:text-emerald-500 transition-colors" size={12} />
-                        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="w-full bg-emerald-50 hover:bg-emerald-100 border border-transparent rounded-2xl py-2.5 pl-10 pr-10 text-xs font-black text-emerald-600 text-center outline-none focus:ring-2 focus:ring-emerald-200 transition-all cursor-pointer appearance-none uppercase tracking-wide">
+                        <FaFilter className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-emerald-400 group-hover:text-emerald-500 transition-colors" size={12} />
+                        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="w-full bg-emerald-50 hover:bg-emerald-100 border border-transparent rounded-2xl py-2 md:py-3 pl-8 md:pl-10 pr-6 md:pr-10 text-[10px] md:text-xs font-black text-emerald-600 text-center outline-none focus:ring-2 focus:ring-emerald-200 transition-all cursor-pointer appearance-none uppercase tracking-wide">
                             <option value="all">All Types</option>
                             <option value="worker">Worker</option>
                             <option value="employee">Employee</option>
                             <option value="guest">Guest</option>
                         </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-emerald-400 text-[10px]">▼</div>
+                        <div className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 pointer-events-none text-emerald-400 text-[10px]">▼</div>
                     </div>
 
                     {/* Member Select Dropdown - Filtered */}
@@ -174,15 +174,15 @@ const SalaryCalculator = ({
                         <select
                             value={filterMember}
                             onChange={(e) => setFilterMember(e.target.value)}
-                            className="w-full h-full bg-slate-800 text-white rounded-2xl py-2.5 pl-10 pr-10 text-xs font-black text-center outline-none focus:ring-2 focus:ring-slate-600 hover:bg-slate-700 transition-all cursor-pointer appearance-none uppercase tracking-wide shadow-lg shadow-slate-200"
+                            className="w-full h-full bg-slate-800 text-white rounded-2xl py-2 md:py-3 pl-8 md:pl-10 pr-6 md:pr-10 text-[10px] md:text-xs font-black text-center outline-none focus:ring-2 focus:ring-slate-600 hover:bg-slate-700 transition-all cursor-pointer appearance-none uppercase tracking-wide shadow-lg shadow-slate-200"
                         >
                             <option value="">Select Member...</option>
                             {filteredMembers.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                         </select>
-                        <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                        <div className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                             <FaUserCheck size={12} />
                         </div>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 text-[10px]">▼</div>
+                        <div className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500 text-[10px]">▼</div>
                     </div>
                 </div>
             </div>

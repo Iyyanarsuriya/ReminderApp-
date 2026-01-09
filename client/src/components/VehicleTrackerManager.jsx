@@ -276,39 +276,40 @@ const VehicleTrackerManager = () => {
                 <div className="lg:col-span-2 space-y-6">
 
                     {/* Filters & Actions */}
-                    <div className="bg-white p-5 rounded-[24px] border border-slate-100 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
-                        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                            <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 w-full sm:w-auto">
+                    <div className="bg-white p-4 rounded-[24px] border border-slate-100 shadow-sm flex flex-col gap-4">
+                        <div className="flex flex-col sm:flex-row gap-3 w-full">
+                            <div className="flex items-center gap-2 bg-slate-50 px-2 md:px-3 py-2 rounded-xl border border-slate-100 w-full sm:w-auto">
                                 <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">From</span>
                                 <input
                                     type="date"
                                     value={dateRange.start}
                                     onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                                    className="bg-transparent text-xs font-bold text-slate-700 outline-none w-full sm:w-[110px]"
+                                    className="bg-transparent text-[10px] md:text-xs font-bold text-slate-700 outline-none w-full sm:w-[110px]"
                                 />
                             </div>
-                            <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 w-full sm:w-auto">
+                            <div className="flex items-center gap-2 bg-slate-50 px-2 md:px-3 py-2 rounded-xl border border-slate-100 w-full sm:w-auto">
                                 <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">To</span>
                                 <input
                                     type="date"
                                     value={dateRange.end}
                                     onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                                    className="bg-transparent text-xs font-bold text-slate-700 outline-none w-full sm:w-[110px]"
+                                    className="bg-transparent text-[10px] md:text-xs font-bold text-slate-700 outline-none w-full sm:w-[110px]"
+                                />
+                            </div>
+                            {/* Search Input */}
+                            <div className="flex-1 relative">
+                                <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
+                                <input
+                                    type="text"
+                                    placeholder="Search Vehicle / Driver..."
+                                    value={searchVehicle}
+                                    onChange={(e) => setSearchVehicle(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-9 pr-4 py-2 text-[10px] md:text-xs font-bold text-slate-700 outline-none focus:border-blue-500 transition-all"
                                 />
                             </div>
                         </div>
 
-                        <div className="flex gap-3 w-full md:w-auto bg-slate-50 px-3 py-2 rounded-xl border border-slate-100">
-                            <input
-                                type="text"
-                                placeholder="Search Vehicle / Driver..."
-                                value={searchVehicle}
-                                onChange={(e) => setSearchVehicle(e.target.value)}
-                                className="bg-transparent text-xs font-bold text-slate-700 outline-none w-full md:w-[200px]"
-                            />
-                        </div>
-
-                        <div className="flex items-center gap-2">
+                        <div className="flex justify-end">
                             <ExportButtons
                                 onExportCSV={() => exportVehicleLogToCSV(filteredLogs, 'Vehicle_Log_Report')}
                                 onExportPDF={() => exportVehicleLogToPDF({ data: filteredLogs, period: 'Custom Range', filename: 'Vehicle_Log_Report' })}

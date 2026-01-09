@@ -585,7 +585,7 @@ const ExpenseTrackerMain = () => {
                             </div>
 
                             {/* Date Selector */}
-                            <div style={{ width: periodType === 'range' ? '100%' : '180px' }} className="transition-all duration-300">
+                            <div className={`transition-all duration-300 w-full ${periodType === 'range' ? 'sm:w-[300px]' : 'sm:w-[180px]'}`}>
                                 <label className="block text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Select {periodType}</label>
                                 <div className="h-10 bg-slate-50 border border-slate-100 rounded-xl px-3 flex items-center">
                                     {periodType === 'day' ? <input type="date" value={currentPeriod.length === 10 ? currentPeriod : ''} onChange={(e) => setCurrentPeriod(e.target.value)} className="w-full text-xs font-bold text-slate-700 outline-none bg-transparent" /> :
@@ -593,15 +593,15 @@ const ExpenseTrackerMain = () => {
                                             periodType === 'month' ? <input type="month" value={currentPeriod.length === 7 ? currentPeriod : ''} onChange={(e) => setCurrentPeriod(e.target.value)} className="w-full text-xs font-bold text-slate-700 outline-none bg-transparent" /> :
                                                 periodType === 'year' ? <input type="number" min="2000" max="2100" value={currentPeriod.slice(0, 4)} onChange={(e) => setCurrentPeriod(e.target.value)} className="w-full text-xs font-bold text-slate-700 outline-none bg-transparent" /> :
                                                     <div className="flex items-center gap-2 w-full">
-                                                        <input type="date" value={customRange.start} onChange={(e) => setCustomRange({ ...customRange, start: e.target.value })} className="text-[11px] font-bold text-slate-700 w-full bg-transparent" />
+                                                        <input type="date" value={customRange.start} onChange={(e) => setCustomRange({ ...customRange, start: e.target.value })} className="text-[10px] font-bold text-slate-700 w-full bg-transparent" />
                                                         <span className="text-slate-400 text-xs">—</span>
-                                                        <input type="date" value={customRange.end} onChange={(e) => setCustomRange({ ...customRange, end: e.target.value })} className="text-[11px] font-bold text-slate-700 w-full bg-transparent" />
+                                                        <input type="date" value={customRange.end} onChange={(e) => setCustomRange({ ...customRange, end: e.target.value })} className="text-[10px] font-bold text-slate-700 w-full bg-transparent" />
                                                     </div>}
                                 </div>
                             </div>
 
                             {/* Project Filter */}
-                            <div style={{ width: '140px' }}>
+                            <div className="w-full sm:w-[140px]">
                                 <label className="block text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Project</label>
                                 <select value={filterProject} onChange={(e) => setFilterProject(e.target.value)} className="h-10 w-full bg-slate-50 border border-slate-100 rounded-xl px-3 text-xs font-bold text-slate-700 outline-none cursor-pointer">
                                     <option value="">All Projects</option>
@@ -610,7 +610,7 @@ const ExpenseTrackerMain = () => {
                             </div>
 
                             {/* Role Filter */}
-                            <div style={{ width: '130px' }}>
+                            <div className="w-full sm:w-[130px]">
                                 <label className="block text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Role</label>
                                 <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)} className="h-10 w-full bg-slate-50 border border-slate-100 rounded-xl px-3 text-xs font-bold text-slate-700 outline-none cursor-pointer">
                                     <option value="">All Roles</option>
@@ -621,7 +621,7 @@ const ExpenseTrackerMain = () => {
                             </div>
 
                             {/* Type Filter */}
-                            <div style={{ width: '130px' }}>
+                            <div className="w-full sm:w-[130px]">
                                 <label className="block text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Type</label>
                                 <select value={filterMemberType} onChange={(e) => setFilterMemberType(e.target.value)} className="h-10 w-full bg-slate-50 border border-slate-100 rounded-xl px-3 text-xs font-bold text-slate-700 outline-none cursor-pointer">
                                     <option value="all">Everyone</option>
@@ -631,7 +631,7 @@ const ExpenseTrackerMain = () => {
                             </div>
 
                             {/* Member Filter */}
-                            <div style={{ width: '180px' }}>
+                            <div className="w-full sm:w-[180px]">
                                 <label className="block text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Member / Guest</label>
                                 <select value={filterMember} onChange={(e) => setFilterMember(e.target.value)} className="h-10 w-full bg-slate-50 border border-slate-100 rounded-xl px-3 text-xs font-bold text-slate-700 outline-none cursor-pointer">
                                     <option value="">Everyone</option>

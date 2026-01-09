@@ -394,33 +394,33 @@ const DailyWorkLogManager = ({ onClose, selectedDate = new Date().toISOString().
                         {/* Search and Filters */}
                         <div className="flex flex-col sm:flex-row gap-4 mb-6">
                             <div className="flex gap-3 w-full sm:w-auto">
-                                <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 w-full sm:w-auto">
+                                <div className="flex items-center gap-2 bg-slate-50 px-2 md:px-3 py-2 rounded-xl border border-slate-100 w-full sm:w-auto">
                                     <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">From</span>
                                     <input
                                         type="date"
                                         value={dateFilter.start}
                                         onChange={(e) => setDateFilter({ ...dateFilter, start: e.target.value })}
-                                        className="bg-transparent text-xs font-bold text-slate-700 outline-none w-full sm:w-[110px]"
+                                        className="bg-transparent text-[10px] md:text-xs font-bold text-slate-700 outline-none w-full sm:w-[110px]"
                                     />
                                 </div>
-                                <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 w-full sm:w-auto">
+                                <div className="flex items-center gap-2 bg-slate-50 px-2 md:px-3 py-2 rounded-xl border border-slate-100 w-full sm:w-auto">
                                     <span className="text-slate-400 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">To</span>
                                     <input
                                         type="date"
                                         value={dateFilter.end}
                                         onChange={(e) => setDateFilter({ ...dateFilter, end: e.target.value })}
-                                        className="bg-transparent text-xs font-bold text-slate-700 outline-none w-full sm:w-[110px]"
+                                        className="bg-transparent text-[10px] md:text-xs font-bold text-slate-700 outline-none w-full sm:w-[110px]"
                                     />
                                 </div>
                             </div>
                             <div className="flex-1 relative">
-                                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={12} />
                                 <input
                                     type="text"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     placeholder="Search by name..."
-                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 h-10 text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all"
+                                    className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 md:pl-12 pr-4 py-2 md:py-2.5 text-[10px] md:text-xs font-bold text-slate-700 outline-none focus:border-indigo-500 transition-all"
                                 />
                             </div>
                             <div className="flex bg-slate-100 p-1 rounded-xl w-fit border border-slate-200">
