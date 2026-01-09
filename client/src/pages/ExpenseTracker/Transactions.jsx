@@ -1,5 +1,5 @@
 import React from 'react';
-import { FaPlus, FaEdit, FaTrash, FaUserCheck, FaExchangeAlt, FaSearch, FaFilter, FaCalendarAlt, FaUser, FaProjectDiagram } from 'react-icons/fa'; // Added icons
+import { FaPlus, FaEdit, FaTrash, FaUserCheck, FaExchangeAlt, FaSearch, FaFilter, FaCalendarAlt, FaUser, FaProjectDiagram, FaTruck } from 'react-icons/fa'; // Added icons
 import { formatDateTime, formatAmount } from '../../utils/formatUtils';
 import ExportButtons from '../../components/ExportButtons'; // Imported
 
@@ -20,6 +20,7 @@ const Transactions = ({
     filterProject, setFilterProject,
     filterMember, setFilterMember,
     filterRole, setFilterRole,
+    filterVehicle, setFilterVehicle, vehicleNames = [],
     periodType, setPeriodType,
     currentPeriod, setCurrentPeriod,
     customRange, setCustomRange,
@@ -97,6 +98,16 @@ const Transactions = ({
                                 {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                             </select>
                             <div className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 pointer-events-none text-emerald-400 text-[10px]">▼</div>
+                        </div>
+
+                        {/* Vehicle - Orange Theme */}
+                        <div className="relative group">
+                            <FaTruck className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 text-orange-400 group-hover:text-orange-500 transition-colors" size={12} />
+                            <select value={filterVehicle} onChange={(e) => setFilterVehicle(e.target.value)} className="w-full bg-orange-50 hover:bg-orange-100 border border-transparent rounded-2xl py-2 md:py-3 pl-8 md:pl-10 pr-6 md:pr-10 text-[10px] md:text-xs font-black text-orange-600 text-center outline-none focus:ring-2 focus:ring-orange-200 transition-all cursor-pointer appearance-none uppercase tracking-wide">
+                                <option value="">All Vehicles</option>
+                                {vehicleNames.map(v => <option key={v} value={v}>{v}</option>)}
+                            </select>
+                            <div className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 pointer-events-none text-orange-400 text-[10px]">▼</div>
                         </div>
 
                         {/* Type - Purple Theme */}

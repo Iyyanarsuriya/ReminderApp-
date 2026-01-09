@@ -7,13 +7,14 @@ import toast from 'react-hot-toast';
 import {
     FaWallet, FaPlus, FaTrash, FaChartBar, FaExchangeAlt, FaFileAlt, FaEdit, FaTimes,
     FaPlusCircle, FaFolderPlus, FaUserEdit, FaBoxes, FaTruck,
-    FaCheck, FaQuestionCircle, FaCalculator, FaTag, FaUsers
+    FaCheck, FaQuestionCircle, FaCalculator, FaTag, FaUsers, FaFilePdf, FaFileCsv
 } from 'react-icons/fa';
 import { getExpenseCategories, createExpenseCategory, deleteExpenseCategory } from '../../api/expenseCategoryApi';
 import { getProjects, createProject, deleteProject } from '../../api/projectApi';
 import { getMembers, getActiveMembers, getGuests } from '../../api/memberApi';
 import { getMemberRoles } from '../../api/memberRoleApi';
 import { getAttendanceStats } from '../../api/attendanceApi';
+import { getVehicleLogs } from '../../api/vehicleLogApi';
 import { exportExpenseToCSV, exportExpenseToTXT, exportExpenseToPDF, exportMemberPayslipToPDF } from '../../utils/exportUtils/index.js';
 import { formatAmount } from '../../utils/formatUtils';
 
@@ -35,6 +36,7 @@ import SalaryCalculator from './SalaryCalculator';
 const ExpenseTrackerMain = () => {
     const navigate = useNavigate();
     const [transactions, setTransactions] = useState([]);
+    const [vehicleLogs, setVehicleLogs] = useState([]);
     const [stats, setStats] = useState({ summary: { total_income: 0, total_expense: 0 }, categories: [] });
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('Dashboard');
@@ -50,6 +52,7 @@ const ExpenseTrackerMain = () => {
     const [filterMember, setFilterMember] = useState('');
     const [filterRole, setFilterRole] = useState(''); // New Role Filter
     const [filterMemberType, setFilterMemberType] = useState('all'); // New Member Type Filter
+    const [filterVehicle, setFilterVehicle] = useState(''); // Vehicle Filter
     const [deleteModalOuter, setDeleteModalOuter] = useState({ show: false, id: null });
 
     // Modals
@@ -131,20 +134,45 @@ const ExpenseTrackerMain = () => {
 
             console.log('Fetching with params:', params); // Debug log
 
-            const [transRes, statsRes, catRes, projRes, membersRes, roleRes, guestRes] = await Promise.all([
+            const [transRes, statsRes, catRes, projRes, membersRes, roleRes, guestRes, vehicleRes] = await Promise.all([
                 getTransactions(params),
                 getTransactionStats(params),
                 getExpenseCategories(),
                 getProjects(),
-                getMembers(), // Fetch all members to ensure they are available for modals/forms
+                getMembers(),
                 getMemberRoles(),
-                getGuests()
+                getGuests(),
+                getVehicleLogs()
             ]);
             setTransactions(transRes.data);
+            setVehicleLogs(vehicleRes || []);
+
+            // PROCESS VEHICLE LOGS
+            const vehicleLogs = vehicleRes || [];
+            const filteredVehicleLogs = vehicleLogs.filter(log => {
+                const logDate = (log.out_time || log.created_at || '').split('T')[0];
+                if (!logDate) return false;
+
+                if (periodType === 'range') return (!rangeStart || logDate >= rangeStart) && (!rangeEnd || logDate <= rangeEnd);
+                if (periodType === 'day') return logDate === currentPeriod;
+                if (periodType === 'month') return logDate.startsWith(currentPeriod);
+                if (periodType === 'year') return logDate.startsWith(currentPeriod);
+                return false; // Skip for 'week' or unknown types for now to avoid errors
+            });
+
+            const vehicleIncome = filteredVehicleLogs.reduce((acc, log) => acc + (parseFloat(log.income_amount) || 0), 0);
+            const vehicleExpense = filteredVehicleLogs.reduce((acc, log) => acc + (parseFloat(log.expense_amount) || 0), 0);
 
             // Adjust Stats: Exclude 'Salary Pot' from total_expense for the main business summary
             // But if it's a member-specific view, we keep everything for the ledger calculation
             const adjustedStats = { ...statsRes.data };
+
+            // Add Vehicle Stats
+            if (adjustedStats.summary) {
+                adjustedStats.summary.total_income = (parseFloat(adjustedStats.summary.total_income || 0) + vehicleIncome);
+                adjustedStats.summary.total_expense = (parseFloat(adjustedStats.summary.total_expense || 0) + vehicleExpense);
+            }
+
             if (!filterMember) {
                 const potsOnly = transRes.data.filter(t => t.category === 'Salary Pot' && t.type === 'expense');
                 const potsTotal = potsOnly.reduce((acc, t) => acc + parseFloat(t.amount || 0), 0);
@@ -351,16 +379,80 @@ const ExpenseTrackerMain = () => {
         return map;
     }, [members]);
 
+    const combinedData = useMemo(() => {
+        // 1. Filter Vehicle Logs
+        const filteredVLogs = vehicleLogs.filter(log => {
+            const logDate = (log.out_time || log.created_at || '').split('T')[0];
+            if (!logDate) return false;
+
+            let dateMatch = false;
+            const isRange = periodType === 'range';
+            const rangeStart = isRange ? customRange.start : null;
+            const rangeEnd = isRange ? customRange.end : null;
+
+            if (periodType === 'range') dateMatch = (!rangeStart || logDate >= rangeStart) && (!rangeEnd || logDate <= rangeEnd);
+            else if (periodType === 'day') dateMatch = logDate === currentPeriod;
+            else if (periodType === 'month') dateMatch = logDate.startsWith(currentPeriod);
+            else if (periodType === 'year') dateMatch = logDate.startsWith(currentPeriod);
+            else dateMatch = true;
+
+            if (!dateMatch) return false;
+
+            if (filterMember) {
+                const memberName = members.find(m => m.id == filterMember)?.name;
+                if (!memberName || (log.driver_name !== memberName)) return false;
+            }
+
+            if (filterVehicle && log.vehicle_name !== filterVehicle) return false;
+
+            return true;
+        }).flatMap(log => {
+            const items = [];
+            if (parseFloat(log.expense_amount) > 0) items.push({
+                id: `v-exp-${log.id}`,
+                date: log.out_time || log.created_at,
+                title: `Vehicle: ${log.vehicle_name} (${log.vehicle_number})`,
+                amount: log.expense_amount,
+                type: 'expense',
+                category: 'Vehicle Log',
+                project_name: 'Fleet',
+                member_name: log.driver_name,
+                payment_status: 'completed'
+            });
+            if (parseFloat(log.income_amount) > 0) items.push({
+                id: `v-inc-${log.id}`,
+                date: log.out_time || log.created_at,
+                title: `Vehicle: ${log.vehicle_name} (${log.vehicle_number})`,
+                amount: log.income_amount,
+                type: 'income',
+                category: 'Vehicle Log',
+                project_name: 'Fleet',
+                member_name: log.driver_name,
+                payment_status: 'completed'
+            });
+            return items;
+        });
+
+        const relevantTransactions = filterVehicle ? [] : transactions;
+
+        return [...relevantTransactions, ...filteredVLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
+    }, [transactions, vehicleLogs, periodType, currentPeriod, customRange, filterMember, members, filterVehicle]);
+
     const filteredTransactions = useMemo(() => {
-        return transactions
+        return combinedData
             .filter(t => {
                 const matchesType = filterType === 'all' || t.type === filterType;
                 const matchesCat = filterCat === 'all' || t.category === filterCat;
                 const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase());
-                const matchesProject = !filterProject || (t.project_id == filterProject);
-                const matchesMember = !filterMember || (t.member_id == filterMember);
+
+                // Check Project if set (Hide vehicle logs if specific project selected, unless we want them everywhere)
+                // Vehicle Logs don't have project_id usually.
+                if (filterProject && t.category === 'Vehicle Log') return false;
+
+                // Check Role
                 const matchesRole = !filterRole || (t.member_id && memberIdToRoleMap[t.member_id] === filterRole);
-                return matchesType && matchesCat && matchesSearch && matchesProject && matchesMember && matchesRole;
+
+                return matchesType && matchesCat && matchesSearch && matchesRole;
             })
             .sort((a, b) => {
                 if (sortBy === 'date_desc') return new Date(b.date) - new Date(a.date);
@@ -369,7 +461,9 @@ const ExpenseTrackerMain = () => {
                 if (sortBy === 'amount_asc') return a.amount - b.amount;
                 return 0;
             });
-    }, [transactions, filterType, filterCat, sortBy, searchQuery, filterProject, filterMember, filterRole, memberIdToRoleMap]);
+    }, [combinedData, filterType, filterCat, sortBy, searchQuery, filterProject, filterRole, memberIdToRoleMap]);
+
+    const vehicleNames = useMemo(() => [...new Set(vehicleLogs.map(l => l.vehicle_name))].filter(Boolean).sort(), [vehicleLogs]);
 
     const formatCurrency = (val) => {
         const absVal = Math.abs(val || 0);
@@ -386,6 +480,8 @@ const ExpenseTrackerMain = () => {
             .reduce((acc, t) => acc + parseFloat(t.amount), 0);
         return { totalSalary, totalAdvances };
     }, [transactions, filterMember]);
+
+
 
     // Export Functions (Reused)
     const handleExportCSV = (data = transactions, filters = {}) => {
@@ -445,7 +541,7 @@ const ExpenseTrackerMain = () => {
                 type: customReportForm.type === 'all' ? null : customReportForm.type
             };
 
-            const fetchPromises = [getTransactions(params), getTransactionStats(params)];
+            const fetchPromises = [getTransactions(params), getTransactionStats(params), getVehicleLogs()];
 
             // If a specific real member is selected, fetch their attendance too
             const isRealMember = filterMemberId && filterMemberId !== 'guest' && !isGuestSelection;
@@ -460,6 +556,60 @@ const ExpenseTrackerMain = () => {
             const results = await Promise.all(fetchPromises);
             const transRes = results[0];
             const statsRes = results[1];
+            const vehicleRes = results[2]; // Vehicle Logs
+
+            // Process Vehicle Logs for Report
+            let combinedTransactions = [...transRes.data];
+            if (vehicleRes && Array.isArray(vehicleRes) && !customReportForm.memberId && (!customReportForm.projectId)) {
+                // Only include vehicle logs if no specific member/project is selected (as vehicles are global/fleet)
+                // OR if you want to include them always, remove the checks. Assuming Global:
+                const vLogs = vehicleRes.filter(log => {
+                    const d = (log.out_time || log.created_at).split('T')[0];
+                    return d >= customReportForm.startDate && d <= customReportForm.endDate.split('T')[0];
+                }).flatMap(log => {
+                    const items = [];
+                    // Check type filter
+                    const showExpense = customReportForm.type === 'all' || customReportForm.type === 'expense';
+                    const showIncome = customReportForm.type === 'all' || customReportForm.type === 'income';
+
+                    if (showExpense && parseFloat(log.expense_amount) > 0) {
+                        items.push({
+                            id: `v-exp-${log.id}`,
+                            date: log.out_time || log.created_at,
+                            title: `Vehicle: ${log.vehicle_name} (${log.vehicle_number})`,
+                            amount: log.expense_amount,
+                            type: 'expense',
+                            category: 'Vehicle Log',
+                            project_name: 'Fleet',
+                            member_name: log.driver_name
+                        });
+                    }
+                    if (showIncome && parseFloat(log.income_amount) > 0) {
+                        items.push({
+                            id: `v-inc-${log.id}`,
+                            date: log.out_time || log.created_at,
+                            title: `Vehicle: ${log.vehicle_name} (${log.vehicle_number})`,
+                            amount: log.income_amount,
+                            type: 'income',
+                            category: 'Vehicle Log',
+                            project_name: 'Fleet',
+                            member_name: log.driver_name
+                        });
+                    }
+                    return items;
+                });
+                combinedTransactions = [...combinedTransactions, ...vLogs];
+
+                // Recalculate stats potentially? 
+                // The 'statsRes' comes from backend for transactions. 
+                // If we want the report header stats to be correct, we should update statsRes.
+                // But handleExport* functions re-calculate summary from 'data' (the first arg) usually.
+                // Let's check handleExportPDF...
+                // exportExpenseToPDF calculates summary from the passed 'data'.
+                // So passing combinedTransactions is enough!
+            }
+
+            // ...
 
             if (format === 'PDF') {
                 // Generate Payslip if it's a specific member or a specific guest
@@ -468,9 +618,8 @@ const ExpenseTrackerMain = () => {
                     let summary = null;
 
                     if (isRealMember) {
-                        const attRes = results[2];
-
-                        const statsArray = attRes.data?.data || [];
+                        const attRes = results[3];
+                        const statsArray = attRes?.data?.data || [];
                         summary = {
                             present: statsArray.find(s => s.status === 'present')?.count || 0,
                             absent: statsArray.find(s => s.status === 'absent')?.count || 0,
@@ -488,12 +637,12 @@ const ExpenseTrackerMain = () => {
                         filename: `payslip_${guestName || memberObj?.name}_${customReportForm.startDate}`
                     });
                 } else {
-                    handleExportPDF(transRes.data, statsRes.data, customReportForm);
+                    handleExportPDF(combinedTransactions, statsRes.data, customReportForm);
                 }
             } else if (format === 'CSV') {
-                handleExportCSV(transRes.data, customReportForm);
+                handleExportCSV(combinedTransactions, customReportForm);
             } else if (format === 'TXT') {
-                handleExportTXT(transRes.data, statsRes.data, customReportForm);
+                handleExportTXT(combinedTransactions, statsRes.data, customReportForm);
             }
 
             setShowCustomReportModal(false);
@@ -613,6 +762,15 @@ const ExpenseTrackerMain = () => {
                                 </select>
                             </div>
 
+                            {/* Vehicle Filter */}
+                            <div className="w-full sm:w-[140px]">
+                                <label className="block text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Vehicle</label>
+                                <select value={filterVehicle} onChange={(e) => setFilterVehicle(e.target.value)} className="h-10 w-full bg-slate-50 border border-slate-100 rounded-xl px-3 text-xs font-bold text-slate-700 outline-none cursor-pointer">
+                                    <option value="">All Vehicles</option>
+                                    {[...new Set(vehicleLogs.map(l => l.vehicle_name))].filter(Boolean).sort().map(v => <option key={v} value={v}>{v}</option>)}
+                                </select>
+                            </div>
+
                             {/* Role Filter */}
                             <div className="w-full sm:w-[130px]">
                                 <label className="block text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Role</label>
@@ -673,7 +831,7 @@ const ExpenseTrackerMain = () => {
                 {activeTab === 'Dashboard' ? (
                     <Dashboard
                         periodType={periodType} customRange={customRange} currentPeriod={currentPeriod} stats={stats}
-                        pieData={pieData} barData={barData} COLORS={COLORS} transactions={transactions}
+                        pieData={pieData} barData={barData} COLORS={COLORS} transactions={combinedData}
                         handleShowTransactions={handleShowTransactions} handleAddNewTransaction={handleAddNewTransaction}
                         setActiveTab={setActiveTab} formatCurrency={formatCurrency}
                     />
@@ -692,6 +850,7 @@ const ExpenseTrackerMain = () => {
                         periodType={periodType} setPeriodType={setPeriodType}
                         currentPeriod={currentPeriod} setCurrentPeriod={setCurrentPeriod}
                         customRange={customRange} setCustomRange={setCustomRange}
+                        filterVehicle={filterVehicle} setFilterVehicle={setFilterVehicle} vehicleNames={vehicleNames}
                         onExportCSV={() => setConfirmModal({ show: true, type: 'CSV', label: 'CSV Report' })}
                         onExportPDF={() => setConfirmModal({ show: true, type: 'PDF', label: 'PDF Report' })}
                         onExportTXT={() => setConfirmModal({ show: true, type: 'TXT', label: 'Plain Text Report' })}
@@ -947,7 +1106,7 @@ const ExpenseTrackerMain = () => {
                         <p className="text-slate-500 text-[15px] font-medium mb-[32px] leading-relaxed">Are you sure you want to download this <span className="text-slate-900 font-bold">{confirmModal.type}</span> report?</p>
                         <div className="grid grid-cols-2 gap-[16px]">
                             <button onClick={() => setConfirmModal({ show: false, type: null, label: '' })} className="py-[16px] rounded-[20px] bg-slate-100 text-slate-600 text-[13px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all">Cancel</button>
-                            <button onClick={() => { if (confirmModal.type === 'CSV') handleExportCSV(filteredTransactions); if (confirmModal.type === 'PDF') handleExportPDF(filteredTransactions); if (confirmModal.type === 'TXT') handleExportTXT(filteredTransactions); setConfirmModal({ show: false, type: null, label: '' }); }} className="py-[16px] rounded-[20px] bg-slate-900 text-white text-[13px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20 flex items-center justify-center gap-[10px]"><FaCheck /> Confirm</button>
+                            <button onClick={() => { if (confirmModal.type === 'CSV') handleExportCSV(combinedData); if (confirmModal.type === 'PDF') handleExportPDF(combinedData); if (confirmModal.type === 'TXT') handleExportTXT(combinedData); setConfirmModal({ show: false, type: null, label: '' }); }} className="py-[16px] rounded-[20px] bg-slate-900 text-white text-[13px] font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-900/20 flex items-center justify-center gap-[10px]"><FaCheck /> Confirm</button>
                         </div>
                     </div>
                 </div>,
