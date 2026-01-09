@@ -70,7 +70,7 @@ const ExpenseTrackerMain = () => {
         quantity: 1,
         unit_price: 0,
         type: 'expense',
-        category: 'Food',
+        category: 'General',
         date: new Date().toISOString().split('T')[0],
         project_id: '',
         member_id: '',
@@ -389,7 +389,7 @@ const ExpenseTrackerMain = () => {
 
     // Export Functions (Reused)
     const handleExportCSV = (data = transactions, filters = {}) => {
-        if (data.length === 0) { toast.error("No data to export"); return; }
+        // Allow empty export
         const periodStr = filters.startDate && filters.endDate ? `${filters.startDate}_to_${filters.endDate}` : currentPeriod;
         const memberStr = filters.memberId ? `_${members.find(m => m.id == filters.memberId)?.name}` : (filterMember ? `_${members.find(m => m.id == filterMember)?.name}` : '');
         const roleStr = filters.role ? `_${filters.role}` : (filterRole ? `_${filterRole}` : '');
@@ -397,7 +397,7 @@ const ExpenseTrackerMain = () => {
     };
 
     const handleExportTXT = (data = transactions, reportStats = stats, filters = {}) => {
-        if (data.length === 0) { toast.error("No data to export"); return; }
+        // Allow empty export
         const periodStr = filters.startDate && filters.endDate ? `${filters.startDate} to ${filters.endDate}` : currentPeriod;
         const memberStr = filters.memberId ? `_${members.find(m => m.id == filters.memberId)?.name}` : (filterMember ? `_${members.find(m => m.id == filterMember)?.name}` : '');
         const roleStr = filters.role ? `_${filters.role}` : (filterRole ? `_${filterRole}` : '');
@@ -405,7 +405,7 @@ const ExpenseTrackerMain = () => {
     };
 
     const handleExportPDF = (data = transactions, reportStats = stats, filters = {}) => {
-        if (data.length === 0) { toast.error("No data to export"); return; }
+        // Allow empty export
         const memberName = filters.memberId ? members.find(m => m.id == filters.memberId)?.name : (filterMember ? members.find(m => m.id == filterMember)?.name : 'Everyone');
         const projectName = filters.projectId ? projects.find(p => p.id == filters.projectId)?.name : (filterProject ? projects.find(p => p.id == filterProject)?.name : 'All Projects');
         const roleName = filters.role || (filterRole || 'All Categories');
@@ -426,16 +426,21 @@ const ExpenseTrackerMain = () => {
         if (!customReportForm.startDate || !customReportForm.endDate) { toast.error("Please select both start and end dates"); return; }
         setCustomReportLoading(format);
         try {
-            const isGuestSelection = customReportForm.memberId && String(customReportForm.memberId).startsWith('guest_');
-            const guestName = isGuestSelection ? customReportForm.memberId.replace('guest_', '') : null;
+            const selectedMember = members.find(m => m.id == customReportForm.memberId);
+            const isGuestSelection = selectedMember?.isGuest || (customReportForm.memberId === 'guest') || (customReportForm.memberId && String(customReportForm.memberId).startsWith('guest_'));
+
+            const guestName = isGuestSelection ? (selectedMember?.name || customReportForm.memberId.replace('guest_', '')) : null;
             const filterMemberId = isGuestSelection ? null : (customReportForm.memberId === 'guest' ? 'guest' : customReportForm.memberId);
+
+            // Ensure endDate covers the full day
+            const endDateInclusive = customReportForm.endDate.includes('T') ? customReportForm.endDate : `${customReportForm.endDate}T23:59:59.999Z`;
 
             const params = {
                 projectId: customReportForm.projectId,
                 memberId: filterMemberId,
                 guestName: guestName,
                 startDate: customReportForm.startDate,
-                endDate: customReportForm.endDate,
+                endDate: endDateInclusive,
                 category: customReportForm.category === 'all' ? null : customReportForm.category,
                 type: customReportForm.type === 'all' ? null : customReportForm.type
             };
@@ -443,12 +448,12 @@ const ExpenseTrackerMain = () => {
             const fetchPromises = [getTransactions(params), getTransactionStats(params)];
 
             // If a specific real member is selected, fetch their attendance too
-            const isRealMember = filterMemberId && filterMemberId !== 'guest';
+            const isRealMember = filterMemberId && filterMemberId !== 'guest' && !isGuestSelection;
             if (isRealMember) {
                 fetchPromises.push(getAttendanceStats({
                     memberId: filterMemberId,
                     startDate: customReportForm.startDate,
-                    endDate: customReportForm.endDate
+                    endDate: endDateInclusive
                 }));
             }
 
@@ -458,12 +463,13 @@ const ExpenseTrackerMain = () => {
 
             if (format === 'PDF') {
                 // Generate Payslip if it's a specific member or a specific guest
-                if (isRealMember || isGuestSelection) {
+                if (isRealMember || (isGuestSelection && customReportForm.memberId !== 'guest')) {
                     const memberObj = members.find(m => m.id == customReportForm.memberId);
                     let summary = null;
 
                     if (isRealMember) {
                         const attRes = results[2];
+
                         const statsArray = attRes.data?.data || [];
                         summary = {
                             present: statsArray.find(s => s.status === 'present')?.count || 0,
@@ -738,8 +744,8 @@ const ExpenseTrackerMain = () => {
 
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="flex p-1 bg-slate-100 rounded-2xl">
-                                <button type="button" onClick={() => setFormData({ ...formData, type: 'expense', category: 'Food' })} className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${formData.type === 'expense' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}>Expense</button>
-                                <button type="button" onClick={() => setFormData({ ...formData, type: 'income', category: 'Salary' })} className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${formData.type === 'income' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}>Income</button>
+                                <button type="button" onClick={() => setFormData({ ...formData, type: 'expense', category: 'General' })} className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${formData.type === 'expense' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}>Expense</button>
+                                <button type="button" onClick={() => setFormData({ ...formData, type: 'income', category: 'General' })} className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${formData.type === 'income' ? 'bg-white shadow-sm text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}>Income</button>
                             </div>
 
                             <div className="space-y-4">
@@ -780,7 +786,8 @@ const ExpenseTrackerMain = () => {
                                         <label className="block text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 ml-1">Category</label>
                                         <div className="flex gap-2">
                                             <select value={formData.category} onChange={(e) => setFormData({ ...formData, category: e.target.value })} className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:bg-white transition-all shadow-xs cursor-pointer">
-                                                {categories.filter(c => c.type === formData.type).map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                                                <option value="General">General</option>
+                                                {categories.filter(c => c.type === formData.type && c.name !== 'General').map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                                             </select>
                                             <button
                                                 type="button"
