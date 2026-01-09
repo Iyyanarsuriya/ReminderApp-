@@ -76,12 +76,14 @@ export const exportVehicleLogToPDF = ({ data, period, subHeader, filename }) => 
         { label: 'Total Logs', value: data.length.toString() }
     ];
 
-    const tableHeaders = ['Date', 'Vehicle', 'No.', 'Driver', 'Distance', 'Exp', 'Inc', 'Notes'];
+    const tableHeaders = ['Date', 'Vehicle', 'No.', 'Driver', 'OUT', 'IN', 'Distance', 'Exp', 'Inc', 'Notes'];
     const tableRows = data.map(log => [
         new Date(log.out_time || log.created_at).toLocaleDateString('en-GB'),
         log.vehicle_name || '-',
         log.vehicle_number,
         log.driver_name || '-',
+        log.out_time ? new Date(log.out_time).toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '-',
+        log.in_time ? new Date(log.in_time).toLocaleString('en-GB', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '-',
         (log.end_km && log.start_km) ? `${log.end_km - log.start_km}` : '-',
         `${formatAmount(log.expense_amount || 0)}`,
         `${formatAmount(log.income_amount || 0)}`,
