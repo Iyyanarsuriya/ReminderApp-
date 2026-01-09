@@ -29,14 +29,14 @@ const LandingPage = ({ token, user, onProfileClick, onSignupClick }) => {
 
 
             {/* Hero Section */}
-            <section className="pt-12 lg:pt-20 pb-20 px-4 sm:px-6 relative overflow-hidden">
+            <section className="pt-[100px] lg:pt-[120px] pb-[80px] px-[20px] sm:px-[30px] relative overflow-hidden">
                 {/* Background Decor */}
                 <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[120px] -z-10 translate-x-1/2 -translate-y-1/2"></div>
 
-                <div className="max-w-7xl mx-auto">
-                    <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-                        <div className="animate-in fade-in slide-in-from-left-10 duration-700">
-                            <h1 className="text-[36px] sm:text-[48px] md:text-[60px] lg:text-[72px] font-black text-[#1a1c21] leading-[1.1] mb-[16px]">
+                <div className="max-w-[1280px] mx-auto">
+                    <div className="grid lg:grid-cols-2 gap-[40px] lg:gap-[80px] items-center">
+                        <div className="animate-in fade-in slide-in-from-left-10 duration-700 text-center lg:text-left">
+                            <h1 className="text-[42px] sm:text-[48px] md:text-[60px] lg:text-[72px] font-black text-[#1a1c21] leading-[1.1] mb-[16px] tracking-tight">
                                 {isLoggedIn ? (
                                     <>Welcome Back to <span className="text-[#2d5bff]">OrganizerPro</span></>
                                 ) : (
@@ -48,71 +48,76 @@ const LandingPage = ({ token, user, onProfileClick, onSignupClick }) => {
                             </p>
 
                             {isLoggedIn ? (
-                                <div className="flex flex-wrap gap-4 mb-12">
-                                    <Link to="/reminders" className="inline-flex items-center gap-3 bg-[#2d5bff] hover:bg-blue-600 text-white font-black px-8 py-4 rounded-2xl shadow-xl shadow-blue-500/10 transition-all active:scale-95 group">
-                                        <Bell className="w-5 h-5" />
+                                <div className="flex flex-wrap gap-[16px] justify-center lg:justify-start mb-[48px]">
+                                    <Link to="/reminders" className="inline-flex items-center gap-[12px] bg-[#2d5bff] hover:bg-blue-600 text-white font-black px-[32px] py-[16px] rounded-[16px] shadow-xl shadow-blue-500/10 transition-all active:scale-95 group text-[14px]">
+                                        <Bell className="w-[20px] h-[20px]" />
                                         My Reminders
                                     </Link>
-                                    <Link to="/expenses" className="inline-flex items-center gap-3 bg-[#00d1a0] hover:bg-[#00b890] text-white font-black px-8 py-4 rounded-2xl shadow-xl shadow-emerald-500/10 transition-all active:scale-95 group">
-                                        <Wallet className="w-5 h-5" />
+                                    <Link to="/expenses" className="inline-flex items-center gap-[12px] bg-[#00d1a0] hover:bg-[#00b890] text-white font-black px-[32px] py-[16px] rounded-[16px] shadow-xl shadow-emerald-500/10 transition-all active:scale-95 group text-[14px]">
+                                        <Wallet className="w-[20px] h-[20px]" />
                                         Track Expenses
-                                    </Link>
-                                    <Link to="/attendance" className="inline-flex items-center gap-3 bg-orange-500 hover:bg-orange-600 text-white font-black px-8 py-4 rounded-2xl shadow-xl shadow-orange-500/10 transition-all active:scale-95 group">
-                                        <UserCheck className="w-5 h-5" />
-                                        Check Attendance
                                     </Link>
                                 </div>
                             ) : (
                                 <button
                                     onClick={onSignupClick}
-                                    className="inline-flex items-center bg-[#00d1a0] hover:bg-[#00b890] text-white text-[18px] font-black px-[40px] py-[16px] rounded-full shadow-2xl shadow-emerald-500/20 transition-all active:scale-95 mb-[64px] cursor-pointer"
+                                    className="inline-flex items-center bg-[#00d1a0] hover:bg-[#00b890] text-white text-[16px] sm:text-[18px] font-black px-[32px] sm:px-[40px] py-[14px] sm:py-[16px] rounded-[50px] shadow-2xl shadow-emerald-500/20 transition-all active:scale-95 mb-[60px] cursor-pointer hover:shadow-emerald-500/40"
                                 >
                                     Get Started For Free
                                 </button>
                             )}
 
                             {/* Center Feature Cards */}
-                            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl">
-                                <div className="p-8 rounded-[40px] bg-[#eff6ff] border border-blue-100 flex flex-col items-center text-center group cursor-pointer hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-500">
-                                    <div className="w-16 h-16 bg-[#2d5bff] rounded-[24px] flex items-center justify-center mb-6 shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
-                                        <Bell className="w-8 h-8 text-white" />
+                            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-[20px] max-w-[896px] mx-auto lg:mx-0">
+                                <Link to="/reminders" className="block">
+                                    <div className="p-[24px] sm:p-[32px] rounded-[32px] sm:rounded-[40px] bg-[#eff6ff] border border-blue-100 flex flex-col items-center text-center group cursor-pointer hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-500 h-full">
+                                        <div className="w-[56px] h-[56px] sm:w-[64px] sm:h-[64px] bg-[#2d5bff] rounded-[20px] sm:rounded-[24px] flex items-center justify-center mb-[20px] sm:mb-[24px] shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
+                                            <Bell className="w-[28px] h-[28px] sm:w-[32px] sm:h-[32px] text-white" />
+                                        </div>
+                                        <h3 className="text-[18px] sm:text-[20px] font-black text-[#2d5bff] mb-[8px] sm:mb-[12px]">Reminders</h3>
+                                        <p className="text-slate-400 text-[13px] sm:text-[14px] font-medium leading-relaxed mb-[16px]">
+                                            Never miss what matters with our smart notification system.
+                                        </p>
+                                        <div className="mt-auto text-[10px] font-black uppercase text-[#2d5bff] tracking-widest flex items-center gap-[8px] group-hover:gap-[12px] transition-all">
+                                            Learn More <ArrowRight className="w-[12px] h-[12px]" />
+                                        </div>
                                     </div>
-                                    <h3 className="text-[20px] font-black text-[#2d5bff] mb-[12px]">Reminders</h3>
-                                    <p className="text-slate-400 text-[14px] font-medium leading-relaxed mb-[16px]">
-                                        Never miss what matters with our smart notification system.
-                                    </p>
-                                    <div className="text-[10px] font-black uppercase text-[#2d5bff] tracking-widest flex items-center gap-2 group-hover:gap-3 transition-all">
-                                        Learn More <ArrowRight className="w-3 h-3" />
+                                </Link>
+
+                                <Link to="/expenses" className="block">
+                                    <div className="p-[24px] sm:p-[32px] rounded-[32px] sm:rounded-[40px] bg-[#ecfdf5] border border-emerald-100 flex flex-col items-center text-center group cursor-pointer hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-500 h-full">
+                                        <div className="w-[56px] h-[56px] sm:w-[64px] sm:h-[64px] bg-[#00d1a0] rounded-[20px] sm:rounded-[24px] flex items-center justify-center mb-[20px] sm:mb-[24px] shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform">
+                                            <Wallet className="w-[28px] h-[28px] sm:w-[32px] sm:h-[32px] text-white" />
+                                        </div>
+                                        <h3 className="text-[18px] sm:text-[20px] font-black text-[#00d1a0] mb-[8px] sm:mb-[12px]">Expense</h3>
+                                        <p className="text-slate-400 text-[13px] sm:text-[14px] font-medium leading-relaxed mb-[16px]">
+                                            Track spending and manage your budget with absolute ease.
+                                        </p>
+                                        <div className="mt-auto text-[10px] font-black uppercase text-[#00d1a0] tracking-widest flex items-center gap-[8px] group-hover:gap-[12px] transition-all">
+                                            View Features <ArrowRight className="w-[12px] h-[12px]" />
+                                        </div>
                                     </div>
-                                </div>
-                                <div className="p-8 rounded-[40px] bg-[#ecfdf5] border border-emerald-100 flex flex-col items-center text-center group cursor-pointer hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-500">
-                                    <div className="w-16 h-16 bg-[#00d1a0] rounded-[24px] flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform">
-                                        <Wallet className="w-8 h-8 text-white" />
+                                </Link>
+
+                                <Link to="/attendance" className="block sm:col-span-2 lg:col-span-1">
+                                    <div className="p-[24px] sm:p-[32px] rounded-[32px] sm:rounded-[40px] bg-[#fff7ed] border border-orange-100 flex flex-col items-center text-center group cursor-pointer hover:shadow-xl hover:shadow-orange-500/10 transition-all duration-500 h-full">
+                                        <div className="w-[56px] h-[56px] sm:w-[64px] sm:h-[64px] bg-orange-500 rounded-[20px] sm:rounded-[24px] flex items-center justify-center mb-[20px] sm:mb-[24px] shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform">
+                                            <UserCheck className="w-[28px] h-[28px] sm:w-[32px] sm:h-[32px] text-white" />
+                                        </div>
+                                        <h3 className="text-[18px] sm:text-[20px] font-black text-orange-600 mb-[8px] sm:mb-[12px]">Attendance</h3>
+                                        <p className="text-slate-400 text-[13px] sm:text-[14px] font-medium leading-relaxed mb-[16px]">
+                                            Log presence and track consistency like a pro every single day.
+                                        </p>
+                                        <div className="mt-auto text-[10px] font-black uppercase text-orange-600 tracking-widest flex items-center gap-[8px] group-hover:gap-[12px] transition-all">
+                                            Get Started <ArrowRight className="w-[12px] h-[12px]" />
+                                        </div>
                                     </div>
-                                    <h3 className="text-xl font-black text-[#00d1a0] mb-3">Expense</h3>
-                                    <p className="text-slate-400 text-sm font-medium leading-relaxed mb-4">
-                                        Track spending and manage your budget with absolute ease.
-                                    </p>
-                                    <div className="text-[10px] font-black uppercase text-[#00d1a0] tracking-widest flex items-center gap-2 group-hover:gap-3 transition-all">
-                                        View Features <ArrowRight className="w-3 h-3" />
-                                    </div>
-                                </div>
-                                <div className="p-8 rounded-[40px] bg-[#fff7ed] border border-orange-100 flex flex-col items-center text-center group cursor-pointer hover:shadow-xl hover:shadow-orange-500/5 transition-all duration-500">
-                                    <div className="w-16 h-16 bg-orange-500 rounded-[24px] flex items-center justify-center mb-6 shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform">
-                                        <UserCheck className="w-8 h-8 text-white" />
-                                    </div>
-                                    <h3 className="text-xl font-black text-orange-600 mb-3">Attendance</h3>
-                                    <p className="text-slate-400 text-sm font-medium leading-relaxed mb-4">
-                                        Log presence and track consistency like a pro every single day.
-                                    </p>
-                                    <div className="text-[10px] font-black uppercase text-orange-600 tracking-widest flex items-center gap-2 group-hover:gap-3 transition-all">
-                                        Get Started <ArrowRight className="w-3 h-3" />
-                                    </div>
-                                </div>
+                                </Link>
                             </div>
                         </div>
 
                         <div className="relative animate-in fade-in slide-in-from-right-10 duration-1000 delay-200 hidden lg:flex justify-end">
+
                             <div className="relative z-10 scale-105 lg:scale-110">
                                 <div className={`navigate-home-container bg-white rounded-[32px] sm:rounded-[48px] p-2 sm:p-4 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] border border-white ${!isLoggedIn ? 'max-w-[450px]' : 'max-w-[550px]'}`}>
                                     <div className="bg-[#1a1c21] rounded-[24px] sm:rounded-[32px] overflow-hidden shadow-2xl p-1.5 sm:p-2">
