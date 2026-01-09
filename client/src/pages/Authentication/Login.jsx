@@ -54,9 +54,8 @@ const Login = ({ setToken, onClose, onSwitch }) => {
       sessionStorage.removeItem("token");
       sessionStorage.removeItem("user");
 
-      const storage = rememberMe ? localStorage : sessionStorage;
-      storage.setItem("token", token);
-      storage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("token", token);
+      localStorage.setItem("user", JSON.stringify(user));
 
       // Handle Remembered Email (Only email, never password)
       if (rememberMe) {

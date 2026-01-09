@@ -20,7 +20,7 @@ const ForgotPassword = lazy(() => import('./pages/Authentication/ForgotPassword'
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+  const token = localStorage.getItem('token');
   if (!token) return <Navigate to="/" replace />;
   return children;
 };
@@ -45,7 +45,7 @@ const AppContent = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [token, setToken] = useState(localStorage.getItem('token') || sessionStorage.getItem('token'));
+  const [token, setToken] = useState(localStorage.getItem('token'));
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('user');
     return saved ? JSON.parse(saved) : null;
@@ -98,7 +98,7 @@ const AppContent = () => {
 
   useEffect(() => {
     const handleStorageChange = () => {
-      const newToken = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const newToken = localStorage.getItem('token');
       const newUser = localStorage.getItem('user');
       setToken(newToken);
       if (newUser) setUser(JSON.parse(newUser));
