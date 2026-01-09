@@ -14,7 +14,7 @@ import {
     Instagram,
     UserCheck
 } from 'lucide-react';
-import { API_URL } from '../api/axiosInstance';
+
 
 const Home = () => {
     // Get user from localStorage for a quick greet

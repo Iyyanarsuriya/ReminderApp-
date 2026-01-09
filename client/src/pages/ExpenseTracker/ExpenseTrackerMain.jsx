@@ -1,7 +1,7 @@
 // Force reload
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ReactDOM from 'react-dom';
+import ReactDOM from 'react-dom'; // Keep ReactDOM as it IS used for the portal
 import { getTransactions, createTransaction, updateTransaction, deleteTransaction, getTransactionStats } from '../../api/transactionApi';
 import toast from 'react-hot-toast';
 import {
@@ -17,7 +17,7 @@ import { getAttendanceStats } from '../../api/attendanceApi';
 import { exportExpenseToCSV, exportExpenseToTXT, exportExpenseToPDF, exportMemberPayslipToPDF } from '../../utils/exportUtils/index.js';
 import { formatAmount } from '../../utils/formatUtils';
 
-import { Settings } from 'lucide-react';
+
 
 import CategoryManager from '../../components/CategoryManager';
 import ProjectManager from '../../components/ProjectManager';
@@ -111,8 +111,6 @@ const ExpenseTrackerMain = () => {
     const [bonus, setBonus] = useState(0);
     const [salaryLoading, setSalaryLoading] = useState(false);
 
-    const expenseCategories = ['Food', 'Shopping', 'Rent', 'Transport', 'Utilities', 'Entertainment', 'Health', 'Salary', 'Advance', 'Salary Pot', 'Other'];
-    const incomeCategories = ['Business Income', 'Freelance', 'Investment', 'Gift', 'Other'];
     const COLORS = ['#2d5bff', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
 
     const fetchData = async () => {

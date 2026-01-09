@@ -7,7 +7,7 @@ import ReminderList from '../../components/ReminderList';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { FaBell, FaTimes } from 'react-icons/fa';
-import { LayoutDashboard, Settings } from 'lucide-react';
+import { LayoutDashboard } from 'lucide-react';
 import { getCategories, createCategory, deleteCategory } from '../../api/categoryApi';
 
 import CategoryManager from '../../components/CategoryManager';
