@@ -40,7 +40,7 @@ const AttendanceTracker = () => {
     const [projects, setProjects] = useState([]);
     const [members, setMembers] = useState([]);
     const [showProjectManager, setShowProjectManager] = useState(false);
-    const [showMemberManager, setShowMemberManager] = useState(false);
+    // showMemberManager removed
     const [filterProject, setFilterProject] = useState('');
     const [filterMember, setFilterMember] = useState('');
     const [periodType, setPeriodType] = useState('day'); // 'month', 'year', 'day', 'range'
@@ -559,8 +559,8 @@ const AttendanceTracker = () => {
                                     </select>
                                 </div>
                                 <button
-                                    onClick={() => setShowMemberManager(true)}
-                                    className="w-[38px] h-[38px] bg-slate-100 text-slate-500 rounded-xl flex items-center justify-center hover:bg-blue-50 hover:text-blue-600 transition-all shadow-sm border border-slate-200 shrink-0"
+                                    onClick={() => setActiveTab('members')}
+                                    className={`w-[38px] h-[38px] rounded-xl flex items-center justify-center transition-all shadow-sm border border-slate-200 shrink-0 ${activeTab === 'members' ? 'bg-blue-600 text-white shadow-blue-500/30 border-transparent' : 'bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-blue-600'}`}
                                     title="Manage Members"
                                 >
                                     <FaUserEdit />
@@ -628,7 +628,8 @@ const AttendanceTracker = () => {
                     {[
                         { id: 'records', label: 'Records' },
                         { id: 'summary', label: 'Summary' },
-                        { id: 'quick', label: 'Daily Sheet' }
+                        { id: 'quick', label: 'Daily Sheet' },
+                        { id: 'members', label: 'Members' }
                     ].map(tab => (
                         <button
                             key={tab.id}
@@ -922,6 +923,8 @@ const AttendanceTracker = () => {
                             )}
                         </div>
                     </div>
+                ) : activeTab === 'members' ? (
+                    <MemberManager onClose={() => setActiveTab('records')} onUpdate={fetchData} />
                 ) : (
                     /* Daily Sheet View */
                     <div className="bg-white rounded-[40px] shadow-xl border border-slate-100 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -1237,18 +1240,16 @@ const AttendanceTracker = () => {
                 )
             }
 
-            {
-                showProjectManager && (
-                    <ProjectManager
-                        projects={projects}
-                        onCreate={createProject}
-                        onDelete={deleteProject}
-                        onClose={() => { setShowProjectManager(false); fetchData(); }}
-                        onRefresh={() => getProjects().then(res => setProjects(res.data))}
-                    />
-                )
+            {showProjectManager && (
+                <ProjectManager
+                    projects={projects}
+                    onCreate={createProject}
+                    onDelete={deleteProject}
+                    onClose={() => { setShowProjectManager(false); fetchData(); }}
+                    onRefresh={() => getProjects().then(res => setProjects(res.data))}
+                />
+            )
             }
-            {showMemberManager && <MemberManager onClose={() => { setShowMemberManager(false); fetchData(); }} onUpdate={fetchData} />}
             {
                 showRoleManager && (
                     <RoleManager
@@ -1259,317 +1260,7 @@ const AttendanceTracker = () => {
                         onRefresh={() => getMemberRoles().then(res => setRoles(res.data.data))}
                     />
                 )
-            }
-
-            {/* Generic Confirmation Modal */}
-            <ConfirmModal
-                isOpen={confirmModal.show}
-                title={confirmModal.type === 'DELETE' ? "Delete Record?" : `Export ${confirmModal.label}?`}
-                message={confirmModal.type === 'DELETE'
-                    ? "Are you sure you want to delete this attendance record?"
-                    : `Are you sure you want to download this ${confirmModal.type} report?`}
-                onConfirm={handleModalConfirm}
-                onCancel={() => setConfirmModal({ show: false, type: null, label: '', id: null })}
-                confirmText={confirmModal.type === 'DELETE' ? "Delete" : "Confirm"}
-                cancelText="Cancel"
-                type={confirmModal.type === 'DELETE' ? "danger" : "info"}
-            />
-
-            {/* Custom Report Modal */}
-            {
-                showCustomReportModal && (
-                    <div className="fixed inset-0 z-150 flex items-center justify-center p-[16px] bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-                        <div className="bg-white rounded-[40px] p-[32px] sm:p-[40px] w-full max-w-[500px] shadow-2xl relative animate-in zoom-in-95 duration-300">
-                            <button onClick={() => setShowCustomReportModal(false)} className="absolute top-[32px] right-[32px] text-slate-400 hover:text-slate-800 transition-colors">
-                                <FaTimes />
-                            </button>
-                            <h2 className="text-[24px] font-black mb-[32px] flex items-center gap-[12px] font-['Outfit']">
-                                <div className="w-[8px] h-[32px] bg-blue-600 rounded-full"></div>
-                                Attendance Report
-                            </h2>
-
-                            <div className="space-y-[24px]">
-                                <div className="grid grid-cols-2 gap-[16px]">
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Start Date</label>
-                                        <input
-                                            type="date"
-                                            value={customReportForm.startDate}
-                                            onChange={(e) => setCustomReportForm({ ...customReportForm, startDate: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-blue-600 transition-all font-['Outfit']"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">End Date</label>
-                                        <input
-                                            type="date"
-                                            value={customReportForm.endDate}
-                                            onChange={(e) => setCustomReportForm({ ...customReportForm, endDate: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-blue-600 transition-all font-['Outfit']"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-[16px]">
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Project</label>
-                                        <select
-                                            value={customReportForm.projectId}
-                                            onChange={(e) => setCustomReportForm({ ...customReportForm, projectId: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-blue-600 transition-all cursor-pointer font-['Outfit']"
-                                        >
-                                            <option value="">All Projects</option>
-                                            {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Member</label>
-                                        <select
-                                            value={customReportForm.memberId}
-                                            onChange={(e) => setCustomReportForm({ ...customReportForm, memberId: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-blue-600 transition-all cursor-pointer font-['Outfit']"
-                                        >
-                                            <option value="">Everyone</option>
-                                            {members.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-[16px]">
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Category</label>
-                                        <select
-                                            value={customReportForm.role}
-                                            onChange={(e) => setCustomReportForm({ ...customReportForm, role: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-blue-600 transition-all cursor-pointer font-['Outfit']"
-                                        >
-                                            <option value="">All Categories</option>
-                                            {[...new Set([...roles.map(r => r.name), ...uniqueRoles])].sort().map(role => (
-                                                <option key={role} value={role}>{role}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-[8px] ml-[4px]">Status Filter</label>
-                                        <select
-                                            value={customReportForm.status}
-                                            onChange={(e) => setCustomReportForm({ ...customReportForm, status: e.target.value })}
-                                            className="w-full bg-slate-50 border border-slate-200 rounded-[16px] px-[20px] py-[12px] text-[12px] font-bold text-slate-700 outline-none focus:border-blue-600 transition-all cursor-pointer font-['Outfit']"
-                                        >
-                                            <option value="all">All Statuses</option>
-                                            {statusOptions.map(opt => <option key={opt.id} value={opt.id}>{opt.label}</option>)}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-col gap-[12px]">
-                                    <button
-                                        onClick={() => handleGenerateCustomReport('PDF')}
-                                        disabled={!!customReportLoading}
-                                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-[18px] rounded-[20px] transition-all active:scale-95 shadow-xl flex items-center justify-center gap-[12px] text-[14px] disabled:opacity-50 disabled:cursor-not-allowed font-['Outfit']"
-                                    >
-                                        {customReportLoading === 'PDF' ? (
-                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                        ) : (
-                                            <FaFileAlt />
-                                        )}
-                                        {customReportLoading === 'PDF' ? 'Generating...' : 'Download PDF Report'}
-                                    </button>
-
-                                    <div className="grid grid-cols-2 gap-[12px]">
-                                        <button
-                                            onClick={() => handleGenerateCustomReport('CSV')}
-                                            disabled={!!customReportLoading}
-                                            className="bg-emerald-500 hover:bg-emerald-600 text-white font-black py-[16px] rounded-[20px] transition-all active:scale-95 shadow-lg flex items-center justify-center gap-[8px] text-[12px] disabled:opacity-50 disabled:cursor-not-allowed font-['Outfit']"
-                                        >
-                                            {customReportLoading === 'CSV' ? (
-                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                            ) : (
-                                                <FaFileAlt />
-                                            )}
-                                            CSV (Excel)
-                                        </button>
-                                        <button
-                                            onClick={() => handleGenerateCustomReport('TXT')}
-                                            disabled={!!customReportLoading}
-                                            className="bg-slate-700 hover:bg-slate-800 text-white font-black py-[16px] rounded-[20px] transition-all active:scale-95 shadow-lg flex items-center justify-center gap-[8px] text-[12px] disabled:opacity-50 disabled:cursor-not-allowed font-['Outfit']"
-                                        >
-                                            {customReportLoading === 'TXT' ? (
-                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                            ) : (
-                                                <FaFileAlt />
-                                            )}
-                                            Text Log
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )
-            }
-
-            {
-                showPermissionModal && (
-                    <div className="fixed inset-0 z-160 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-                        <div className="bg-white rounded-[40px] w-full max-w-md shadow-2xl relative animate-in zoom-in-95 duration-300 overflow-hidden">
-                            <div className="p-8 border-b border-slate-100 bg-linear-to-br from-purple-900 to-purple-800 text-white">
-                                <button onClick={() => setShowPermissionModal(false)} className="absolute top-6 right-6 text-purple-300 hover:text-white transition-colors">
-                                    <FaTimes />
-                                </button>
-                                <h3 className="text-xl font-black font-['Outfit']">Permission Details</h3>
-                                <p className="text-purple-300 text-[10px] font-black uppercase tracking-widest mt-1 font-['Outfit']">{permissionModalData.member_name}</p>
-                            </div>
-
-                            <div className="p-8 space-y-6">
-                                <div className="space-y-4">
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 font-['Outfit']">Permission Time</label>
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 font-['Outfit']">From</p>
-                                            <div className="flex gap-2">
-                                                <select value={permissionModalData.start_hour} onChange={(e) => setPermissionModalData({ ...permissionModalData, start_hour: e.target.value })} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-xs font-black text-slate-700 outline-none focus:border-purple-500 font-['Outfit']">
-                                                    {Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0')).map(h => <option key={h} value={h}>{h}</option>)}
-                                                </select>
-                                                <select value={permissionModalData.start_minute} onChange={(e) => setPermissionModalData({ ...permissionModalData, start_minute: e.target.value })} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-xs font-black text-slate-700 outline-none focus:border-purple-500 font-['Outfit']">
-                                                    {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map(m => <option key={m} value={m}>{m}</option>)}
-                                                </select>
-                                                <select value={permissionModalData.start_period} onChange={(e) => setPermissionModalData({ ...permissionModalData, start_period: e.target.value })} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-xs font-black text-slate-700 outline-none focus:border-purple-500 font-['Outfit']">
-                                                    <option value="AM">AM</option>
-                                                    <option value="PM">PM</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1 font-['Outfit']">To</p>
-                                            <div className="flex gap-2">
-                                                <select value={permissionModalData.end_hour} onChange={(e) => setPermissionModalData({ ...permissionModalData, end_hour: e.target.value })} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-xs font-black text-slate-700 outline-none focus:border-purple-500 font-['Outfit']">
-                                                    {Array.from({ length: 12 }, (_, i) => (i + 1).toString().padStart(2, '0')).map(h => <option key={h} value={h}>{h}</option>)}
-                                                </select>
-                                                <select value={permissionModalData.end_minute} onChange={(e) => setPermissionModalData({ ...permissionModalData, end_minute: e.target.value })} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-xs font-black text-slate-700 outline-none focus:border-purple-500 font-['Outfit']">
-                                                    {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map(m => <option key={m} value={m}>{m}</option>)}
-                                                </select>
-                                                <select value={permissionModalData.end_period} onChange={(e) => setPermissionModalData({ ...permissionModalData, end_period: e.target.value })} className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-xs font-black text-slate-700 outline-none focus:border-purple-500 font-['Outfit']">
-                                                    <option value="AM">AM</option>
-                                                    <option value="PM">PM</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 font-['Outfit']">Reason for Permission</label>
-                                    <textarea
-                                        value={permissionModalData.reason}
-                                        onChange={(e) => setPermissionModalData({ ...permissionModalData, reason: e.target.value })}
-                                        placeholder="Enter reason for leaving..."
-                                        rows="3"
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold text-slate-600 outline-none focus:bg-white focus:border-purple-500 transition-all resize-none font-['Outfit']"
-                                    ></textarea>
-                                </div>
-                            </div>
-
-                            <div className="p-6 bg-slate-50 flex gap-3">
-                                <button
-                                    onClick={() => setShowPermissionModal(false)}
-                                    className="flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 bg-white border border-slate-200 hover:bg-slate-100 transition-all font-['Outfit']"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={async () => {
-                                        const duration = `${permissionModalData.start_hour}:${permissionModalData.start_minute} ${permissionModalData.start_period} - ${permissionModalData.end_hour}:${permissionModalData.end_minute} ${permissionModalData.end_period}`;
-                                        const to24h = (h, m, p) => {
-                                            let hours = parseInt(h);
-                                            if (p === 'PM' && hours < 12) hours += 12;
-                                            if (p === 'AM' && hours === 12) hours = 0;
-                                            return `${hours.toString().padStart(2, '0')}:${m}`;
-                                        };
-
-                                        await handleQuickMark(
-                                            permissionModalData.member_id,
-                                            'permission',
-                                            duration,
-                                            null, // don't overwrite work notes here
-                                            to24h(permissionModalData.start_hour, permissionModalData.start_minute, permissionModalData.start_period),
-                                            to24h(permissionModalData.end_hour, permissionModalData.end_minute, permissionModalData.end_period),
-                                            permissionModalData.reason
-                                        );
-                                        setShowPermissionModal(false);
-                                        toast.success("Permission details saved!");
-                                    }}
-                                    className="flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white bg-purple-600 shadow-lg shadow-purple-600/20 hover:bg-purple-700 transition-all font-['Outfit']"
-                                >
-                                    Save Permission
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )
-            }
-
-            {
-                showWorkDoneModal && (
-                    <div className="fixed inset-0 z-160 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-300">
-                        <div className="bg-white rounded-[40px] w-full max-w-md shadow-2xl relative animate-in zoom-in-95 duration-300 overflow-hidden">
-                            <div className="p-8 border-b border-slate-100 bg-linear-to-br from-blue-900 to-blue-800 text-white">
-                                <button onClick={() => setShowWorkDoneModal(false)} className="absolute top-6 right-6 text-blue-300 hover:text-white transition-colors">
-                                    <FaTimes />
-                                </button>
-                                <h3 className="text-xl font-black font-['Outfit']">Work of the Day</h3>
-                                <p className="text-blue-300 text-[10px] font-black uppercase tracking-widest mt-1 font-['Outfit']">{workDoneModalData.member_name}</p>
-                            </div>
-
-                            <div className="p-8 space-y-6">
-                                <div className="space-y-2">
-                                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 font-['Outfit']">Tasks Completed / Notes</label>
-                                    <textarea
-                                        value={workDoneModalData.note}
-                                        onChange={(e) => setWorkDoneModalData({ ...workDoneModalData, note: e.target.value })}
-                                        placeholder="Describe the work completed today..."
-                                        rows="6"
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-bold text-slate-600 outline-none focus:bg-white focus:border-blue-500 transition-all resize-none font-['Outfit']"
-                                    ></textarea>
-                                </div>
-                            </div>
-
-                            <div className="p-6 bg-slate-50 flex gap-3">
-                                <button
-                                    onClick={() => setShowWorkDoneModal(false)}
-                                    className="flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-500 bg-white border border-slate-200 hover:bg-slate-100 transition-all font-['Outfit']"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={async () => {
-                                        await handleQuickMark(
-                                            workDoneModalData.member_id,
-                                            workDoneModalData.status,
-                                            null, // keep current duration
-                                            workDoneModalData.note
-                                        );
-                                        setShowWorkDoneModal(false);
-                                        toast.success("Work log updated!");
-                                    }}
-                                    className="flex-1 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white bg-blue-600 shadow-lg shadow-blue-600/20 hover:bg-blue-700 transition-all font-['Outfit']"
-                                >
-                                    Save Work Log
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )
-            }
-
-
-            {showMemberManager && (
-                <MemberManager
-                    onClose={() => setShowMemberManager(false)}
-                    onUpdate={fetchData}
-                />
-            )}
-        </div >
+            }        </div >
     );
 };
 
