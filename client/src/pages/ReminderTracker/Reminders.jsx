@@ -366,16 +366,20 @@ const Reminders = () => {
     }, []);
 
     const handleToggle = useCallback(async (id, currentStatus) => {
-        // If unchecking (marking as incomplete), update directly
+        // If unchecking (marking as incomplete)
         if (currentStatus) {
+            // Optimistic Update
+            const previousReminders = [...reminders];
+            setReminders(prev => prev.map(r =>
+                r.id === id ? { ...r, is_completed: false, completed_at: null } : r
+            ));
+
             try {
                 await updateReminder(id, { is_completed: false });
-                setReminders(prev => prev.map(r =>
-                    r.id === id ? { ...r, is_completed: false, completed_at: null } : r
-                ));
                 window.dispatchEvent(new Event('refresh-reminders'));
                 toast.success("Task marked as incomplete");
             } catch {
+                setReminders(previousReminders); // Revert
                 toast.error("Update failed");
             }
             return;
@@ -383,25 +387,29 @@ const Reminders = () => {
 
         // If checking (marking as complete), show confirmation modal
         setConfirmToggle({ id, currentStatus });
-    }, []);
+    }, [reminders]);
 
     const confirmCompletion = useCallback(async () => {
         if (!confirmToggle) return;
         const { id } = confirmToggle;
 
+        // Optimistic Update
+        const previousReminders = [...reminders];
+        const now = new Date().toISOString();
+        setReminders(prev => prev.map(r =>
+            r.id === id ? { ...r, is_completed: true, completed_at: now } : r
+        ));
+        setConfirmToggle(null);
+
         try {
             await updateReminder(id, { is_completed: true });
-            setReminders(prev => prev.map(r =>
-                r.id === id ? { ...r, is_completed: true, completed_at: new Date().toISOString() } : r
-            ));
             window.dispatchEvent(new Event('refresh-reminders'));
             toast.success("Task completed! 🥳");
         } catch {
+            setReminders(previousReminders); // Revert
             toast.error("Update failed");
-        } finally {
-            setConfirmToggle(null);
         }
-    }, [confirmToggle]);
+    }, [confirmToggle, reminders]);
 
     const handleDelete = useCallback(async (id) => {
         try {
