@@ -40,7 +40,6 @@ const AttendanceTracker = () => {
     const [projects, setProjects] = useState([]);
     const [members, setMembers] = useState([]);
     const [showProjectManager, setShowProjectManager] = useState(false);
-    // showMemberManager removed
     const [filterProject, setFilterProject] = useState('');
     const [filterMember, setFilterMember] = useState('');
     const [periodType, setPeriodType] = useState('day'); // 'month', 'year', 'day', 'range'
@@ -239,10 +238,10 @@ const AttendanceTracker = () => {
         }
     };
 
-    const handleQuickMark = async (memberId, status = null, permission_duration = null, note = null, permission_start_time = null, permission_end_time = null, permission_reason = null) => {
+    const handleQuickMark = async (memberId, status = null, permission_duration = null, note = null, permission_start_time = null, permission_end_time = null, permission_reason = null, overtimeData = null) => {
         try {
             const date = periodType === 'day' ? currentPeriod : new Date().toISOString().split('T')[0];
-            await quickMarkAttendance({
+            const payload = {
                 member_id: memberId,
                 status,
                 date,
@@ -253,7 +252,14 @@ const AttendanceTracker = () => {
                 permission_start_time,
                 permission_end_time,
                 permission_reason
-            });
+            };
+
+            if (overtimeData) {
+                payload.overtime_duration = overtimeData.duration;
+                payload.overtime_reason = overtimeData.reason;
+            }
+
+            await quickMarkAttendance(payload);
             fetchData();
         } catch (error) {
             toast.error("Failed to update");
@@ -1109,17 +1115,28 @@ const AttendanceTracker = () => {
                                                                                 member_id: w.id, member_name: w.name, status: 'overtime',
                                                                                 start_hour: '05', start_minute: '00', start_period: 'PM',
                                                                                 end_hour: '07', end_minute: '00', end_period: 'PM',
-                                                                                reason: attendance?.permission_reason || '', attendance_id: attendance?.id
+                                                                                reason: attendance?.overtime_reason || '', attendance_id: attendance?.id
                                                                             });
                                                                             setShowOvertimeModal(true);
                                                                         }}
-                                                                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${currentStatus === 'overtime' ? 'bg-orange-500 text-white shadow-xs' : 'bg-slate-50 text-slate-400 border border-slate-200 hover:bg-orange-50 hover:text-orange-600'}`}
+                                                                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${attendance?.overtime_duration ? 'bg-orange-500 text-white shadow-xs' : 'bg-slate-50 text-slate-400 border border-slate-200 hover:bg-orange-50 hover:text-orange-600'}`}
                                                                     >
                                                                         <FaBusinessTime className="text-[10px]" /> OT
                                                                     </button>
-                                                                    {(currentStatus === 'permission' || currentStatus === 'overtime') && (
-                                                                        <div className="bg-white border border-slate-100 rounded-lg px-2 py-1.5 text-[10px] font-bold text-slate-600 truncate max-w-[120px]">
-                                                                            {attendance?.permission_duration}
+                                                                    {(currentStatus === 'permission' || attendance?.overtime_duration) && (
+                                                                        <div className="flex flex-col gap-1">
+                                                                            {currentStatus === 'permission' && (
+                                                                                <div className="bg-white border border-slate-100 rounded-lg px-2 py-1 text-[8px] font-bold text-slate-600 truncate max-w-[120px] shadow-sm">
+                                                                                    <div>Perm: {attendance?.permission_duration}</div>
+                                                                                    {attendance?.permission_reason && <div className="text-[7px] font-normal truncate max-w-[100px] border-t border-slate-100 mt-0.5 pt-0.5 opacity-70">{attendance.permission_reason}</div>}
+                                                                                </div>
+                                                                            )}
+                                                                            {attendance?.overtime_duration && (
+                                                                                <div className="bg-white border border-slate-100 rounded-lg px-2 py-1 text-[8px] font-bold text-orange-600 truncate max-w-[120px] shadow-sm">
+                                                                                    <div>OT: {attendance?.overtime_duration}</div>
+                                                                                    {attendance?.overtime_reason && <div className="text-[7px] font-normal truncate max-w-[100px] border-t mt-0.5 pt-0.5 opacity-70 border-orange-100">{attendance.overtime_reason}</div>}
+                                                                                </div>
+                                                                            )}
                                                                         </div>
                                                                     )}
                                                                 </div>
@@ -1210,8 +1227,8 @@ const AttendanceTracker = () => {
                                                     </button>
                                                 </div>
 
-                                                <div className="flex flex-col gap-2">
-                                                    <div className="flex items-center gap-2">
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="grid grid-cols-2 gap-1">
                                                         <button
                                                             disabled={!isPresentOrPerm}
                                                             onClick={() => {
@@ -1231,9 +1248,10 @@ const AttendanceTracker = () => {
                                                                 });
                                                                 setShowPermissionModal(true);
                                                             }}
-                                                            className={`flex-1 h-[36px] rounded-xl text-[9px] font-black uppercase flex items-center justify-center gap-2 transition-all ${currentStatus === 'permission' ? 'bg-purple-500 text-white shadow-lg' : isPresentOrPerm ? 'bg-purple-50 text-purple-600 border border-purple-100' : 'bg-slate-50 text-slate-300 border border-slate-50 cursor-not-allowed'}`}
+                                                            className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase flex flex-col items-center justify-center gap-1 transition-all ${currentStatus === 'permission' ? 'bg-purple-500 text-white shadow-lg' : isPresentOrPerm ? 'bg-purple-50 text-purple-600 border border-purple-100' : 'bg-slate-50 text-slate-300 border border-slate-50 cursor-not-allowed'}`}
                                                         >
-                                                            <FaClock /> Permission {currentStatus === 'permission' && `(${attendance?.permission_duration})`}
+                                                            <div className="flex items-center gap-1.5"><FaClock /> PERMISSION</div>
+                                                            {currentStatus === 'permission' && <div className="text-[8px] opacity-90 font-medium leading-none">{attendance?.permission_duration}</div>}
                                                         </button>
                                                         <button
                                                             disabled={!isPresentOrPerm}
@@ -1246,14 +1264,32 @@ const AttendanceTracker = () => {
                                                                 });
                                                                 setShowOvertimeModal(true);
                                                             }}
-                                                            className={`flex-1 h-[36px] rounded-xl text-[9px] font-black uppercase flex items-center justify-center gap-2 transition-all ${currentStatus === 'overtime' ? 'bg-orange-500 text-white shadow-lg' : isPresentOrPerm ? 'bg-orange-50 text-orange-600 border border-orange-100' : 'bg-slate-50 text-slate-300 border border-slate-50 cursor-not-allowed'}`}
+                                                            className={`flex-1 py-2.5 rounded-xl text-[9px] font-black uppercase flex flex-col items-center justify-center gap-1 transition-all ${attendance?.overtime_duration ? 'bg-orange-500 text-white shadow-lg' : isPresentOrPerm ? 'bg-orange-50 text-orange-600 border border-orange-100' : 'bg-slate-50 text-slate-300 border border-slate-50 cursor-not-allowed'}`}
                                                         >
-                                                            <FaBusinessTime /> OT {currentStatus === 'overtime' && `(${attendance?.permission_duration})`}
+                                                            <div className="flex items-center gap-1.5"><FaBusinessTime /> OT</div>
+                                                            {attendance?.overtime_duration && <div className="text-[8px] opacity-90 font-medium leading-none">{attendance?.overtime_duration}</div>}
                                                         </button>
                                                     </div>
+
+                                                    {(attendance?.permission_reason || attendance?.overtime_reason) && (
+                                                        <div className="grid grid-cols-2 gap-1 mb-2">
+                                                            {attendance?.permission_reason && (
+                                                                <div className="bg-purple-50 border border-purple-100 rounded-xl px-3 py-2">
+                                                                    <p className="text-[8px] font-black uppercase text-purple-300 tracking-widest mb-0.5">Perm Reason</p>
+                                                                    <p className="text-[10px] font-bold text-purple-700 leading-tight">{attendance.permission_reason}</p>
+                                                                </div>
+                                                            )}
+                                                            {attendance?.overtime_reason && (
+                                                                <div className="bg-orange-50 border border-orange-100 rounded-xl px-3 py-2">
+                                                                    <p className="text-[8px] font-black uppercase text-orange-300 tracking-widest mb-0.5">OT Reason</p>
+                                                                    <p className="text-[10px] font-bold text-orange-700 leading-tight">{attendance.overtime_reason}</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                     <div
                                                         onClick={() => { if (!isPresentOrPerm) return; setWorkDoneModalData({ member_id: w.id, member_name: w.name, status: currentStatus || 'present', note: attendance?.note || '', attendance_id: attendance?.id }); setShowWorkDoneModal(true); }}
-                                                        className={`h-[36px] rounded-xl px-4 flex items-center gap-3 transition-all ${isPresentOrPerm ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-slate-50 text-slate-300 border border-slate-50 cursor-not-allowed'}`}
+                                                        className={`py-3 h-auto rounded-xl px-4 flex items-center gap-3 transition-all ${isPresentOrPerm ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-slate-50 text-slate-300 border border-slate-50 cursor-not-allowed'}`}
                                                     >
                                                         <FaEdit className="text-[10px]" />
                                                         <span className="text-[10px] font-black uppercase truncate">{attendance?.note || "Add work details..."}</span>
@@ -1418,9 +1454,7 @@ const AttendanceTracker = () => {
                                 <button
                                     onClick={() => {
                                         const duration = `${overtimeModalData.start_hour}:${overtimeModalData.start_minute} ${overtimeModalData.start_period} - ${overtimeModalData.end_hour}:${overtimeModalData.end_minute} ${overtimeModalData.end_period}`;
-                                        const startTime = `${overtimeModalData.start_hour}:${overtimeModalData.start_minute} ${overtimeModalData.start_period}`;
-                                        const endTime = `${overtimeModalData.end_hour}:${overtimeModalData.end_minute} ${overtimeModalData.end_period}`;
-                                        handleQuickMark(overtimeModalData.member_id, 'overtime', duration, null, startTime, endTime, overtimeModalData.reason);
+                                        handleQuickMark(overtimeModalData.member_id, null, null, null, null, null, null, { duration, reason: overtimeModalData.reason });
                                         setShowOvertimeModal(false);
                                     }}
                                     className="flex-1 py-2.5 rounded-xl bg-orange-500 text-white text-xs font-black uppercase tracking-widest shadow-lg shadow-orange-500/20 hover:bg-orange-600 transition-colors"

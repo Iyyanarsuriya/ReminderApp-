@@ -36,9 +36,30 @@ const calculateAttendanceSummary = (data) => {
         if (a.status === 'late') memberSummary[mId].late++;
         if (a.status === 'half-day') memberSummary[mId].halfDay++;
         if (a.status === 'permission') memberSummary[mId].permission++;
-        if (a.status === 'overtime') memberSummary[mId].overtime = (memberSummary[mId].overtime || 0) + 1;
+        // Overtime check (independent of status)
+        if (a.overtime_duration) {
+            memberSummary[mId].overtime = (memberSummary[mId].overtime || 0) + 1;
+            const match = a.overtime_duration.match(/(\d+):(\d+)\s*(AM|PM)\s*-\s*(\d+):(\d+)\s*(AM|PM)/i);
+            if (match) {
+                const h1 = parseInt(match[1]);
+                const m1 = parseInt(match[2]);
+                const p1 = match[3].toUpperCase();
+                const h2 = parseInt(match[4]);
+                const m2 = parseInt(match[5]);
+                const p2 = match[6].toUpperCase();
 
-        if ((a.status === 'permission' || a.status === 'overtime') && a.permission_duration) {
+                let mins1 = (h1 % 12) * 60 + m1;
+                if (p1 === 'PM') mins1 += 12 * 60;
+                let mins2 = (h2 % 12) * 60 + m2;
+                if (p2 === 'PM') mins2 += 12 * 60;
+
+                let diff = mins2 - mins1;
+                if (diff < 0) diff += 24 * 60;
+                memberSummary[mId].overtimeMinutes = (memberSummary[mId].overtimeMinutes || 0) + diff;
+            }
+        }
+
+        if (a.status === 'permission' && a.permission_duration) {
             const match = a.permission_duration.match(/(\d+):(\d+)\s*(AM|PM)\s*-\s*(\d+):(\d+)\s*(AM|PM)/i);
             if (match) {
                 const h1 = parseInt(match[1]);
@@ -55,13 +76,8 @@ const calculateAttendanceSummary = (data) => {
 
                 let diff = mins2 - mins1;
                 if (diff < 0) diff += 24 * 60;
-
-                if (a.status === 'permission') {
-                    memberSummary[mId].minutes += diff;
-                    globalMinutes += diff;
-                } else if (a.status === 'overtime') {
-                    memberSummary[mId].overtimeMinutes = (memberSummary[mId].overtimeMinutes || 0) + diff;
-                }
+                memberSummary[mId].minutes += diff;
+                globalMinutes += diff;
             }
         }
     });
@@ -103,10 +119,18 @@ const getPAStatus = (status) => {
 };
 
 const getRowPermHrs = (a, type = 'permission') => {
-    if (a.status !== type) return '-';
-    if (!a.permission_duration) return '-';
+    let durationString = null;
+    if (type === 'permission') {
+        if (a.status !== 'permission') return '-';
+        durationString = a.permission_duration;
+    } else if (type === 'overtime') {
+        if (!a.overtime_duration) return '-';
+        durationString = a.overtime_duration;
+    }
 
-    const match = a.permission_duration.match(/(\d+):(\d+)\s*(AM|PM)\s*-\s*(\d+):(\d+)\s*(AM|PM)/i);
+    if (!durationString) return '-';
+
+    const match = durationString.match(/(\d+):(\d+)\s*(AM|PM)\s*-\s*(\d+):(\d+)\s*(AM|PM)/i);
     if (match) {
         const h1 = parseInt(match[1]);
         const m1 = parseInt(match[2]);
@@ -129,7 +153,7 @@ const getRowPermHrs = (a, type = 'permission') => {
         if (mins > 0) str += hrs > 0 ? ` ${mins}mins` : `${mins}mins`;
         return str || "0hrs";
     }
-    return a.permission_duration;
+    return durationString;
 };
 
 export const processAttendanceExportData = (attendances, members, { periodType, currentPeriod, filterRole, filterMember, searchQuery }) => {
@@ -178,7 +202,7 @@ export const exportAttendanceToCSV = (data, filename) => {
     const { memberStatsRows } = calculateAttendanceSummary(data);
 
     const summaryHeaders = ["Member Summary", "Present Total", "Absent", "Half Day", "Permissions", "Total Perm. Hrs", "Overtime", "Total OT Hrs", "Total Records"];
-    const detailHeaders = ["Date", "Member", "Attd. (P/A/H/O)", "Status", "Perm. Duration", "Perm. Hrs", "OT Duration", "OT Hrs", "Subject", "Project", "Note"];
+    const detailHeaders = ["Date", "Member", "Attd. (P/A/H/O)", "Status", "Perm. Duration", "Perm. Hrs", "Perm. Reason", "OT Duration", "OT Hrs", "OT Reason", "Subject", "Project", "Note"];
 
     const rows = [
         ...memberStatsRows,
@@ -191,8 +215,10 @@ export const exportAttendanceToCSV = (data, filename) => {
             a.status.toUpperCase(),
             a.status === 'permission' ? (a.permission_duration || 'N/A') : '-',
             getRowPermHrs(a, 'permission'),
-            a.status === 'overtime' ? (a.permission_duration || 'N/A') : '-',
+            a.permission_reason || '-',
+            a.overtime_duration ? a.overtime_duration : '-',
             getRowPermHrs(a, 'overtime'),
+            a.overtime_reason || '-',
             a.subject,
             a.project_name || 'General',
             a.note || ''
@@ -211,14 +237,16 @@ export const exportAttendanceToTXT = ({ data, period, filename }) => {
         titleSuffix += row.map((v, i) => String(v).padEnd(8, ' ')).join(' | ') + "\n";
     });
 
-    const logHeaders = ["Date", "Member", "P/A/H/O", "Status", "Perm. Hrs", "OT Hrs", "Subject", "Project"];
+    const logHeaders = ["Date", "Member", "P/A/H/O", "Status", "Perm. Hrs", "Perm. Reason", "OT Hrs", "OT Reason", "Subject", "Project"];
     const logRows = data.map(a => [
         new Date(a.date).toLocaleDateString('en-GB'),
         a.member_name || 'N/A',
         getPAStatus(a.status),
         a.status.toUpperCase(),
         getRowPermHrs(a, 'permission'),
+        a.permission_reason || '-',
         getRowPermHrs(a, 'overtime'),
+        a.overtime_reason || '-',
         a.subject,
         a.project_name || 'General'
     ]);
@@ -274,14 +302,16 @@ export const exportAttendanceToPDF = ({ data, period, subHeader, filename }) => 
     doc.setFontSize(11);
     doc.text('DETAILED ATTENDANCE LOGS', 15, doc.lastAutoTable.finalY + 15);
 
-    const tableHeaders = ['Date', 'Member', 'P/A/H/O', 'Status', 'Perm. Hrs', 'OT Hrs', 'Subject', 'Project', 'Note'];
+    const tableHeaders = ['Date', 'Member', 'P/A/H/O', 'Status', 'Perm. Hrs', 'Perm. Reason', 'OT Hrs', 'OT Reason', 'Subject', 'Project', 'Note'];
     const tableRows = data.map(a => [
         new Date(a.date).toLocaleDateString('en-GB'),
         a.member_name || 'N/A',
         getPAStatus(a.status),
         a.status.toUpperCase(),
         getRowPermHrs(a, 'permission'),
+        a.permission_reason || '-',
         getRowPermHrs(a, 'overtime'),
+        a.overtime_reason || '-',
         a.subject,
         a.project_name || 'General',
         a.note || ''

@@ -20,6 +20,8 @@ CREATE TABLE `attendance` (
   `permission_start_time` varchar(20) DEFAULT NULL,
   `permission_end_time` varchar(20) DEFAULT NULL,
   `permission_reason` text,
+  `overtime_duration` varchar(100) DEFAULT NULL,
+  `overtime_reason` text,
   PRIMARY KEY (`id`),
   KEY `user_id` (`user_id`),
   KEY `project_id` (`project_id`),
