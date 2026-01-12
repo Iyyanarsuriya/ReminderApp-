@@ -64,7 +64,8 @@ const AppContent = () => {
     if (!token) return;
     try {
       const res = await getReminders();
-      setReminders(res.data || []);
+      // Ensure res.data is an array before setting state
+      setReminders(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
       console.error("Failed to fetch reminders for header", error);
     }
