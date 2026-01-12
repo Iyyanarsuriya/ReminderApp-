@@ -13,7 +13,7 @@ exports.getReminders = async (req, res) => {
 };
 
 exports.createReminder = async (req, res) => {
-    const { title, description, due_date, priority, category, recurrence_type, recurrence_interval } = req.body;
+    const { title, description, due_date, priority, category } = req.body;
     try {
         const newReminder = await Reminder.create({
             user_id: req.user.id,
@@ -21,9 +21,7 @@ exports.createReminder = async (req, res) => {
             description,
             due_date,
             priority,
-            category,
-            recurrence_type,
-            recurrence_interval
+            category
         });
 
         // Sync with Google Calendar if connected

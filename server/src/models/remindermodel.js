@@ -5,15 +5,20 @@ exports.getAllByUserId = async (userId) => {
     return rows;
 };
 
+exports.getById = async (id, userId) => {
+    const [rows] = await db.query('SELECT * FROM reminders WHERE id = ? AND user_id = ?', [id, userId]);
+    return rows[0];
+};
+
 exports.create = async (reminderData) => {
-    const { user_id, title, description, due_date, priority, category, recurrence_type, recurrence_interval, google_event_id } = reminderData;
+    const { user_id, title, description, due_date, priority, category, google_event_id } = reminderData;
 
     const dateObj = due_date ? new Date(due_date) : null;
     const finalDate = (dateObj && !isNaN(dateObj.getTime())) ? dateObj : null;
 
     const [result] = await db.query(
-        'INSERT INTO reminders (user_id, title, description, due_date, priority, category, recurrence_type, recurrence_interval, google_event_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [user_id, title, description, finalDate, priority || 'medium', category || 'General', recurrence_type || 'none', recurrence_interval || 1, google_event_id || null]
+        'INSERT INTO reminders (user_id, title, description, due_date, priority, category, google_event_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [user_id, title, description, finalDate, priority || 'medium', category || 'General', google_event_id || null]
     );
     return { id: result.insertId, ...reminderData, is_completed: false, created_at: new Date() };
 };
@@ -50,6 +55,8 @@ exports.delete = async (id, userId) => {
     );
     return result.affectedRows > 0;
 };
+
+
 
 exports.getOverdueRemindersForToday = async (userId = null, startDate = null, endDate = null, status = 'pending') => {
     // Get reminders that are due on a specific date (or today) OR a range
