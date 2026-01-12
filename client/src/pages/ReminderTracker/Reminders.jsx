@@ -462,6 +462,15 @@ const Reminders = () => {
             });
     }, [reminders, filterDate, periodType, customRange, filterCategory, filterPriority, sortBy, searchQuery]);
 
+    const exportPeriod = useMemo(() => {
+        if (periodType === 'today') return filterDate;
+        if (periodType === 'range') {
+            if (customRange.start && customRange.end) return `${customRange.start} to ${customRange.end}`;
+            return 'Custom Range';
+        }
+        return 'All Time';
+    }, [periodType, filterDate, customRange]);
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -681,9 +690,9 @@ const Reminders = () => {
                                         <div className="h-[24px] w-px bg-slate-200 mx-[4px]"></div>
 
                                         <ExportButtons
-                                            onExportCSV={() => exportReminderToCSV(processedReminders, `reminders_${new Date().toISOString().split('T')[0]}`)}
-                                            onExportPDF={() => exportReminderToPDF({ data: processedReminders, period: filterDate || 'All Time', filename: `reminders_${new Date().toISOString().split('T')[0]}` })}
-                                            onExportTXT={() => exportReminderToTXT({ data: processedReminders, period: filterDate || 'All Time', filename: `reminders_${new Date().toISOString().split('T')[0]}` })}
+                                            onExportCSV={() => exportReminderToCSV({ data: processedReminders, period: exportPeriod, filename: `reminders_${new Date().toISOString().split('T')[0]}` })}
+                                            onExportPDF={() => exportReminderToPDF({ data: processedReminders, period: exportPeriod, filename: `reminders_${new Date().toISOString().split('T')[0]}` })}
+                                            onExportTXT={() => exportReminderToTXT({ data: processedReminders, period: exportPeriod, filename: `reminders_${new Date().toISOString().split('T')[0]}` })}
                                             className="scale-90 sm:scale-100"
                                         />
                                     </div>

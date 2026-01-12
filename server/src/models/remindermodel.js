@@ -27,10 +27,19 @@ exports.updateGoogleEventId = async (id, googleEventId) => {
 };
 
 exports.updateStatus = async (id, userId, is_completed) => {
-    const [result] = await db.query(
-        'UPDATE reminders SET is_completed = ? WHERE id = ? AND user_id = ?',
-        [is_completed, id, userId]
-    );
+    let query = 'UPDATE reminders SET is_completed = ?';
+    const params = [is_completed];
+
+    if (is_completed) {
+        query += ', completed_at = NOW()';
+    } else {
+        query += ', completed_at = NULL';
+    }
+
+    query += ' WHERE id = ? AND user_id = ?';
+    params.push(id, userId);
+
+    const [result] = await db.query(query, params);
     return result.affectedRows > 0;
 };
 

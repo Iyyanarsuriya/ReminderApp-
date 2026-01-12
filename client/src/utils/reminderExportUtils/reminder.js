@@ -1,6 +1,6 @@
 import { generateCSV, generateTXT, generatePDF } from '../exportUtils/base.js';
 
-export const exportReminderToCSV = (data, filename) => {
+export const exportReminderToCSV = ({ data, period, filename }) => {
     // Add Summary
     const total = data.length;
     const completed = data.filter(r => r.is_completed).length;
@@ -8,23 +8,26 @@ export const exportReminderToCSV = (data, filename) => {
 
     const summaryRows = [
         ["REMINDER REPORT SUMMARY"],
+        ["Period", period || 'All Time'],
         ["Total Tasks", total],
         ["Completed", completed],
         ["Pending", pending],
         [] // Empty row
     ];
 
-    const headers = ["Due Date", "Title", "Description", "Priority", "Category", "Status"];
+    const headers = ["Created At", "Due Date", "Title", "Description", "Priority", "Category", "Status", "Completed At"];
     const rows = [
         ...summaryRows,
         headers,
         ...data.map(r => [
-            r.due_date ? new Date(r.due_date).toLocaleDateString('en-GB') : 'No Date',
+            r.created_at ? new Date(r.created_at).toLocaleString('en-GB') : '-',
+            r.due_date ? new Date(r.due_date).toLocaleString('en-GB') : 'No Date',
             r.title,
             r.description || '',
             r.priority.toUpperCase(),
             r.category || 'General',
-            r.is_completed ? 'COMPLETED' : 'PENDING'
+            r.is_completed ? 'COMPLETED' : 'PENDING',
+            r.completed_at ? new Date(r.completed_at).toLocaleString('en-GB') : '-'
         ])
     ];
     generateCSV("", rows, filename);
@@ -41,13 +44,16 @@ export const exportReminderToTXT = ({ data, period, filename }) => {
         { label: 'Pending', value: pending }
     ];
 
-    const logHeaders = ["Due Date", "Title", "Priority", "Category", "Status"];
+    const logHeaders = ["Created At", "Due Date", "Title", "Description", "Priority", "Category", "Status", "Completed At"];
     const logRows = data.map(r => [
-        r.due_date ? new Date(r.due_date).toLocaleDateString('en-GB') : 'No Date',
+        r.created_at ? new Date(r.created_at).toLocaleString('en-GB') : '-',
+        r.due_date ? new Date(r.due_date).toLocaleString('en-GB') : 'No Date',
         r.title,
+        r.description || '',
         r.priority.toUpperCase(),
         r.category || 'General',
-        r.is_completed ? 'COMPLETED' : 'PENDING'
+        r.is_completed ? 'COMPLETED' : 'PENDING',
+        r.completed_at ? new Date(r.completed_at).toLocaleString('en-GB') : '-'
     ]);
 
     generateTXT({ title: 'Reminder Report', period, stats, logHeaders, logRows, filename });
@@ -64,13 +70,16 @@ export const exportReminderToPDF = ({ data, period, subHeader, filename }) => {
         { label: 'Pending', value: pending.toString() }
     ];
 
-    const tableHeaders = ['Due Date', 'Title', 'Category', 'Priority', 'Status'];
+    const tableHeaders = ['Created At', 'Due Date', 'Title', 'Description', 'Category', 'Priority', 'Status', 'Completed At'];
     const tableRows = data.map(r => [
-        r.due_date ? new Date(r.due_date).toLocaleDateString('en-GB') : 'No Date',
+        r.created_at ? new Date(r.created_at).toLocaleString('en-GB') : '-',
+        r.due_date ? new Date(r.due_date).toLocaleString('en-GB') : 'No Date',
         r.title,
+        r.description || '',
         r.category || 'General',
         r.priority.toUpperCase(),
-        r.is_completed ? 'COMPLETED' : 'PENDING'
+        r.is_completed ? 'COMPLETED' : 'PENDING',
+        r.completed_at ? new Date(r.completed_at).toLocaleString('en-GB') : '-'
     ]);
 
     generatePDF({ title: 'Reminder Report', period, subHeader, stats, tableHeaders, tableRows, filename, themeColor: [45, 91, 255] });
