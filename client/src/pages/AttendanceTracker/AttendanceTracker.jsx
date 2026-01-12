@@ -664,12 +664,7 @@ const AttendanceTracker = () => {
                                         className="w-full h-[38px] pl-8 pr-3 bg-white border border-slate-200 rounded-xl text-[11px] font-bold text-slate-700 outline-none focus:border-blue-500 transition-all shadow-sm"
                                     />
                                 </div>
-                                <button
-                                    onClick={() => setShowAddModal(true)}
-                                    className="h-[38px] bg-blue-600 hover:bg-blue-700 text-white px-5 rounded-xl text-[11px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 transition-all active:scale-95 flex items-center gap-2 whitespace-nowrap"
-                                >
-                                    <FaPlus className="text-[10px]" /> Mark
-                                </button>
+
                             </div>
 
                             <ExportButtons
@@ -773,7 +768,7 @@ const AttendanceTracker = () => {
                                                                 <div className="min-w-0">
                                                                     <div className="flex items-center gap-2 mb-0.5">
                                                                         <h4 className="font-black text-slate-900 text-sm leading-tight truncate">{item.subject}</h4>
-                                                                        <div className={`h-[8px] flex items-center px-1.5 rounded-full text-[6px] font-black uppercase tracking-tighter ${option?.bg} ${option?.color} border ${option?.border}`}>
+                                                                        <div className={`py-0.5 px-2 rounded-full text-[8px] font-black uppercase tracking-wider whitespace-nowrap ${option?.bg} ${option?.color} border ${option?.border}`}>
                                                                             {option?.label}
                                                                         </div>
                                                                     </div>
