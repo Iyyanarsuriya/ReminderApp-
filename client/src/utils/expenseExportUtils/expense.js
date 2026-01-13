@@ -96,7 +96,9 @@ export const exportMemberPayslipToPDF = ({
     transactions,
     attendanceStats,
     period,
-    filename
+    filename,
+    calculatedSalary = 0,
+    bonus = 0
 }) => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
@@ -177,18 +179,32 @@ export const exportMemberPayslipToPDF = ({
     doc.text('FINANCIAL BREAKDOWN', 20, currentY);
     doc.line(20, currentY + 3, 40, currentY + 3);
 
-    const earned = transactions.filter(t => t.category === 'Salary Pot').reduce((acc, t) => acc + parseFloat(t.amount || 0), 0);
+    let earned = transactions.filter(t => t.category === 'Salary Pot').reduce((acc, t) => acc + parseFloat(t.amount || 0), 0);
+    // Fallback to calculated salary if no ledger entry exists
+    if (earned === 0 && calculatedSalary > 0) {
+        earned = calculatedSalary;
+    }
+
     const advance = transactions.filter(t => t.category === 'Advance').reduce((acc, t) => acc + parseFloat(t.amount || 0), 0);
     const paid = transactions.filter(t => t.category === 'Salary').reduce((acc, t) => acc + parseFloat(t.amount || 0), 0);
+    const totalEarnings = earned + parseFloat(bonus || 0);
+
+    const breakdownBody = [
+        [`Rs. ${formatAmount(earned)}`, `Rs. ${formatAmount(advance)}`, `Rs. ${formatAmount(paid)}`]
+    ];
+
+    if (bonus > 0) {
+        // If bonus exists, we might want to show it. For simplicity in this grid, let's keep it simple or add a note.
+        // Actually, let's modify the headers to include Bonus or just sum it up.
+        // Let's add it to Earnings for display in column 1 but maybe denote it?
+        // Or better: Just use Total Earnings including bonus.
+        breakdownBody[0][0] = `Rs. ${formatAmount(totalEarnings)} ${bonus > 0 ? '(Inc. Bonus)' : ''}`;
+    }
 
     autoTable(doc, {
         startY: currentY + 8,
-        head: [['Earnings (Salary Pot)', 'Advances', 'Salary Paid']],
-        body: [[
-            `Rs. ${formatAmount(earned)}`,
-            `Rs. ${formatAmount(advance)}`,
-            `Rs. ${formatAmount(paid)}`
-        ]],
+        head: [['Total Earnings', 'Advances Taken', 'Salary Paid']],
+        body: breakdownBody,
         theme: 'grid',
         headStyles: { fillColor: secondaryColor, textColor: [100, 100, 100], halign: 'center' },
         bodyStyles: { halign: 'center', fontSize: 11 },
@@ -202,7 +218,7 @@ export const exportMemberPayslipToPDF = ({
     currentY = doc.lastAutoTable.finalY + 10;
 
     // Net Settlement Box
-    const net = earned - (advance + paid);
+    const net = totalEarnings - (advance + paid);
     doc.setFillColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
     doc.roundedRect(120, currentY, 70, 25, 3, 3, 'F');
     doc.setFontSize(9);

@@ -501,6 +501,21 @@ const ExpenseTrackerMain = () => {
         exportExpenseToTXT({ data, period: periodStr, filename: `expense_report_${periodStr}${memberStr}${roleStr}` });
     };
 
+    const handleExportPayslip = ({ memberId, transactions, attendanceStats, period, calculatedSalary, bonus }) => {
+        const memberObj = members.find(m => m.id == memberId);
+        if (!memberObj) return;
+
+        exportMemberPayslipToPDF({
+            member: memberObj,
+            transactions,
+            attendanceStats,
+            period,
+            filename: `payslip_${memberObj.name}_${period}`,
+            calculatedSalary,
+            bonus
+        });
+    };
+
     const handleExportPDF = (data = transactions, reportStats = stats, filters = {}) => {
         // Allow empty export
         const memberName = filters.memberId ? members.find(m => m.id == filters.memberId)?.name : (filterMember ? members.find(m => m.id == filterMember)?.name : 'Everyone');
@@ -875,9 +890,10 @@ const ExpenseTrackerMain = () => {
                 ) : activeTab === 'Salary' ? (
                     <SalaryCalculator
                         periodType={periodType} filterMember={filterMember} setFilterMember={setFilterMember}
-                        filterMemberType={filterMemberType}
+                        filterMemberType={filterMemberType} currentPeriod={currentPeriod}
                         members={members} roles={roles} filteredTransactions={filteredTransactions}
                         handleExportPDF={handleExportPDF} handleExportCSV={handleExportCSV} handleExportTXT={handleExportTXT}
+                        handleExportPayslip={handleExportPayslip}
                         salaryLoading={salaryLoading} attendanceStats={attendanceStats} salaryMode={salaryMode} setSalaryMode={setSalaryMode}
                         dailyWage={dailyWage} setDailyWage={setDailyWage} monthlySalary={monthlySalary} setMonthlySalary={setMonthlySalary}
                         unitsProduced={unitsProduced} setUnitsProduced={setUnitsProduced} ratePerUnit={ratePerUnit} setRatePerUnit={setRatePerUnit}

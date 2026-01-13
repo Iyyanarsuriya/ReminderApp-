@@ -32,6 +32,8 @@ const SalaryCalculator = ({
     setFormData,
     formData,
     setShowAddModal,
+    handleExportPayslip,
+    currentPeriod,
     transactions
 }) => {
     // Local Filter State
@@ -89,11 +91,17 @@ const SalaryCalculator = ({
         if (salaryMode === 'daily') {
             return ((attendanceStats?.summary?.present || 0) * dailyWage) + ((attendanceStats?.summary?.half_day || 0) * (dailyWage / 2));
         } else if (salaryMode === 'monthly') {
-            return (((attendanceStats?.summary?.present || 0) + (attendanceStats?.summary?.half_day || 0) * 0.5) * (monthlySalary / 30));
+            // Calculate days in month dynamically
+            let daysInMonth = 30;
+            if (currentPeriod) {
+                const [y, m] = currentPeriod.split('-');
+                if (y && m) daysInMonth = new Date(y, m, 0).getDate();
+            }
+            return (((attendanceStats?.summary?.present || 0) + (attendanceStats?.summary?.half_day || 0) * 0.5) * (monthlySalary / daysInMonth));
         } else {
             return (unitsProduced * ratePerUnit);
         }
-    }, [salaryMode, attendanceStats, dailyWage, monthlySalary, unitsProduced, ratePerUnit]);
+    }, [salaryMode, attendanceStats, dailyWage, monthlySalary, unitsProduced, ratePerUnit, currentPeriod]);
 
     const totalGross = currentAttendanceEarned + parseFloat(bonus || 0);
     // Note: Deductions usually include both Salary payments and Advances in this period
@@ -102,7 +110,20 @@ const SalaryCalculator = ({
     // Export Wrappers
     const onExport = (type) => {
         const filters = { memberId: filterMember };
-        if (type === 'PDF') handleExportPDF(filteredTransactions, null, filters);
+        if (type === 'PDF') {
+            if (filterMember && handleExportPayslip) {
+                handleExportPayslip({
+                    memberId: filterMember,
+                    transactions: filteredTransactions,
+                    attendanceStats: attendanceStats,
+                    period: currentPeriod,
+                    calculatedSalary: currentAttendanceEarned,
+                    bonus: parseFloat(bonus || 0)
+                });
+            } else {
+                handleExportPDF(filteredTransactions, null, filters);
+            }
+        }
         if (type === 'CSV') handleExportCSV(filteredTransactions, filters);
         if (type === 'TXT') handleExportTXT(filteredTransactions, null, filters);
     };
