@@ -224,8 +224,8 @@ export const exportAttendanceToCSV = (data, filename) => {
         detailHeaders,
         ...data.map(a => {
             const wageDisplay = a.wage_type === 'monthly'
-                ? `Monthly: Rs. ${a.daily_wage}`
-                : (a.wage_type === 'piece_rate' ? `Piece: Rs. ${a.daily_wage}/${a.unit_name || 'unit'}` : `Daily: Rs. ${a.daily_wage}`);
+                ? `Monthly: Rs. ${parseFloat(a.daily_wage)}`
+                : (a.wage_type === 'piece_rate' ? `Piece: Rs. ${parseFloat(a.daily_wage)}/${a.unit_name || 'unit'}` : `Daily: Rs. ${parseFloat(a.daily_wage)}`);
 
             return [
                 new Date(a.date).toLocaleDateString('en-GB'),

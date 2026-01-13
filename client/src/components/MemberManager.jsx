@@ -70,20 +70,29 @@ const MemberManager = ({ onClose, onUpdate }) => {
 
     // Export Handlers
     const handleExportCSV = () => {
-        const headers = ['Name', 'Role', 'Type', 'Status', 'Phone', 'Email', 'Wage Type', 'Wage'];
-        const rows = filteredMembers.map(m => [m.name, m.role, m.member_type, m.status, m.phone, m.email, m.wage_type, m.daily_wage]);
+        const headers = ['Name', 'Role', 'Type', 'Status', 'Phone', 'Email', 'Wage'];
+        const rows = filteredMembers.map(m => [
+            m.name,
+            m.role,
+            m.member_type,
+            m.status,
+            m.phone,
+            m.email,
+            `${m.wage_type === 'monthly' ? 'Monthly' : 'Daily'}: ${parseFloat(m.daily_wage)}`
+        ]);
         generateCSV(headers, rows, 'Members_Export');
     };
 
     const handleExportPDF = () => {
-        const headers = ['Name', 'Role', 'Type', 'Status', 'Phone', 'Wage'];
+        const headers = ['Name', 'Role', 'Type', 'Status', 'Phone', 'Email', 'Wage'];
         const rows = filteredMembers.map(m => [
             m.name,
             m.role || '-',
             m.member_type,
             m.status,
             m.phone || '-',
-            `${m.wage_type === 'monthly' ? 'Monthly' : 'Daily'}: ${m.daily_wage}`
+            m.email || '-',
+            `${m.wage_type === 'monthly' ? 'Monthly' : 'Daily'}: ${parseFloat(m.daily_wage)}`
         ]);
 
         generatePDF({
@@ -102,8 +111,16 @@ const MemberManager = ({ onClose, onUpdate }) => {
     };
 
     const handleExportTXT = () => {
-        const headers = ['Name', 'Role', 'Type', 'Status', 'Phone', 'Email'];
-        const rows = filteredMembers.map(m => [m.name, m.role, m.member_type, m.status, m.phone, m.email]);
+        const headers = ['Name', 'Role', 'Type', 'Status', 'Phone', 'Email', 'Wage'];
+        const rows = filteredMembers.map(m => [
+            m.name,
+            m.role,
+            m.member_type,
+            m.status,
+            m.phone,
+            m.email || '-',
+            `${m.wage_type === 'monthly' ? 'Monthly' : 'Daily'}: ${parseFloat(m.daily_wage)}`
+        ]);
         generateTXT({
             title: 'Member List Report',
             period: 'All Time',
@@ -258,6 +275,19 @@ const MemberManager = ({ onClose, onUpdate }) => {
                                 value={formData.phone}
                                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                 placeholder="Contact number"
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 h-10 text-xs font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all"
+                            />
+                        </div>
+
+                        <div className="col-span-1 lg:col-span-1">
+                            <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">
+                                <FaEnvelope className="inline mr-1 text-[8px]" /> Email
+                            </label>
+                            <input
+                                type="email"
+                                value={formData.email}
+                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                placeholder="Email address"
                                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 h-10 text-xs font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 transition-all"
                             />
                         </div>
@@ -442,7 +472,7 @@ const MemberManager = ({ onClose, onUpdate }) => {
                                                     <FaMoneyBillWave className="text-slate-400 text-[12px]" />
                                                     <span className="font-medium">
                                                         {member.wage_type === 'monthly' ? 'Monthly' : 'Daily'}:
-                                                        ₹{member.daily_wage || 0}
+                                                        ₹{parseFloat(member.daily_wage || 0)}
                                                     </span>
                                                 </div>
                                             </div>
